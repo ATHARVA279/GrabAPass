@@ -1,18 +1,14 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
-use serde::{Deserialize, Serialize};
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
-use jsonwebtoken::{encode, EncodingKey, Header};
-use chrono::{Utc, Duration};
+use axum::{Json, extract::State, http::StatusCode};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{EncodingKey, Header, encode};
+use serde::{Deserialize, Serialize};
 
-use crate::models::{User, UserRole, Claims};
 use crate::AppState;
+use crate::models::{Claims, User, UserRole};
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -64,7 +60,7 @@ pub async fn register(
         INSERT INTO users (email, password_hash, role, name, phone_number, organizer_company)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, email, password_hash, role, name, phone_number, organizer_company, created_at
-        "#
+        "#,
     )
     .bind(&payload.email)
     .bind(&password_hash)
@@ -114,7 +110,7 @@ pub async fn login(
     // Verify password
     let parsed_hash = PasswordHash::new(&user.password_hash)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        
+
     Argon2::default()
         .verify_password(payload.password.as_bytes(), &parsed_hash)
         .map_err(|_| (StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()))?;

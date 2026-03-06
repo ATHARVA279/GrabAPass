@@ -1,19 +1,21 @@
 use axum::{
     extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
+    http::{StatusCode, request::Parts},
 };
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::models::{Claims, UserRole};
 use crate::AppState;
+use crate::models::{Claims, UserRole};
 
 pub struct RequireAuth(pub Claims);
 
-impl FromRequestParts<AppState> for RequireAuth
-{
+impl FromRequestParts<AppState> for RequireAuth {
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let auth_header = parts
             .headers
             .get("Authorization")
@@ -39,13 +41,15 @@ impl FromRequestParts<AppState> for RequireAuth
 // Extractor to specifically require Organizer role
 pub struct RequireOrganizer(pub Claims);
 
-impl FromRequestParts<AppState> for RequireOrganizer
-{
+impl FromRequestParts<AppState> for RequireOrganizer {
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let require_auth = RequireAuth::from_request_parts(parts, state).await?;
-        
+
         if require_auth.0.role != UserRole::Organizer {
             return Err((StatusCode::FORBIDDEN, "Requires Organizer role".to_string()));
         }

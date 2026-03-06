@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Row};
-use sqlx::postgres::PgRow;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use sqlx::postgres::PgRow;
+use sqlx::{FromRow, Row};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type, Clone, PartialEq)]
 #[sqlx(type_name = "user_role", rename_all = "PascalCase")]

@@ -1,15 +1,18 @@
-pub mod models;
 pub mod handlers_auth;
 pub mod middleware;
+pub mod models;
 
-use axum::{routing::{get, post}, Router};
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
-use std::str::FromStr;
-use std::env;
-use std::time::Duration;
-use tower_http::cors::{CorsLayer};
-use axum::http::{HeaderValue, Method};
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::{HeaderValue, Method};
+use axum::{
+    Router,
+    routing::{get, post},
+};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use std::env;
+use std::str::FromStr;
+use std::time::Duration;
+use tower_http::cors::CorsLayer;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -25,11 +28,9 @@ async fn main() {
     tracing_subscriber::fmt::init();
     tracing::info!("Starting up the backend server");
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let jwt_secret = env::var("JWT_SECRET")
-        .expect("JWT_SECRET must be set");
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -46,11 +47,15 @@ async fn main() {
     let state = AppState { pool, jwt_secret };
 
     // Set up CORS — restrict to frontend origin
-    let allowed_origin = env::var("FRONTEND_URL")
-        .unwrap_or_else(|_| "http://localhost:4200".to_string());
+    let allowed_origin =
+        env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:4200".to_string());
 
     let cors = CorsLayer::new()
-        .allow_origin(allowed_origin.parse::<HeaderValue>().expect("Invalid FRONTEND_URL"))
+        .allow_origin(
+            allowed_origin
+                .parse::<HeaderValue>()
+                .expect("Invalid FRONTEND_URL"),
+        )
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
