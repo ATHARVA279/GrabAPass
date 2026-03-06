@@ -1,0 +1,46 @@
+<div class="detail-container fade-in">
+  <button routerLink="/events" class="back-btn">← Back to Events</button>
+
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading event details...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="event" class="event-content">
+    <div class="event-hero">
+      <div class="category-badge">{{ event.category }}</div>
+      <h1>{{ event.title }}</h1>
+      <div class="status-badge" *ngIf="event.status !== 'Published'" [ngClass]="event.status.toLowerCase()">
+        {{ event.status }} Event
+      </div>
+    </div>
+
+    <div class="event-grid">
+      <div class="main-column">
+        <h3>About this event</h3>
+        <p class="description">{{ event.description || 'No description provided by the organizer.' }}</p>
+      </div>
+
+      <div class="sidebar">
+        <div class="info-card">
+          <h4>Date & Time</h4>
+          <p>{{ event.start_time | date:'fullDate' }}</p>
+          <p>{{ event.start_time | date:'shortTime' }}</p>
+        </div>
+
+        <div class="info-card">
+          <h4>Location</h4>
+          <p><strong>{{ event.venue_name }}</strong></p>
+          <p>{{ event.venue_address }}</p>
+        </div>
+
+        <button class="btn-primary buy-btn" disabled>
+          Buy Tickets (Next Phase)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

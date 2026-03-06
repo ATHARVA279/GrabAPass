@@ -1,15 +1,18 @@
-pub mod models;
-pub mod handlers_auth;
+pub mod db;
+pub mod handlers;
 pub mod middleware;
+pub mod repositories;
+pub mod routes;
+pub mod services;
 
-use axum::{routing::{get, post}, Router};
-use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
-use std::str::FromStr;
-use std::env;
-use std::time::Duration;
-use tower_http::cors::{CorsLayer};
-use axum::http::{HeaderValue, Method};
+use axum::Router;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::{HeaderValue, Method};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use std::env;
+use std::str::FromStr;
+use std::time::Duration;
+use tower_http::cors::CorsLayer;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -25,11 +28,9 @@ async fn main() {
     tracing_subscriber::fmt::init();
     tracing::info!("Starting up the backend server");
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let jwt_secret = env::var("JWT_SECRET")
-        .expect("JWT_SECRET must be set");
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -46,29 +47,29 @@ async fn main() {
     let state = AppState { pool, jwt_secret };
 
     // Set up CORS — restrict to frontend origin
-    let allowed_origin = env::var("FRONTEND_URL")
-        .unwrap_or_else(|_| "http://localhost:4200".to_string());
+    let allowed_origin =
+        env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:4200".to_string());
 
     let cors = CorsLayer::new()
-        .allow_origin(allowed_origin.parse::<HeaderValue>().expect("Invalid FRONTEND_URL"))
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin(
+            allowed_origin
+                .parse::<HeaderValue>()
+                .expect("Invalid FRONTEND_URL"),
+        )
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
-    let auth_routes = Router::new()
-        .route("/register", post(handlers_auth::register))
-        .route("/login", post(handlers_auth::login));
-
     let app = Router::new()
-        .route("/health", get(health_check))
-        .nest("/api/auth", auth_routes)
+        .merge(routes::health::router())
+        .nest("/api/auth", routes::auth::router())
+        .nest("/api/events", routes::event::public_router())
+        .nest("/api/organizer/events", routes::event::organizer_router())
         .layer(cors)
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let bind_address = format!("0.0.0.0:{port}");
+    let listener = tokio::net::TcpListener::bind(&bind_address).await.unwrap();
     tracing::info!("Listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn health_check() -> &'static str {
-    "OK"
 }

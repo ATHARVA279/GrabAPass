@@ -1,0 +1,73 @@
+<div class="form-container fade-in">
+  <div class="header">
+    <button routerLink="/organizer" class="back-btn">← Back to Dashboard</button>
+    <h2>Create New Event</h2>
+    <p>Publish an event to the public GrabAPass marketplace.</p>
+  </div>
+
+  <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="event-form">
+    <div *ngIf="errorMessage" class="error-banner">
+      {{ errorMessage }}
+    </div>
+
+    <div class="form-group">
+      <label for="title">Event Title</label>
+      <input id="title" type="text" formControlName="title" placeholder="e.g., Summer Music Festival 2026">
+      <div *ngIf="eventForm.get('title')?.touched && eventForm.get('title')?.invalid" class="error-msg">
+        Title is required.
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" formControlName="category">
+          <option value="">Select a category</option>
+          <option value="Music">Music</option>
+          <option value="Comedy">Comedy</option>
+          <option value="Sports">Sports</option>
+          <option value="Tech">Tech Conference</option>
+          <option value="Arts & Theater">Arts & Theater</option>
+        </select>
+        <div *ngIf="eventForm.get('category')?.touched && eventForm.get('category')?.invalid" class="error-msg">
+          Please select a category.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="start_time">Start Date & Time</label>
+        <input id="start_time" type="datetime-local" formControlName="start_time">
+        <div *ngIf="eventForm.get('start_time')?.touched && eventForm.get('start_time')?.invalid" class="error-msg">
+          Valid start time is required.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="venue_name">Venue Name</label>
+        <input id="venue_name" type="text" formControlName="venue_name" placeholder="e.g., Madison Square Garden">
+        <div *ngIf="eventForm.get('venue_name')?.touched && eventForm.get('venue_name')?.invalid" class="error-msg">
+          Venue name is required.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="venue_address">Venue Address</label>
+        <input id="venue_address" type="text" formControlName="venue_address" placeholder="e.g., 4 Pennsylvania Plaza, NY">
+        <div *ngIf="eventForm.get('venue_address')?.touched && eventForm.get('venue_address')?.invalid" class="error-msg">
+          Address is required.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Event Description</label>
+      <textarea id="description" formControlName="description" rows="5" placeholder="Tell ticket buyers what to expect..."></textarea>
+    </div>
+
+    <button type="submit" [disabled]="isSubmitting" class="submit-btn">
+      {{ isSubmitting ? 'Publishing Event...' : 'Publish Event' }}
+    </button>
+  </form>
+</div>

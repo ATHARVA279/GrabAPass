@@ -82,7 +82,7 @@ export class AuthService {
           role: payload.role as UserRole,
           name: payload.name || 'User',
         });
-      } catch (e) {
+      } catch {
         this.logout();
       }
     }

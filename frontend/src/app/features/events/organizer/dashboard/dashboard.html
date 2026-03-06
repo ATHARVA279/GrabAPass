@@ -1,0 +1,47 @@
+<div class="dashboard-container">
+  <div class="header-banner">
+    <div>
+      <h1>Organizer Dashboard</h1>
+      <p *ngIf="user" class="subtitle">Welcome back, {{ user.name }}</p>
+    </div>
+    <div class="actions">
+      <button routerLink="/organizer/create-event" class="btn-primary">Create Event</button>
+      <button (click)="logout()" class="btn-outline">Logout</button>
+    </div>
+  </div>
+
+  <div class="content-section">
+    <div class="section-header">
+      <h2>Your Events</h2>
+      <span class="badge">{{ events.length }} Total</span>
+    </div>
+
+    <div *ngIf="loading" class="loading-state">
+      <p>Loading your events...</p>
+    </div>
+
+    <div *ngIf="!loading && error" class="error-state">
+      <p>{{ error }}</p>
+    </div>
+
+    <div *ngIf="!loading && !error && events.length === 0" class="empty-state">
+      <p>You haven't created any events yet.</p>
+      <button routerLink="/organizer/create-event" class="btn-primary" style="margin-top: 1rem">Create Your First Event</button>
+    </div>
+
+    <div *ngIf="!loading && !error && events.length > 0" class="event-grid">
+      <div *ngFor="let event of events" class="event-card">
+        <div class="card-status" [ngClass]="event.status.toLowerCase()">
+          {{ event.status }}
+        </div>
+        <h3>{{ event.title }}</h3>
+        <p class="category">{{ event.category }}</p>
+
+        <div class="card-details">
+          <p>{{ event.venue_name }}</p>
+          <p>{{ event.start_time | date:'medium' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

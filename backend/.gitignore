@@ -9,3 +9,5 @@ sqlx-tmp/
 
 # Editor/OS files
 .DS_Store
+
+.sqlx

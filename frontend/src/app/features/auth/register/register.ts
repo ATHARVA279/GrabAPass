@@ -48,7 +48,7 @@ export class Register {
         } else if (res.user.role === UserRole.GateStaff) {
           this.router.navigate(['/gate']);
         } else {
-          this.router.navigate(['/']);
+          this.router.navigate(['/events']);
         }
       },
       error: (err) => {

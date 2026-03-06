@@ -6,17 +6,36 @@ import { authGuard } from './core/auth/auth-guard';
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
-  { 
-    path: 'organizer', 
-    canActivate: [authGuard], 
+  {
+    path: 'organizer',
+    canActivate: [authGuard],
     data: { role: 'Organizer' },
-    loadComponent: () => import('./features/auth/login/login').then(m => m.Login) // Placeholder
+    loadComponent: () => import('./features/events/organizer/dashboard/dashboard').then(m => m.Dashboard)
+  },
+  {
+    path: 'organizer/create-event',
+    canActivate: [authGuard],
+    data: { role: 'Organizer' },
+    loadComponent: () => import('./features/events/organizer/create-event/create-event').then(m => m.CreateEvent)
+  },
+  {
+    path: 'gate',
+    canActivate: [authGuard],
+    data: { role: 'GateStaff' },
+    loadComponent: () => import('./features/events/home/home').then(m => m.Home)
+  },
+  {
+    path: 'events',
+    loadComponent: () => import('./features/events/home/home').then(m => m.Home),
+    pathMatch: 'full'
+  },
+  {
+    path: 'events/:id',
+    loadComponent: () => import('./features/events/detail/event-detail').then(m => m.EventDetail)
   },
   { 
-    path: 'gate', 
-    canActivate: [authGuard], 
-    data: { role: 'GateStaff' },
-    loadComponent: () => import('./features/auth/login/login').then(m => m.Login) // Placeholder
-  },
-  { path: '', redirectTo: '/login', pathMatch: 'full' }
+    path: '', 
+    redirectTo: '/events',
+    pathMatch: 'full' 
+  }
 ];
