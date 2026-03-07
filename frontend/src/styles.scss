@@ -1,31 +1,94 @@
-/* GrabAPass Global Styles */
-
-:root {
-  /* Color Palette */
-  --bg-dark: #0f172a;
-  --bg-card: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent-primary: #3b82f6;
-  --accent-hover: #2563eb;
-  --error: #ef4444;
-  --input-bg: #0b1120;
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --glass-bg: rgba(30, 41, 59, 0.7);
-
-  /* Typography */
-  --font-family: 'Inter', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, sans-serif;
+@use '@angular/material' as mat;
+@use 'ngx-toastr/toastr' as toastr;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+// ─── Base layout ─────────────────────────────────────────────────────────────
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-* {
+app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+// ─── Angular Material Theme ───────────────────────────────────────────────────
+// typography omitted — we override all font tokens manually below with Poppins
+html {
+  @include mat.theme((
+    color: (
+      theme-type: dark,
+      primary: mat.$yellow-palette,
+    ),
+    density: 0,
+  ));
+}
+
+// ─── CSS Custom Properties ────────────────────────────────────────────────────
+:root {
+  // Core palette
+  --yellow:        #FFD60A;
+  --yellow-dark:   #E6C000;
+  --yellow-glow:   rgba(255, 214, 10, 0.18);
+  --yellow-subtle: rgba(255, 214, 10, 0.08);
+
+  --pink:          #FF2E88;
+  --pink-dark:     #E0006E;
+  --pink-glow:     rgba(255, 46, 136, 0.18);
+  --pink-subtle:   rgba(255, 46, 136, 0.08);
+
+  --black:         #0D0D0D;
+  --black-soft:    #141414;
+  --black-card:    #1A1A1A;
+  --black-raised:  #222222;
+  --black-border:  rgba(255, 255, 255, 0.08);
+
+  // Text
+  --text-primary:   #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-muted:     #606060;
+
+  // Status
+  --success:       #22c55e;
+  --error:         #FF2E88;
+  --error-subtle:  rgba(255, 46, 136, 0.1);
+  --warning:       #FFD60A;
+
+  // Spacing & Shape
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  // Shadows
+  --shadow-card:   0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-raised: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-yellow: 0 4px 20px rgba(255, 214, 10, 0.25);
+  --shadow-pink:   0 4px 20px rgba(255, 46, 136, 0.25);
+
+  // Typography
+  --font: 'Poppins', -apple-system, blinkmacsystemfont, 'Segoe UI', sans-serif;
+}
+
+// ─── Reset & Base ─────────────────────────────────────────────────────────────
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+html, body {
+  height: 100%;
+  color-scheme: dark;
+}
+
 body {
-  font-family: var(--font-family);
-  background: var(--bg-dark);
+  font-family: var(--font);
+  background: var(--black);
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
@@ -34,116 +97,417 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Global Form Elements for Auth Components */
-.auth-container {
-  width: 100%;
-  max-width: 440px;
-  margin: 4rem auto;
-  padding: 2.5rem;
-  background: var(--glass-bg);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
+// ─── Angular Material Overrides ───────────────────────────────────────────────
+
+// Spinner
+.mat-mdc-progress-spinner circle {
+  stroke: var(--yellow) !important;
 }
 
-.auth-container h2 {
+// Primary flat button → yellow bg, black text
+.mat-mdc-unelevated-button.mat-primary {
+  --mdc-filled-button-container-color: var(--yellow);
+  --mdc-filled-button-label-text-color: #000000;
   font-weight: 700;
-  font-size: 1.75rem;
-  margin-bottom: 2rem;
-  text-align: center;
-  background: linear-gradient(to right, #60a5fa, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: var(--font);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+
+  &:hover:not(:disabled) {
+    --mdc-filled-button-container-color: var(--yellow-dark);
+    box-shadow: var(--shadow-yellow);
+    transform: translateY(-1px);
+  }
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:disabled { opacity: 0.4; }
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+// Accent flat button → pink
+.mat-mdc-unelevated-button.mat-accent {
+  --mdc-filled-button-container-color: var(--pink);
+  --mdc-filled-button-label-text-color: #ffffff;
+  font-weight: 700;
+  font-family: var(--font);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+
+  &:hover:not(:disabled) {
+    --mdc-filled-button-container-color: var(--pink-dark);
+    box-shadow: var(--shadow-pink);
+    transform: translateY(-1px);
+  }
+}
+
+// Text / stroked button
+.mat-mdc-button,
+.mat-mdc-outlined-button {
+  font-family: var(--font);
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  &:hover { color: var(--yellow); }
+}
+
+// Icon buttons
+.mat-mdc-icon-button {
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  &:hover                     { color: var(--pink);       }
+  &.mat-primary               { color: var(--yellow);     &:hover { color: var(--yellow-dark); } }
+  &.mat-accent                { color: var(--pink);       &:hover { color: var(--pink-dark);   } }
+}
+
+// Cards
+mat-card,
+.mat-mdc-card {
+  background: var(--black-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--black-border) !important;
+}
+
+// Form fields
+// ─────────────────────────────────────────────────────────────────────────────
+// Angular Material 21 uses --mat-form-field-* tokens (M3 system), NOT the old
+// --mdc-outlined-text-field-* tokens. All declared at :root so they win over
+// mat.theme() generated values at the same :root level by source order.
+:root {
+  // ── FONT ────────────────────────────────────────────────────────────────────
+  // These are the CONFIRMED token names from the compiled Material 21 bundle.
+  --mat-form-field-container-text-font:              'Poppins', sans-serif;
+  --mat-form-field-outlined-label-text-font:         'Poppins', sans-serif;
+  --mat-form-field-filled-label-text-font:           'Poppins', sans-serif;
+  --mat-form-field-subscript-text-font:              'Poppins', sans-serif;
+  // System-level font tokens that feed all --mat-sys-body-*-font references
+  --mat-sys-body-large-font:                         'Poppins', sans-serif;
+  --mat-sys-body-medium-font:                        'Poppins', sans-serif;
+  --mat-sys-body-small-font:                         'Poppins', sans-serif;
+  --mat-sys-label-large-font:                        'Poppins', sans-serif;
+  --mat-sys-label-medium-font:                       'Poppins', sans-serif;
+
+  // ── NOTCH-PIECE BORDER (the actual outline element Material renders) ─────────
+  // Idle
+  --mat-form-field-outlined-outline-color:           rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-outline-width:           1px;
+  // Hover (not focused, not invalid)
+  --mat-form-field-outlined-hover-outline-color:     rgba(255, 255, 255, 0.3);
+  // Focus → no color change (stays same as idle)
+  --mat-form-field-outlined-focus-outline-color:     rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-focus-outline-width:     1px;
+  // Error / invalid → same as idle (no pink)
+  --mat-form-field-outlined-error-outline-color:     rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-error-hover-outline-color: rgba(255, 255, 255, 0.35);
+  --mat-form-field-outlined-error-focus-outline-color: rgba(255, 255, 255, 0.12);
+
+  // ── LABEL COLORS ────────────────────────────────────────────────────────────
+  --mat-form-field-outlined-label-text-color:        #a0a0a0;
+  --mat-form-field-outlined-hover-label-text-color:  #a0a0a0;
+  --mat-form-field-outlined-focus-label-text-color:  #a0a0a0;
+  --mat-form-field-outlined-error-label-text-color:  #a0a0a0;   // no pink on label
+  --mat-form-field-outlined-error-focus-label-text-color: #a0a0a0;
+  --mat-form-field-outlined-error-hover-label-text-color: #a0a0a0;
+
+  // ── INPUT TEXT & CARET ──────────────────────────────────────────────────────
+  --mat-form-field-outlined-input-text-color:              #ffffff;
+  --mat-form-field-outlined-input-text-placeholder-color:  #606060;
+  --mat-form-field-outlined-caret-color:                   #ffffff;
+  --mat-form-field-outlined-error-caret-color:             #ffffff;
+
+  // ── CONTAINER SHAPE ─────────────────────────────────────────────────────────
+  --mat-form-field-outlined-container-shape:         8px;
+
+  // ── ERROR TEXT ──────────────────────────────────────────────────────────────
+  --mat-form-field-error-text-color:                 #FF2E88;
+
+  // ── STATE LAYER (hover overlay on filled variant, zero for outlined) ────────
+  --mat-form-field-focus-state-layer-opacity:        0;
+  --mat-form-field-hover-state-layer-opacity:        0;
+}
+
+// ── Font on the host element ─────────────────────────────────────────────────
+.mat-mdc-form-field {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+// ── Container background ─────────────────────────────────────────────────────
+.mat-mdc-form-field .mdc-text-field {
+  background-color: #222222 !important;
+  border-radius: 8px !important;
+}
+
+// ── Input text & caret ───────────────────────────────────────────────────────
+.mat-mdc-form-field .mdc-text-field__input {
+  font-family: 'Poppins', sans-serif !important;
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// ── Floating label ───────────────────────────────────────────────────────────
+.mat-mdc-form-field .mdc-floating-label {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+// ── NOTCH BORDERS — selectors mirror the compiled Material bundle exactly ────
+// These MUST be top-level (not nested inside .mat-mdc-form-field) because
+// .mdc-text-field--outlined lives on .mat-mdc-text-field-wrapper, a CHILD of
+// .mat-mdc-form-field, and nesting would add a wrong ancestor combinator.
+
+// Idle
+.mdc-text-field--outlined:not(.mdc-text-field--disabled) .mat-mdc-notch-piece {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+// Hover (not focused, not invalid)
+.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):not(.mdc-text-field--invalid):hover .mat-mdc-notch-piece {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+// Focused → no color change
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mat-mdc-notch-piece {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-width: 1px !important;
+}
+
+// Invalid — same as idle (no color change)
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mat-mdc-notch-piece {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-width: 1px !important;
+}
+
+// Invalid + focused — still no color change
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid.mdc-text-field--focused .mat-mdc-notch-piece {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-width: 1px !important;
+}
+
+// ── Label colors (top-level to match compiled specificity) ───────────────────
+.mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label {
+  color: #a0a0a0 !important;
+}
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-floating-label {
+  color: #a0a0a0 !important;
+}
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mdc-floating-label {
+  color: #a0a0a0 !important;
+}
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid.mdc-text-field--focused .mdc-floating-label {
+  color: #a0a0a0 !important;
+}
+
+// ── Error / hint text ────────────────────────────────────────────────────────
+.mat-mdc-form-field-error {
+  color: #FF2E88 !important;
+  font-family: 'Poppins', sans-serif !important;
+}
+.mat-mdc-form-field-hint {
+  color: #606060;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+// Select panel
+.mat-mdc-select-panel {
+  background: var(--black-raised) !important;
+  border: 1px solid var(--black-border);
+  border-radius: var(--radius-md) !important;
+
+  .mat-mdc-option {
+    color: var(--text-primary);
+    font-family: var(--font);
+    &:hover, &.mat-mdc-option-active  { background: var(--yellow-subtle); }
+    &.mdc-list-item--selected         { color: var(--yellow); }
+  }
+}
+.mat-mdc-select-value { color: var(--text-primary) !important; font-family: var(--font); }
+.mat-mdc-select-arrow { color: var(--text-secondary) !important; }
+
+// Chips
+mat-chip {
+  background: var(--yellow-subtle) !important;
+  color: var(--yellow) !important;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.78rem;
+  border: 1px solid rgba(255, 214, 10, 0.3) !important;
+}
+
+// Tables
+.mat-mdc-table {
+  background: transparent !important;
+  font-family: var(--font);
+
+  .mat-mdc-header-row  { background: var(--black-raised) !important; }
+  .mat-mdc-header-cell {
+    color: var(--text-secondary) !important;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-color: var(--black-border) !important;
+  }
+  .mat-mdc-row         { transition: background 0.15s; &:hover { background: var(--yellow-subtle) !important; } }
+  .mat-mdc-cell        { color: var(--text-primary) !important; border-bottom-color: var(--black-border) !important; }
+}
+
+// Toolbar
+mat-toolbar.mat-toolbar {
+  background: var(--black-soft) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font);
+}
+
+// ─── Shared Utility Blocks ────────────────────────────────────────────────────
+
+.loading-state,
+.empty-state {
   display: flex;
   flex-direction: column;
-}
-
-.form-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: var(--input-bg);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-family: var(--font-family);
-  transition: all 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-.form-group select option {
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-button[type="submit"] {
-  width: 100%;
-  padding: 0.875rem;
-  background: var(--accent-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 1rem;
-}
-
-button[type="submit"]:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-button[type="submit"]:active {
-  transform: translateY(1px);
-}
-
-.error-box {
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 4px solid var(--error);
-  color: var(--error);
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-}
-
-.auth-container p {
-  margin-top: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
   text-align: center;
-  font-size: 0.9rem;
   color: var(--text-secondary);
+  background: var(--black-card);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--black-border);
+
+  mat-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.35;
+    color: var(--yellow);
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
 }
 
-.auth-container a {
-  color: var(--accent-primary);
-  text-decoration: none;
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--error-subtle);
+  border: 1px solid rgba(255, 46, 136, 0.3);
+  border-left: 4px solid var(--pink);
+  border-radius: var(--radius-sm);
+  color: #ff8ab8;
+  font-size: 0.9rem;
   font-weight: 500;
-  transition: color 0.2s;
+
+  mat-icon { color: var(--pink); flex-shrink: 0; }
 }
 
-.auth-container a:hover {
-  color: #60a5fa;
-  text-decoration: underline;
+// ─── Toast overrides ──────────────────────────────────────────────────────────
+#toast-container > div {
+  font-family: 'Poppins', sans-serif !important;
+  border-radius: 10px !important;
+  padding: 14px 16px 14px 52px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  opacity: 1 !important;
+  min-width: 280px;
+  max-width: 360px;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+#toast-container > div .toast-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 2px;
+}
+
+#toast-container > div .toast-message {
+  font-size: 0.825rem;
+  font-weight: 400;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+// Close button
+#toast-container > div button.toast-close-button {
+  color: inherit !important;
+  opacity: 0.5;
+  font-size: 18px;
+  top: 10px;
+  right: 10px;
+
+  &:hover { opacity: 1; }
+}
+
+// Progress bar
+#toast-container > div .toast-progress {
+  height: 3px !important;
+  opacity: 0.5;
+  bottom: 0;
+  border-radius: 0 0 10px 10px;
+}
+
+// Error toast — pink
+#toast-container > .toast-error {
+  background-color: #1a0d12 !important;
+  border-left-color: #FF2E88 !important;
+  color: #ffffff !important;
+
+  .toast-title  { color: #FF2E88; }
+  .toast-progress { background: #FF2E88 !important; }
+
+  &::before {
+    background-image: none !important;
+  }
+}
+
+// Warning toast — yellow
+#toast-container > .toast-warning {
+  background-color: #1a1500 !important;
+  border-left-color: #FFD60A !important;
+  color: #ffffff !important;
+
+  .toast-title  { color: #FFD60A; }
+  .toast-progress { background: #FFD60A !important; }
+}
+
+// Success toast — green
+#toast-container > .toast-success {
+  background-color: #0d1a11 !important;
+  border-left-color: #22c55e !important;
+  color: #ffffff !important;
+
+  .toast-title  { color: #22c55e; }
+  .toast-progress { background: #22c55e !important; }
+}
+
+// Info toast — neutral
+#toast-container > .toast-info {
+  background-color: #0d1520 !important;
+  border-left-color: #60a5fa !important;
+  color: #ffffff !important;
+
+  .toast-title  { color: #60a5fa; }
+  .toast-progress { background: #60a5fa !important; }
+}
+
+// Hide default background images (the icons)
+.toast-error, .toast-warning, .toast-success, .toast-info {
+  background-image: none !important;
+}
+
+// ─── Time Picker Dialog ───────────────────────────────────────────────────────
+.timepicker-panel .mat-mdc-dialog-container {
+  background: transparent !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7) !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  .mdc-dialog__surface {
+    background: transparent !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+  }
+}
+.timepicker-backdrop {
+  backdrop-filter: blur(4px);
 }

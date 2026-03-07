@@ -1,47 +1,90 @@
-<div class="dashboard-container">
-  <div class="header-banner">
-    <div>
+<div class="dashboard-page">
+  <div class="dashboard-header">
+    <div class="title-section">
       <h1>Organizer Dashboard</h1>
       <p *ngIf="user" class="subtitle">Welcome back, {{ user.name }}</p>
     </div>
-    <div class="actions">
-      <button routerLink="/organizer/create-event" class="btn-primary">Create Event</button>
-      <button (click)="logout()" class="btn-outline">Logout</button>
+    <div class="header-actions">
+      <button mat-flat-button color="primary" routerLink="/organizer/create-event">
+        <mat-icon>add</mat-icon>
+        Create Event
+      </button>
     </div>
   </div>
 
-  <div class="content-section">
-    <div class="section-header">
-      <h2>Your Events</h2>
-      <span class="badge">{{ events.length }} Total</span>
-    </div>
-
-    <div *ngIf="loading" class="loading-state">
+  <div class="dashboard-content">
+    <div *ngIf="viewState === 'loading'" class="loading-state">
+      <mat-spinner diameter="40"></mat-spinner>
       <p>Loading your events...</p>
     </div>
 
-    <div *ngIf="!loading && error" class="error-state">
-      <p>{{ error }}</p>
+    <div *ngIf="viewState === 'error'" class="error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <p>Failed to load events. Please try again.</p>
+      <button mat-button type="button" (click)="loadDashboard()">Retry</button>
     </div>
 
-    <div *ngIf="!loading && !error && events.length === 0" class="empty-state">
+    <div *ngIf="viewState === 'success' && events.length === 0" class="empty-state">
+      <mat-icon>event_note</mat-icon>
+      <h3>No Events Yet</h3>
       <p>You haven't created any events yet.</p>
-      <button routerLink="/organizer/create-event" class="btn-primary" style="margin-top: 1rem">Create Your First Event</button>
+      <button mat-stroked-button color="primary" routerLink="/organizer/create-event" class="mt-3">
+        Create Your First Event
+      </button>
     </div>
 
-    <div *ngIf="!loading && !error && events.length > 0" class="event-grid">
-      <div *ngFor="let event of events" class="event-card">
-        <div class="card-status" [ngClass]="event.status.toLowerCase()">
-          {{ event.status }}
-        </div>
-        <h3>{{ event.title }}</h3>
-        <p class="category">{{ event.category }}</p>
+    <div
+      *ngIf="viewState === 'success' && events.length > 0"
+      class="table-container mat-elevation-z4"
+    >
+      <table mat-table [dataSource]="events" class="events-table">
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Event Title</th>
+          <td mat-cell *matCellDef="let event">
+            <strong>{{ event.title }}</strong>
+            <div class="venue-subtitle">{{ event.venue_name }}</div>
+          </td>
+        </ng-container>
 
-        <div class="card-details">
-          <p>{{ event.venue_name }}</p>
-          <p>{{ event.start_time | date:'medium' }}</p>
-        </div>
-      </div>
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Category</th>
+          <td mat-cell *matCellDef="let event">{{ event.category }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let event">
+            <span class="status-badge" [ngClass]="event.status.toLowerCase()">{{
+              event.status
+            }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="start_time">
+          <th mat-header-cell *matHeaderCellDef>Date & Time</th>
+          <td mat-cell *matCellDef="let event">{{ event.start_time | date: 'short' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-col">Actions</th>
+          <td mat-cell *matCellDef="let event" class="actions-col">
+            <button
+              mat-icon-button
+              color="primary"
+              title="View Details"
+              [routerLink]="['/events', event.id]"
+            >
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" title="Manage Event">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
     </div>
   </div>
 </div>

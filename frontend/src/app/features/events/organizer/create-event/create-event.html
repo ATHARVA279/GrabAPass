@@ -1,73 +1,88 @@
 <div class="form-container fade-in">
   <div class="header">
-    <button routerLink="/organizer" class="back-btn">← Back to Dashboard</button>
+    <button mat-button routerLink="/organizer" class="back-btn">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Dashboard
+    </button>
     <h2>Create New Event</h2>
     <p>Publish an event to the public GrabAPass marketplace.</p>
   </div>
 
-  <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="event-form">
-    <div *ngIf="errorMessage" class="error-banner">
-      {{ errorMessage }}
-    </div>
+  <mat-card class="event-form-card">
+    <mat-card-content>
+      <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="event-form">
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Event Title</mat-label>
+          <input matInput formControlName="title" placeholder="e.g., Summer Music Festival 2026">
+          <mat-icon matPrefix>title</mat-icon>
+          <mat-error *ngIf="eventForm.get('title')?.hasError('required')">Title is required.</mat-error>
+          <mat-error *ngIf="eventForm.get('title')?.hasError('maxlength')">Title is too long.</mat-error>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label for="title">Event Title</label>
-      <input id="title" type="text" formControlName="title" placeholder="e.g., Summer Music Festival 2026">
-      <div *ngIf="eventForm.get('title')?.touched && eventForm.get('title')?.invalid" class="error-msg">
-        Title is required.
-      </div>
-    </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              <mat-option value="Music">Music</mat-option>
+              <mat-option value="Comedy">Comedy</mat-option>
+              <mat-option value="Sports">Sports</mat-option>
+              <mat-option value="Tech">Tech Conference</mat-option>
+              <mat-option value="Arts & Theater">Arts & Theater</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+            <mat-error *ngIf="eventForm.get('category')?.hasError('required')">Please select a category.</mat-error>
+          </mat-form-field>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="category">Category</label>
-        <select id="category" formControlName="category">
-          <option value="">Select a category</option>
-          <option value="Music">Music</option>
-          <option value="Comedy">Comedy</option>
-          <option value="Sports">Sports</option>
-          <option value="Tech">Tech Conference</option>
-          <option value="Arts & Theater">Arts & Theater</option>
-        </select>
-        <div *ngIf="eventForm.get('category')?.touched && eventForm.get('category')?.invalid" class="error-msg">
-          Please select a category.
+          <mat-form-field appearance="outline" class="quarter-width">
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="startDatePicker" formControlName="start_date" placeholder="MM/DD/YYYY" readonly>
+            <mat-icon matPrefix>event</mat-icon>
+            <mat-datepicker-toggle matIconSuffix [for]="startDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #startDatePicker></mat-datepicker>
+            <mat-error *ngIf="eventForm.get('start_date')?.hasError('required')">Start date is required.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="quarter-width" (click)="openTimePicker()">
+            <mat-label>Start Time</mat-label>
+            <input matInput readonly [value]="displayTime" placeholder="HH:MM AM/PM" style="cursor:pointer">
+            <mat-icon matPrefix>schedule</mat-icon>
+            <mat-icon matSuffix style="cursor:pointer; color: rgba(255,255,255,0.5)">access_time</mat-icon>
+            <mat-error *ngIf="eventForm.get('start_time_input')?.touched && eventForm.get('start_time_input')?.hasError('required')">Start time is required.</mat-error>
+          </mat-form-field>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="start_time">Start Date & Time</label>
-        <input id="start_time" type="datetime-local" formControlName="start_time">
-        <div *ngIf="eventForm.get('start_time')?.touched && eventForm.get('start_time')?.invalid" class="error-msg">
-          Valid start time is required.
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Venue Name</mat-label>
+            <input matInput formControlName="venue_name" placeholder="e.g., Madison Square Garden">
+            <mat-icon matPrefix>stadium</mat-icon>
+            <mat-error *ngIf="eventForm.get('venue_name')?.hasError('required')">Venue name is required.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Venue Address</mat-label>
+            <input matInput formControlName="venue_address" placeholder="e.g., 4 Pennsylvania Plaza, NY">
+            <mat-icon matPrefix>place</mat-icon>
+            <mat-error *ngIf="eventForm.get('venue_address')?.hasError('required')">Address is required.</mat-error>
+          </mat-form-field>
         </div>
-      </div>
-    </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="venue_name">Venue Name</label>
-        <input id="venue_name" type="text" formControlName="venue_name" placeholder="e.g., Madison Square Garden">
-        <div *ngIf="eventForm.get('venue_name')?.touched && eventForm.get('venue_name')?.invalid" class="error-msg">
-          Venue name is required.
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Event Description</mat-label>
+          <textarea matInput formControlName="description" rows="5" placeholder="Tell ticket buyers what to expect..."></textarea>
+          <mat-icon class="align-top" matPrefix>description</mat-icon>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting || eventForm.invalid" class="submit-btn">
+            <mat-icon *ngIf="!isSubmitting">publish</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
+            <span *ngIf="isSubmitting" style="margin-left: 8px">Publishing Event...</span>
+            <span *ngIf="!isSubmitting">Publish Event</span>
+          </button>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="venue_address">Venue Address</label>
-        <input id="venue_address" type="text" formControlName="venue_address" placeholder="e.g., 4 Pennsylvania Plaza, NY">
-        <div *ngIf="eventForm.get('venue_address')?.touched && eventForm.get('venue_address')?.invalid" class="error-msg">
-          Address is required.
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="description">Event Description</label>
-      <textarea id="description" formControlName="description" rows="5" placeholder="Tell ticket buyers what to expect..."></textarea>
-    </div>
-
-    <button type="submit" [disabled]="isSubmitting" class="submit-btn">
-      {{ isSubmitting ? 'Publishing Event...' : 'Publish Event' }}
-    </button>
-  </form>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>

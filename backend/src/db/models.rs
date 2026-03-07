@@ -12,7 +12,7 @@ pub enum UserRole {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type, Clone, PartialEq)]
-#[sqlx(type_name = "event_status")]
+#[sqlx(type_name = "event_status", rename_all = "PascalCase")]
 pub enum EventStatus {
     Draft,
     Published,

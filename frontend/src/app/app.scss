@@ -1,0 +1,92 @@
+.app-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--black-soft) !important;
+    border-bottom: 1px solid var(--black-border);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.4rem;
+        font-weight: 800;
+        font-family: var(--font);
+        color: var(--text-primary);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+        transition: opacity 0.2s;
+
+        mat-icon {
+            color: var(--yellow);
+            font-size: 1.6rem;
+            width: 1.6rem;
+            height: 1.6rem;
+        }
+
+        span {
+            background: linear-gradient(90deg, var(--yellow) 0%, var(--pink) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        &:hover { opacity: 0.85; }
+    }
+
+    .spacer { flex: 1 1 auto; }
+
+    .user-greeting {
+        margin-right: 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-family: var(--font);
+    }
+
+    // Nav buttons
+    button {
+        margin-left: 4px;
+        font-family: var(--font);
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+
+        &:hover:not([disabled]) {
+            color: var(--yellow) !important;
+        }
+    }
+
+    // Active/dashboard nav button
+    .nav-active {
+        color: var(--yellow) !important;
+    }
+}
+
+.content-container {
+    flex: 1 1 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+
+    // Auth pages must be full-bleed — escape the max-width constraint
+    &:has(.auth-page) {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    @media (max-width: 768px) {
+        padding: 1.25rem;
+
+        &:has(.auth-page) {
+            padding: 0;
+        }
+    }
+}

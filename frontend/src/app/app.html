@@ -1,1 +1,28 @@
-<router-outlet></router-outlet>
+<mat-toolbar color="primary" class="app-toolbar">
+  <a class="logo" routerLink="/">
+    <mat-icon>event</mat-icon>
+    <span>GrabAPass</span>
+  </a>
+
+  <span class="spacer"></span>
+
+  <ng-container *ngIf="!user">
+    <button mat-button routerLink="/login">Login</button>
+    <button mat-stroked-button routerLink="/register">Register</button>
+  </ng-container>
+
+  <ng-container *ngIf="user">
+    <span class="user-greeting">Hi, {{ user.name }}</span>
+    <button mat-button *ngIf="user.role === 'Organizer'" routerLink="/organizer">
+      <mat-icon>dashboard</mat-icon>
+      Dashboard
+    </button>
+    <button mat-icon-button (click)="logout()" title="Logout">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </ng-container>
+</mat-toolbar>
+
+<main class="content-container">
+  <router-outlet></router-outlet>
+</main>

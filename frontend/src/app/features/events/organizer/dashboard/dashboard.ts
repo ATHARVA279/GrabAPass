@@ -1,7 +1,13 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { timeout } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
+
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService, User } from '../../../../core/auth/auth';
 import { EventService } from '../../../../core/services/event.service';
@@ -10,72 +16,71 @@ import { Event } from '../../../../shared/models/event';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
 export class Dashboard implements OnInit {
   user: User | null = null;
   events: Event[] = [];
-  loading = true;
-  error = '';
+  displayedColumns: string[] = ['title', 'category', 'status', 'start_time', 'actions'];
+  viewState: 'loading' | 'error' | 'success' = 'loading';
 
-  constructor(
-    private readonly authService: AuthService,
-    private readonly eventService: EventService,
-    private readonly router: Router,
-    private readonly cdr: ChangeDetectorRef
-  ) {}
+  private readonly authService = inject(AuthService);
+  private readonly eventService = inject(EventService);
+  private readonly router = inject(Router);
+  private readonly toastr = inject(ToastrService);
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe((user) => {
-      this.user = user;
-      this.cdr.detectChanges();
-
-      if (user) {
-        this.fetchMyEvents();
-        return;
-      }
-
-      this.loading = false;
-      this.error = 'No active organizer session. Please login again.';
-      this.cdr.detectChanges();
-    });
+    this.user = this.authService.currentUserValue;
+    this.loadDashboard();
   }
 
-  fetchMyEvents(): void {
-    this.loading = true;
-    this.error = '';
+  get loading(): boolean {
+    return this.viewState === 'loading';
+  }
+
+  loadDashboard(): void {
+    this.viewState = 'loading';
+
+    if (!this.user) {
+      this.router.navigate(['/login']);
+      return;
+    }
 
     this.eventService.getOrganizerEvents().pipe(
       timeout(10000)
     ).subscribe({
       next: (events) => {
         this.events = events;
-        this.loading = false;
-        this.cdr.detectChanges();
+        this.viewState = 'success';
       },
       error: (err) => {
-        this.loading = false;
+        this.events = [];
 
         if (err.name === 'TimeoutError') {
-          this.error = 'Request timed out while loading events. Check if backend is running on port 3000.';
-          this.cdr.detectChanges();
-          return;
-        }
-
-        if (err.status === 401 || err.status === 403) {
-          this.error = 'Your session is invalid or expired. Please login again.';
-          this.cdr.detectChanges();
+          this.toastr.error('Request timed out. Check if the backend is running.', 'Timeout');
+        } else if (err.status === 401 || err.status === 403) {
           this.authService.logout();
           this.router.navigate(['/login']);
           return;
+        } else {
+          const msg = err instanceof Error
+            ? err.message
+            : typeof err.error === 'string'
+              ? err.error
+              : (err.error?.message ?? 'Failed to load your events.');
+          this.toastr.error(msg, 'Error');
         }
 
-        this.error = typeof err.error === 'string'
-          ? err.error
-          : err.error?.message || 'Failed to load organizer events.';
-        this.cdr.detectChanges();
+        this.viewState = 'error';
       }
     });
   }

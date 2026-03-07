@@ -39,6 +39,8 @@ pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, String)> {
+    tracing::info!(email = %payload.email, role = ?payload.role, "Register attempt");
+
     let password_hash = auth_service::hash_password(&payload.password)?;
 
     let user = auth_repository::create_user(
@@ -56,10 +58,12 @@ pub async fn register(
         if message.contains("duplicate key") || message.contains("unique") {
             (StatusCode::CONFLICT, "Email already in use".to_string())
         } else {
+            tracing::error!(error = %message, "Failed to create user");
             (StatusCode::INTERNAL_SERVER_ERROR, message)
         }
     })?;
 
+    tracing::info!(user_id = %user.id, "User registered successfully");
     let token = auth_service::create_jwt(&user, &state.jwt_secret)?;
 
     Ok((
@@ -80,13 +84,19 @@ pub async fn login(
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, String)> {
+    tracing::info!(email = %payload.email, "Login attempt");
+
     let user = auth_repository::find_user_by_email(&state.pool, &payload.email)
         .await
-        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+        .map_err(|error| {
+            tracing::error!(error = %error, "DB error during login");
+            (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+        })?
         .ok_or((StatusCode::UNAUTHORIZED, "Invalid credentials".to_string()))?;
 
     auth_service::verify_password(&payload.password, &user.password_hash)?;
 
+    tracing::info!(user_id = %user.id, "Login successful");
     let token = auth_service::create_jwt(&user, &state.jwt_secret)?;
 
     Ok((

@@ -1,45 +1,72 @@
-<div class="detail-container fade-in">
-  <button routerLink="/events" class="back-btn">← Back to Events</button>
+<div class="detail-container">
+  <button mat-button class="back-btn" (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+    Back to Events
+  </button>
 
   <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
     <p>Loading event details...</p>
   </div>
 
-  <div *ngIf="error" class="error-state">
-    <p>{{ error }}</p>
-  </div>
-
   <div *ngIf="event" class="event-content">
+    
     <div class="event-hero">
-      <div class="category-badge">{{ event.category }}</div>
-      <h1>{{ event.title }}</h1>
-      <div class="status-badge" *ngIf="event.status !== 'Published'" [ngClass]="event.status.toLowerCase()">
-        {{ event.status }} Event
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <mat-chip-listbox>
+          <mat-chip>{{ event.category }}</mat-chip>
+          <mat-chip *ngIf="event.status !== 'Published'" color="warn" [highlighted]="true">{{ event.status }} Event</mat-chip>
+        </mat-chip-listbox>
+        <h1>{{ event.title }}</h1>
       </div>
     </div>
 
     <div class="event-grid">
       <div class="main-column">
-        <h3>About this event</h3>
-        <p class="description">{{ event.description || 'No description provided by the organizer.' }}</p>
+        <mat-card class="description-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar>info</mat-icon>
+            <mat-card-title>About this event</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="description">{{ event.description || 'No description provided by the organizer.' }}</p>
+          </mat-card-content>
+        </mat-card>
       </div>
 
       <div class="sidebar">
-        <div class="info-card">
-          <h4>Date & Time</h4>
-          <p>{{ event.start_time | date:'fullDate' }}</p>
-          <p>{{ event.start_time | date:'shortTime' }}</p>
-        </div>
+        
+        <mat-card class="info-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="primary">event</mat-icon>
+            <mat-card-title>Date & Time</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p>{{ event.start_time | date:'fullDate' }}</p>
+            <p>{{ event.start_time | date:'shortTime' }}</p>
+          </mat-card-content>
+        </mat-card>
 
-        <div class="info-card">
-          <h4>Location</h4>
-          <p><strong>{{ event.venue_name }}</strong></p>
-          <p>{{ event.venue_address }}</p>
-        </div>
+        <mat-card class="info-card">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="primary">place</mat-icon>
+            <mat-card-title>Location</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p><strong>{{ event.venue_name }}</strong></p>
+            <p>{{ event.venue_address }}</p>
+          </mat-card-content>
+        </mat-card>
 
-        <button class="btn-primary buy-btn" disabled>
-          Buy Tickets (Next Phase)
-        </button>
+        <mat-card class="booking-card">
+          <mat-card-content>
+            <button mat-flat-button color="primary" class="buy-btn" disabled>
+              Buy Tickets (Next Phase)
+            </button>
+          </mat-card-content>
+        </mat-card>
+
       </div>
     </div>
   </div>

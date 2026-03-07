@@ -1,45 +1,127 @@
-:host {
+.auth-page {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: calc(100vh - 64px);
+    padding: 2rem 1rem;
+    background:
+        radial-gradient(ellipse at 80% 80%, var(--yellow-glow), transparent 50%),
+        radial-gradient(ellipse at 20% 20%, var(--pink-glow), transparent 50%);
+}
+
+.auth-card {
     width: 100%;
-    padding: 1rem;
-}
+    max-width: 480px;
+    background: var(--black-card) !important;
+    border: 1px solid var(--black-border) !important;
+    border-radius: var(--radius-xl) !important;
+    padding: 0.5rem;
+    box-shadow: var(--shadow-raised);
 
-.auth-container {
-    // Give the register form a touch more width due to more fields
-    max-width: 500px;
-    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    mat-card-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-top: 1.5rem;
 
-@keyframes slideUp {
-    0% {
-        opacity: 0;
-        transform: translateY(30px) scale(0.96);
+        .auth-avatar {
+            margin-bottom: 1rem;
+            background: var(--yellow-subtle);
+            border: 2px solid rgba(255, 214, 10, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 64px;
+            width: 64px;
+            border-radius: 50%;
+            box-shadow: var(--shadow-yellow);
+
+            mat-icon {
+                font-size: 2rem;
+                width: 2rem;
+                height: 2rem;
+                color: var(--yellow);
+            }
+        }
+
+        mat-card-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            font-family: var(--font);
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.25rem;
+        }
+
+        mat-card-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-family: var(--font);
+            text-align: center;
+        }
     }
 
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+    .full-width {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .role-field {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .submit-btn {
+        width: 100%;
+        height: 50px;
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: var(--font);
+        margin-top: 1rem;
+        border-radius: var(--radius-md) !important;
+    }
+
+    .auth-footer {
+        padding: 1.25rem 1rem 0.5rem;
+        border-top: 1px solid var(--black-border);
+        margin-top: 0.5rem;
+
+        p {
+            color: var(--text-secondary);
+            width: 100%;
+            text-align: center;
+            font-size: 0.88rem;
+            font-family: var(--font);
+
+            a {
+                color: var(--yellow);
+                text-decoration: none;
+                font-weight: 600;
+                transition: color 0.2s;
+                &:hover {
+                    color: var(--pink);
+                    text-decoration: underline;
+                }
+            }
+        }
     }
 }
 
-// Fade in animation for the conditional Organizer Company field
-.form-group[ng-reflect-ng-if="role === 'Organizer'"],
-div[ng-reflect-ng-if="role === 'Organizer'"],
-div[ngIf="role === 'Organizer'"] {
-    animation: fadeIn 0.4s ease forwards;
-}
+.error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: var(--error-subtle);
+    border: 1px solid rgba(255, 46, 136, 0.3);
+    border-left: 4px solid var(--pink);
+    border-radius: var(--radius-sm);
+    color: #ff8ab8;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    font-family: var(--font);
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    mat-icon { color: var(--pink); flex-shrink: 0; font-size: 1.1rem; }
 }

@@ -1,13 +1,32 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
+
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+
 import { AuthService, UserRole } from '../../../core/auth/auth';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    RouterModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSelectModule
+  ],
   templateUrl: './register.html',
   styleUrls: ['./register.scss']
 })
@@ -18,14 +37,12 @@ export class Register {
   password = '';
   role: UserRole = UserRole.Customer;
   organizer_company = '';
-  
-  error = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly toastr = inject(ToastrService);
 
   onSubmit() {
-    this.error = '';
-
     const payload: any = {
       name: this.name,
       email: this.email,
@@ -52,14 +69,12 @@ export class Register {
         }
       },
       error: (err) => {
-        if (err.status === 409) {
-          this.error = 'That email is already in use. Please log in.';
-        } else if (err.status === 401 || err.status === 403) {
-          this.error = 'Invalid email or password.';
-        } else {
-          // If the backend returned a plain text string, try to use it, else default
-          this.error = (typeof err.error === 'string' ? err.error : err.error?.message) || 'Failed to register. Please try again.';
-        }
+        const msg = err.status === 409
+          ? 'That email is already in use. Please log in.'
+          : err.status === 401 || err.status === 403
+            ? 'Invalid credentials.'
+            : (typeof err.error === 'string' ? err.error : err.error?.message) || 'Failed to register. Please try again.';
+        this.toastr.error(msg, 'Registration Failed');
       }
     });
   }

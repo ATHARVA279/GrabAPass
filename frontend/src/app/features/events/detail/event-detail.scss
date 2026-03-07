@@ -1,1 +1,214 @@
-@import '../../public/event-detail/event-detail.scss';
+.detail-container {
+    max-width: 1100px;
+    margin: 0 auto;
+
+    .back-btn {
+        margin-bottom: 2rem;
+        color: var(--text-secondary) !important;
+        font-family: var(--font);
+        font-weight: 500;
+
+        &:hover { color: var(--yellow) !important; }
+    }
+
+    .loading-state,
+    .error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+        background: var(--black-card);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--black-border);
+
+        p { margin-top: 1rem; color: var(--text-secondary); }
+    }
+
+    .error-state {
+        color: #ff8ab8;
+        background: var(--error-subtle);
+        border-color: rgba(255, 46, 136, 0.2);
+
+        mat-icon {
+            font-size: 3rem;
+            width: 3rem;
+            height: 3rem;
+            color: var(--pink);
+        }
+    }
+}
+
+// ─── Hero Banner ──────────────────────────────────────────────────────────────
+.event-hero {
+    position: relative;
+    height: 280px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: var(--black-soft);
+    display: flex;
+    align-items: flex-end;
+    padding: 2.5rem;
+    border: 1px solid var(--black-border);
+
+    // Gradient mesh background
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse at 20% 50%, var(--yellow-glow) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 30%, var(--pink-glow) 0%, transparent 60%);
+    }
+
+    // Bottom fade to readable text
+    .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(13,13,13,0.9) 0%, rgba(13,13,13,0.2) 60%, transparent 100%);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+
+        h1 {
+            font-size: clamp(1.75rem, 4vw, 3rem);
+            font-weight: 800;
+            line-height: 1.15;
+            margin: 0.75rem 0 0;
+            color: #fff;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        }
+    }
+}
+
+// ─── Content Grid ─────────────────────────────────────────────────────────────
+.event-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+// ─── Description Card ─────────────────────────────────────────────────────────
+.main-column {
+    .description-card {
+        background: var(--black-card) !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--black-border) !important;
+
+        mat-card-header {
+            padding-bottom: 0.5rem;
+
+            mat-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--yellow);
+                background: var(--yellow-subtle);
+                border: 1px solid rgba(255, 214, 10, 0.2);
+                border-radius: 50%;
+                padding: 8px;
+                box-sizing: content-box;
+                font-size: 1.1rem;
+                width: 1.1rem;
+                height: 1.1rem;
+            }
+
+            mat-card-title {
+                font-family: var(--font);
+                font-weight: 700;
+                color: var(--text-primary);
+            }
+        }
+
+        .description {
+            color: var(--text-secondary);
+            line-height: 1.75;
+            font-size: 1rem;
+            white-space: pre-wrap;
+            font-family: var(--font);
+        }
+    }
+}
+
+// ─── Sidebar Cards ────────────────────────────────────────────────────────────
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .info-card {
+        background: var(--black-card) !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid var(--black-border) !important;
+        transition: border-color 0.2s;
+
+        &:hover { border-color: rgba(255, 214, 10, 0.2) !important; }
+
+        mat-card-header {
+            padding-bottom: 0.5rem;
+
+            mat-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--yellow);
+                background: var(--yellow-subtle);
+                border: 1px solid rgba(255, 214, 10, 0.2);
+                border-radius: 50%;
+                padding: 8px;
+                box-sizing: content-box;
+                font-size: 1.1rem;
+                width: 1.1rem;
+                height: 1.1rem;
+            }
+
+            mat-card-title {
+                font-family: var(--font);
+                font-weight: 700;
+                font-size: 1rem;
+                color: var(--text-primary);
+            }
+        }
+
+        p {
+            margin: 0 0 0.4rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-family: var(--font);
+
+            strong { color: var(--text-primary); font-weight: 600; }
+        }
+    }
+
+    .booking-card {
+        background: var(--black-card) !important;
+        border-radius: var(--radius-lg) !important;
+        border: 1px solid rgba(255, 214, 10, 0.2) !important;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top left, var(--yellow-subtle), transparent 70%);
+            pointer-events: none;
+        }
+
+        .buy-btn {
+            width: 100%;
+            height: 48px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: var(--font);
+            border-radius: var(--radius-sm);
+        }
+    }
+}

@@ -1,44 +1,63 @@
-<div class="auth-container">
-  <h2>Register for GrabAPass</h2>
-  <form (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="name">Name:</label>
-      <input type="text" id="name" [(ngModel)]="name" name="name" required />
-    </div>
+<div class="auth-page">
+  <mat-card class="auth-card">
+    <mat-card-header>
+      <div mat-card-avatar class="auth-avatar">
+        <mat-icon>person_add</mat-icon>
+      </div>
+      <mat-card-title>Create an Account</mat-card-title>
+      <mat-card-subtitle>Join GrabAPass today</mat-card-subtitle>
+    </mat-card-header>
 
-    <div class="form-group">
-      <label for="email">Email:</label>
-      <input type="email" id="email" [(ngModel)]="email" name="email" required />
-    </div>
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput autoFocus type="text" id="name" [(ngModel)]="name" name="name" required />
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label for="phone_number">Phone Number (Optional):</label>
-      <input type="text" id="phone_number" [(ngModel)]="phone_number" name="phone_number" />
-    </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" id="email" [(ngModel)]="email" name="email" required />
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label for="password">Password:</label>
-      <input type="password" id="password" [(ngModel)]="password" name="password" required />
-    </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Phone Number (Optional)</mat-label>
+          <input matInput type="tel" id="phone_number" [(ngModel)]="phone_number" name="phone_number" />
+          <mat-icon matPrefix>phone</mat-icon>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label for="role">Role:</label>
-      <select id="role" [(ngModel)]="role" name="role" required>
-        <option value="Customer">Customer</option>
-        <option value="Organizer">Organizer</option>
-      </select>
-    </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" id="password" [(ngModel)]="password" name="password" required />
+          <mat-icon matPrefix>lock</mat-icon>
+        </mat-form-field>
 
-    <div class="form-group" *ngIf="role === 'Organizer'">
-      <label for="organizer_company">Company Name (Optional):</label>
-      <input type="text" id="organizer_company" [(ngModel)]="organizer_company" name="organizer_company" />
-    </div>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Role</mat-label>
+          <mat-select id="role" [(ngModel)]="role" name="role" required>
+            <mat-option value="Customer">Customer</mat-option>
+            <mat-option value="Organizer">Organizer</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>badge</mat-icon>
+        </mat-form-field>
 
-    <div *ngIf="error" class="error-box">
-      {{ error }}
-    </div>
+        <mat-form-field appearance="outline" class="full-width" *ngIf="role === 'Organizer'">
+          <mat-label>Company Name (Optional)</mat-label>
+          <input matInput type="text" id="organizer_company" [(ngModel)]="organizer_company" name="organizer_company" />
+          <mat-icon matPrefix>apartment</mat-icon>
+        </mat-form-field>
 
-    <button type="submit">Register</button>
-  </form>
-  <p>Already have an account? <a routerLink="/login">Login here</a></p>
+        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!registerForm.form.valid">
+          Register
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions class="auth-footer">
+      <p>Already have an account? <a routerLink="/login">Login here</a></p>
+    </mat-card-actions>
+  </mat-card>
 </div>
