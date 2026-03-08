@@ -13,7 +13,10 @@
             font-family: var(--font);
             font-weight: 500;
             transition: color 0.2s;
-            &:hover { color: var(--yellow) !important; }
+
+            &:hover {
+                color: var(--yellow) !important;
+            }
         }
 
         h2 {
@@ -46,13 +49,37 @@
             margin-bottom: 2px;
             font-family: var(--font);
         }
-        .mat-step-label { color: var(--text-secondary) !important; font-family: var(--font); }
-        .mat-step-label-selected { color: var(--text-primary) !important; font-weight: 700; }
-        .mat-step-icon { background: var(--yellow) !important; color: #000 !important; }
-        .mat-step-icon-not-touched { background: rgba(255,255,255,0.1) !important; }
-        .mat-stepper-vertical-line::before { border-left-color: var(--black-border) !important; }
-        .mat-vertical-content-container { border-left-color: var(--black-border) !important; }
-        .mat-vertical-content { padding: 0 24px 24px !important; }
+
+        .mat-step-label {
+            color: var(--text-secondary) !important;
+            font-family: var(--font);
+        }
+
+        .mat-step-label-selected {
+            color: var(--text-primary) !important;
+            font-weight: 700;
+        }
+
+        .mat-step-icon {
+            background: var(--yellow) !important;
+            color: #000 !important;
+        }
+
+        .mat-step-icon-not-touched {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .mat-stepper-vertical-line::before {
+            border-left-color: var(--black-border) !important;
+        }
+
+        .mat-vertical-content-container {
+            border-left-color: var(--black-border) !important;
+        }
+
+        .mat-vertical-content {
+            padding: 0 24px 24px !important;
+        }
     }
 }
 
@@ -64,12 +91,22 @@
     gap: 0.25rem;
     padding-top: 1rem;
 
-    .full-width { width: 100%; }
+    .full-width {
+        width: 100%;
+    }
+
     .form-row {
         display: flex;
         gap: 1rem;
-        .half-width { flex: 1; }
-        @media (max-width: 680px) { flex-direction: column; gap: 0; }
+
+        .half-width {
+            flex: 1;
+        }
+
+        @media (max-width: 680px) {
+            flex-direction: column;
+            gap: 0;
+        }
     }
 }
 
@@ -99,6 +136,7 @@
         align-items: center;
         gap: 4px;
     }
+
     .submit-btn {
         min-width: 220px;
         justify-content: center;
@@ -150,7 +188,7 @@
     height: 14px;
     border-radius: 50%;
     flex-shrink: 0;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .section-name-input,
@@ -167,10 +205,16 @@
     padding: 4px 4px 4px 0;
     width: 100%;
     transition: border-color 0.15s;
-    &:focus { border-bottom-color: var(--yellow); }
+
+    &:focus {
+        border-bottom-color: var(--yellow);
+    }
 }
 
-.row-label-input { width: 56px; min-width: 40px; }
+.row-label-input {
+    width: 56px;
+    min-width: 40px;
+}
 
 .color-picker {
     width: 28px;
@@ -197,7 +241,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.3rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .seat-count-control {
@@ -231,7 +275,7 @@
     font-family: var(--font);
     font-weight: 600;
     color: var(--yellow) !important;
-    border-color: rgba(255,214,10,0.3) !important;
+    border-color: rgba(255, 214, 10, 0.3) !important;
 }
 
 // ── Category builder ─────────────────────────────────────────────────────────
@@ -292,8 +336,11 @@
         font-weight: 600;
         width: 72px;
         -moz-appearance: textfield;
+
         &::-webkit-outer-spin-button,
-        &::-webkit-inner-spin-button { -webkit-appearance: none; }
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
     }
 }
 
@@ -310,13 +357,15 @@
     padding-top: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .preview-header-info {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
 
     .preview-venue-name {
         font-size: 1.3rem;

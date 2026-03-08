@@ -1,30 +1,37 @@
 .seat-map-wrap {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
     background: var(--black-soft);
     border: 1px solid var(--black-border);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 2rem;
     overflow-x: auto;
+    align-items: center;
+    /* Center the whole map */
 }
 
 // ── Stage bar ────────────────────────────────────────────────────────────────
 
 .stage-bar {
     text-align: center;
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     font-family: var(--font);
-    background: rgba(255, 214, 10, 0.15);
+
+    background: linear-gradient(180deg, rgba(255, 214, 10, 0.2) 0%, rgba(255, 214, 10, 0.05) 100%);
     color: var(--yellow);
-    border: 1px solid rgba(255, 214, 10, 0.3);
-    border-radius: 6px;
-    padding: 8px 32px;
-    width: fit-content;
+    border: 1px solid rgba(255, 214, 10, 0.4);
+    box-shadow: 0 4px 24px rgba(255, 214, 10, 0.15);
+
+    border-radius: 40px;
+    padding: 12px 0;
+    width: 60%;
+    min-width: 300px;
     margin-inline: auto;
+    margin-bottom: 2rem;
 }
 
 // ── Sections ─────────────────────────────────────────────────────────────────
@@ -32,35 +39,38 @@
 .sections-list {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: 3rem;
+    align-items: center;
+    width: 100%;
 }
 
 .section-block {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 1.25rem;
+    align-items: center;
 }
 
 .section-header {
     display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-
-    .section-color-stripe {
-        width: 4px;
-        border-radius: 4px;
-        align-self: stretch;
-        min-height: 28px;
-    }
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
     .section-info {
         display: flex;
         flex-direction: column;
         gap: 1px;
+        align-items: center;
 
         .section-name {
-            font-size: 0.88rem;
+            font-size: 0.95rem;
             font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             font-family: var(--font);
             color: var(--text-primary);
         }
@@ -78,32 +88,37 @@
 .rows-wrap {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+    align-items: center;
 }
 
 .row-line {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
 }
 
 .row-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
     font-family: var(--font);
-    width: 28px;
-    text-align: center;
+    width: 24px;
+    text-align: right;
     flex-shrink: 0;
     user-select: none;
 
-    &.right { text-align: left; }
+    &.right {
+        text-align: left;
+    }
 }
 
 .seats-line {
     display: flex;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: 5px;
+    justify-content: center;
 }
 
 // ── Seat button ───────────────────────────────────────────────────────────────
@@ -111,83 +126,107 @@
 .seat-btn {
     --seat-color: #4A90D9;
 
-    width: 24px;
-    height: 22px;
-    border-radius: 4px 4px 2px 2px;
-    border: 1px solid rgba(255,255,255,0.1);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     background: var(--seat-color);
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.1s, filter 0.1s;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
-
-    // Seat-back ridge
-    &::before {
-        content: '';
-        position: absolute;
-        top: 1px;
-        left: 2px;
-        right: 2px;
-        height: 4px;
-        border-radius: 2px 2px 0 0;
-        background: rgba(255,255,255,0.15);
-    }
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
     .seat-label-text {
-        font-size: 0px; // hidden by default; shown on hover via title tooltip
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 600;
+        font-family: var(--font);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    &.available {
+        background: #4a5568 !important;
+        /* Muted gray-blue for available */
+        border-color: rgba(255, 255, 255, 0.1) !important;
     }
 
     &.available:hover {
-        transform: scale(1.18);
-        filter: brightness(1.3);
+        transform: scale(1.25);
+        filter: brightness(1.4);
+        border-color: rgba(255, 255, 255, 0.6) !important;
         z-index: 2;
         cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     }
 
     &.selected {
         background: var(--yellow) !important;
         border-color: #fff !important;
-        transform: scale(1.1);
+        transform: scale(1.15);
         z-index: 1;
+        box-shadow: 0 0 12px rgba(255, 214, 10, 0.5);
     }
 
     &.sold {
-        background: #2a2a2a !important;
-        border-color: transparent !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.02) !important;
         cursor: not-allowed;
-        opacity: 0.5;
+        opacity: 0.4;
+        box-shadow: none;
     }
 
     &.held {
         background: #5c5c00 !important;
         cursor: not-allowed;
+        opacity: 0.6;
     }
 
     &.blocked {
-        background: #1e1e1e !important;
-        border-color: transparent !important;
+        background: transparent !important;
+        border: 1px dashed rgba(255, 255, 255, 0.1) !important;
         cursor: not-allowed;
         opacity: 0.3;
+        box-shadow: none;
+    }
+
+    &.accessible {
+        border-color: #4A90D9 !important;
+
+        .seat-label-text {
+            opacity: 0; // Hide text to make room for icon
+        }
     }
 
     &.accessible::after {
-        content: '♿';
-        font-size: 8px;
+        content: 'I'; // fallback if icon fails, we will style icon in HTML directly but use CSS logic just in case
+        font-family: 'Material Icons Outlined';
+        content: 'accessible';
+        font-size: 14px;
+        color: #fff;
         position: absolute;
-        bottom: 0;
-        right: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         line-height: 1;
         opacity: 0.9;
     }
 
     &.aisle-gap {
-        margin-left: 8px;
+        margin-left: 16px;
     }
 
-    &:disabled { pointer-events: none; }
+    /* Pseudo aisle gap generation for generic layouts: every 5th seat has a small right margin */
+    &:nth-child(5n):not(:last-child) {
+        margin-right: 12px;
+    }
+
+    &:disabled {
+        pointer-events: none;
+    }
 }
 
 // ── Legend ────────────────────────────────────────────────────────────────────
@@ -195,32 +234,37 @@
 .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem 1.25rem;
-    border-top: 1px solid var(--black-border);
-    padding-top: 1rem;
-    margin-top: 0.25rem;
+    gap: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.78rem;
+    gap: 8px;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     font-family: var(--font);
 }
 
 .legend-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid rgba(255,255,255,0.1);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
 
     &.accessible-dot {
         background: transparent;
-        border: none;
-        font-size: 12px;
-        width: auto;
+        border: 1px solid #4A90D9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
     }
 }

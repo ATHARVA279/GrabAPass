@@ -10,7 +10,6 @@
     <div *ngFor="let section of layout.sections; trackBy: trackSection" class="section-block">
 
       <div class="section-header">
-        <div class="section-color-stripe" [style.background]="section.category?.color_hex ?? '#4A90D9'"></div>
         <div class="section-info">
           <span class="section-name">{{ section.name }}</span>
           <span *ngIf="section.category" class="section-category">
@@ -56,7 +55,9 @@
       <span>{{ item.label }}</span>
     </div>
     <div class="legend-item">
-      <div class="legend-dot accessible-dot">♿</div>
+      <div class="legend-dot accessible-dot">
+        <span class="material-icons-outlined" style="font-size: 14px;">accessible</span>
+      </div>
       <span>Accessible</span>
     </div>
   </div>
