@@ -1,0 +1,64 @@
+<div class="seat-map-wrap">
+
+  <!-- Stage -->
+  <div class="stage-bar" [class]="'orient-' + layout.orientation.toLowerCase()">
+    {{ layout.stage_label }}
+  </div>
+
+  <!-- Sections -->
+  <div class="sections-list">
+    <div *ngFor="let section of layout.sections; trackBy: trackSection" class="section-block">
+
+      <div class="section-header">
+        <div class="section-color-stripe" [style.background]="section.category?.color_hex ?? '#4A90D9'"></div>
+        <div class="section-info">
+          <span class="section-name">{{ section.name }}</span>
+          <span *ngIf="section.category" class="section-category">
+            {{ section.category.name }} &mdash; ${{ section.category.price | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="rows-wrap">
+        <div *ngFor="let row of section.rows" class="row-line">
+          <span class="row-label">{{ row.row_label }}</span>
+
+          <div class="seats-line">
+            <button
+              *ngFor="let seat of row.seats; trackBy: trackSeat"
+              class="seat-btn"
+              [class.available]="seat.status === 'Available' && !selectedSeatIds.has(seat.id)"
+              [class.selected]="selectedSeatIds.has(seat.id)"
+              [class.sold]="seat.status === 'Sold'"
+              [class.held]="seat.status === 'Held'"
+              [class.blocked]="seat.status === 'Blocked'"
+              [class.accessible]="seat.is_accessible"
+              [class.aisle-gap]="seat.is_aisle"
+              [style.--seat-color]="seatColor(seat, section)"
+              [disabled]="!isSeatClickable(seat)"
+              [title]="seatTitle(seat, section)"
+              (click)="onSeatClick(seat, section)">
+              <span class="seat-label-text">{{ seat.seat_label }}</span>
+            </button>
+          </div>
+
+          <span class="row-label right">{{ row.row_label }}</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div *ngFor="let item of legendItems" class="legend-item">
+      <div class="legend-dot" [style.background]="item.color"></div>
+      <span>{{ item.label }}</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot accessible-dot">♿</div>
+      <span>Accessible</span>
+    </div>
+  </div>
+
+</div>

@@ -1,3 +1,5 @@
+import { SeatingMode } from './venue';
+
 export type EventStatus = 'Draft' | 'Published' | 'Cancelled';
 
 export interface Event {
@@ -11,6 +13,8 @@ export interface Event {
   start_time: string;
   status: EventStatus;
   created_at: string;
+  venue_template_id?: string | null;
+  seating_mode?: SeatingMode | null;
 }
 
 export interface CreateEventRequest {
@@ -20,4 +24,7 @@ export interface CreateEventRequest {
   venue_name: string;
   venue_address: string;
   start_time: string;
+  venue_template_id?: string;
+  seating_mode?: SeatingMode;
 }
+

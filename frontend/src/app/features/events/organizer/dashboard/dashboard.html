@@ -5,6 +5,10 @@
       <p *ngIf="user" class="subtitle">Welcome back, {{ user.name }}</p>
     </div>
     <div class="header-actions">
+      <button mat-stroked-button routerLink="/organizer/create-venue" class="venue-btn">
+        <mat-icon>stadium</mat-icon>
+        New Venue Template
+      </button>
       <button mat-flat-button color="primary" routerLink="/organizer/create-event">
         <mat-icon>add</mat-icon>
         Create Event

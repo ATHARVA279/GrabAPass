@@ -137,6 +137,47 @@
     }
 }
 
+// ─── Seat Map Section ─────────────────────────────────────────────────────────
+.seat-map-section {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--black-border);
+
+    .seat-map-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+
+        mat-icon {
+            color: var(--yellow);
+            font-size: 1.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            font-family: var(--font);
+        }
+    }
+
+    .layout-loading {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem;
+        background: var(--black-card);
+        border: 1px solid var(--black-border);
+        border-radius: var(--radius-lg);
+        color: var(--text-secondary);
+        font-family: var(--font);
+    }
+}
+
 // ─── Sidebar Cards ────────────────────────────────────────────────────────────
 .sidebar {
     display: flex;

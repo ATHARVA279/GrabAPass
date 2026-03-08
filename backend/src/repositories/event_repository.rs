@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::db::models::Event;
+use crate::db::models::{Event, SeatingMode};
 
 pub async fn list_published_events(
     pool: &PgPool,
@@ -15,7 +15,8 @@ pub async fn list_published_events(
     match (category, apply_search) {
         (Some(cat), true) => sqlx::query_as::<_, Event>(
             r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+                   start_time, status, created_at, venue_template_id, seating_mode
             FROM events
             WHERE status = 'Published'
               AND category = $1
@@ -30,7 +31,8 @@ pub async fn list_published_events(
 
         (Some(cat), false) => sqlx::query_as::<_, Event>(
             r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+                   start_time, status, created_at, venue_template_id, seating_mode
             FROM events
             WHERE status = 'Published'
               AND category = $1
@@ -43,7 +45,8 @@ pub async fn list_published_events(
 
         (None, true) => sqlx::query_as::<_, Event>(
             r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+                   start_time, status, created_at, venue_template_id, seating_mode
             FROM events
             WHERE status = 'Published'
               AND (title ILIKE $1 OR COALESCE(description, '') ILIKE $1)
@@ -56,7 +59,8 @@ pub async fn list_published_events(
 
         (None, false) => sqlx::query_as::<_, Event>(
             r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+                   start_time, status, created_at, venue_template_id, seating_mode
             FROM events
             WHERE status = 'Published'
             ORDER BY start_time ASC
@@ -70,7 +74,8 @@ pub async fn list_published_events(
 pub async fn find_event_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+        SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+               start_time, status, created_at, venue_template_id, seating_mode
         FROM events
         WHERE id = $1
         "#,
@@ -89,12 +94,17 @@ pub async fn create_event(
     venue_name: &str,
     venue_address: &str,
     start_time: chrono::DateTime<chrono::Utc>,
+    venue_template_id: Option<Uuid>,
+    seating_mode: Option<SeatingMode>,
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        INSERT INTO events (organizer_id, title, description, category, venue_name, venue_address, start_time, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published')
-        RETURNING id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+        INSERT INTO events
+            (organizer_id, title, description, category, venue_name, venue_address,
+             start_time, status, venue_template_id, seating_mode)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode)
+        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
+                  start_time, status, created_at, venue_template_id, seating_mode
         "#,
     )
     .bind(organizer_id)
@@ -104,6 +114,8 @@ pub async fn create_event(
     .bind(venue_name)
     .bind(venue_address)
     .bind(start_time)
+    .bind(venue_template_id)
+    .bind(seating_mode)
     .fetch_one(pool)
     .await
 }
@@ -114,7 +126,8 @@ pub async fn list_organizer_events(
 ) -> Result<Vec<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        SELECT id, organizer_id, title, description, category, venue_name, venue_address, start_time, status, created_at
+        SELECT id, organizer_id, title, description, category, venue_name, venue_address,
+               start_time, status, created_at, venue_template_id, seating_mode
         FROM events
         WHERE organizer_id = $1
         ORDER BY created_at DESC

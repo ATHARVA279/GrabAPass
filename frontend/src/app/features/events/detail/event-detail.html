@@ -17,6 +17,7 @@
         <mat-chip-listbox>
           <mat-chip>{{ event.category }}</mat-chip>
           <mat-chip *ngIf="event.status !== 'Published'" color="warn" [highlighted]="true">{{ event.status }} Event</mat-chip>
+          <mat-chip *ngIf="event.seating_mode" class="seating-chip">{{ event.seating_mode }}</mat-chip>
         </mat-chip-listbox>
         <h1>{{ event.title }}</h1>
       </div>
@@ -61,13 +62,35 @@
 
         <mat-card class="booking-card">
           <mat-card-content>
-            <button mat-flat-button color="primary" class="buy-btn" disabled>
-              Buy Tickets (Next Phase)
+            <button mat-flat-button color="primary" class="buy-btn"
+                    [disabled]="!seatLayout && !!event.venue_template_id"
+                    (click)="seatLayout ? null : null">
+              {{ event.venue_template_id ? 'Select Seats Below' : 'Buy Tickets (Next Phase)' }}
             </button>
           </mat-card-content>
         </mat-card>
 
       </div>
     </div>
+
+    <!-- ── Seat Map ──────────────────────────────────────────────────────── -->
+    <div *ngIf="event.venue_template_id" class="seat-map-section">
+      <div class="seat-map-heading">
+        <mat-icon>chair</mat-icon>
+        <h3>Select Your Seats</h3>
+      </div>
+
+      <div *ngIf="layoutLoading" class="layout-loading">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Loading seat map…</span>
+      </div>
+
+      <app-seat-map-renderer
+        *ngIf="seatLayout && !layoutLoading"
+        [layout]="seatLayout"
+        (seatSelected)="onSeatSelected($event)">
+      </app-seat-map-renderer>
+    </div>
+
   </div>
 </div>

@@ -74,6 +74,31 @@
           <mat-icon class="align-top" matPrefix>description</mat-icon>
         </mat-form-field>
 
+        <!-- ── Seating ────────────────────────────────────────────────────── -->
+        <div class="seating-section">
+          <div class="seating-header">
+            <mat-icon>chair</mat-icon>
+            <span>Seating Layout <span class="optional">(optional)</span></span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Venue Template</mat-label>
+            <mat-select formControlName="venue_template_id">
+              <mat-option [value]="null">— None (no seat map) —</mat-option>
+              <mat-option *ngFor="let t of venueTemplates" [value]="t.id">
+                {{ t.name }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>stadium</mat-icon>
+            <mat-hint>
+              <span *ngIf="!venueTemplates.length">No templates yet —
+                <a routerLink="/organizer/create-venue">create one first</a>.
+              </span>
+              <span *ngIf="venueTemplates.length">Attach a seating chart so attendees can pick seats.</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
         <div class="form-actions">
           <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting || eventForm.invalid" class="submit-btn">
             <mat-icon *ngIf="!isSubmitting">publish</mat-icon>

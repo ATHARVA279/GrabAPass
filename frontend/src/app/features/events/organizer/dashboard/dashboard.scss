@@ -32,11 +32,27 @@
         }
     }
 
-    .header-actions button {
-        font-family: var(--font);
-        font-weight: 700;
-        padding: 0 1.5rem;
-        height: 44px;
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+
+        button {
+            font-family: var(--font);
+            font-weight: 700;
+            padding: 0 1.5rem;
+            height: 44px;
+        }
+
+        .venue-btn {
+            border-color: var(--black-border) !important;
+            color: var(--text-secondary) !important;
+
+            &:hover {
+                border-color: var(--yellow) !important;
+                color: var(--yellow) !important;
+            }
+        }
     }
 }
 

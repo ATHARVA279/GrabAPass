@@ -11,7 +11,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 
 import { EventService } from '../../../core/services/event.service';
+import { VenueService } from '../../../core/services/venue.service';
 import { Event } from '../../../shared/models/event';
+import { SeatLayoutResponse } from '../../../shared/models/venue';
+import { SeatMapRenderer, SelectedSeat } from '../../../shared/components/seat-map-renderer/seat-map-renderer';
 
 @Component({
   selector: 'app-event-detail',
@@ -23,18 +26,22 @@ import { Event } from '../../../shared/models/event';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatChipsModule
+    MatChipsModule,
+    SeatMapRenderer,
   ],
   templateUrl: './event-detail.html',
   styleUrls: ['./event-detail.scss']
 })
 export class EventDetail implements OnInit {
   event: Event | null = null;
+  seatLayout: SeatLayoutResponse | null = null;
   loading = true;
+  layoutLoading = false;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly eventService = inject(EventService);
+  private readonly venueService = inject(VenueService);
   private readonly toastr = inject(ToastrService);
 
   ngOnInit(): void {
@@ -49,9 +56,32 @@ export class EventDetail implements OnInit {
     this.eventService.getEventById(eventId).pipe(
       finalize(() => (this.loading = false))
     ).subscribe({
-      next: (event) => (this.event = event),
+      next: (event) => {
+        this.event = event;
+        if (event.venue_template_id) {
+          this.loadSeatLayout(eventId);
+        }
+      },
       error: () => this.toastr.error('Event not found or failed to load.', 'Error')
     });
+  }
+
+  private loadSeatLayout(eventId: string): void {
+    this.layoutLoading = true;
+    this.venueService.getSeatLayout(eventId).pipe(
+      finalize(() => (this.layoutLoading = false))
+    ).subscribe({
+      next: (layout) => (this.seatLayout = layout),
+      error: () => this.toastr.error('Could not load seat layout.', 'Seating Error')
+    });
+  }
+
+  onSeatSelected(seat: SelectedSeat): void {
+    // Phase 4 will handle checkout; for now just show a toast
+    this.toastr.info(
+      `${seat.seatLabel} — ${seat.categoryName} $${seat.price.toFixed(2)}`,
+      'Seat Selected'
+    );
   }
 
   goBack(): void {

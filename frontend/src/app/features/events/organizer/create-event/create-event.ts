@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -18,7 +18,9 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 
 import { TimePickerDialog } from '../../../../shared/components/time-picker-dialog/time-picker-dialog';
 import { EventService } from '../../../../core/services/event.service';
+import { VenueService } from '../../../../core/services/venue.service';
 import { CreateEventRequest } from '../../../../shared/models/event';
+import { VenueTemplate } from '../../../../shared/models/venue';
 
 @Component({
   selector: 'app-create-event',
@@ -36,18 +38,20 @@ import { CreateEventRequest } from '../../../../shared/models/event';
     MatProgressSpinnerModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatDialogModule
+    MatDialogModule,
   ],
   templateUrl: './create-event.html',
   styleUrls: ['./create-event.scss']
 })
-export class CreateEvent {
+export class CreateEvent implements OnInit {
   readonly eventForm: FormGroup;
   isSubmitting = false;
   displayTime = '';
+  venueTemplates: VenueTemplate[] = [];
 
   private readonly fb = inject(FormBuilder);
   private readonly eventService = inject(EventService);
+  private readonly venueService = inject(VenueService);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
   private readonly dialog = inject(MatDialog);
@@ -60,7 +64,15 @@ export class CreateEvent {
       venue_address: ['', Validators.required],
       start_date: [null, Validators.required],
       start_time_input: ['', [Validators.required, Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/)]],
-      description: ['']
+      description: [''],
+      venue_template_id: [null]
+    });
+  }
+
+  ngOnInit(): void {
+    this.venueService.listVenueTemplates().subscribe({
+      next: (templates) => (this.venueTemplates = templates),
+      error: () => {} // non-fatal — organizer may have no templates yet
     });
   }
 
@@ -104,7 +116,9 @@ export class CreateEvent {
     const { start_date, start_time_input, ...rest } = formValue;
     const payload: CreateEventRequest = {
       ...rest,
-      start_time: date.toISOString()
+      start_time: date.toISOString(),
+      venue_template_id: rest.venue_template_id || undefined,
+      seating_mode: rest.venue_template_id ? 'Reserved' as const : undefined
     };
 
     this.eventService.createEvent(payload).pipe(

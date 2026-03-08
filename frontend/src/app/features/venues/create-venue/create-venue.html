@@ -1,0 +1,194 @@
+<div class="venue-builder fade-in">
+  <div class="page-header">
+    <button mat-button routerLink="/organizer" class="back-btn">
+      <mat-icon>arrow_back</mat-icon> Back to Dashboard
+    </button>
+    <h2>Create Venue Template</h2>
+    <p>Define a reusable seating layout for your events.</p>
+  </div>
+
+  <mat-stepper [linear]="true" #stepper class="venue-stepper" orientation="vertical">
+
+    <!-- ── Step 1: Venue Info ──────────────────────────────────────────── -->
+    <mat-step [stepControl]="infoForm" label="Venue Info">
+      <form [formGroup]="infoForm" class="step-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Venue Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., Madison Square Garden">
+          <mat-icon matPrefix>stadium</mat-icon>
+          <mat-error *ngIf="infoForm.get('name')?.hasError('required')">Name is required.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description (optional)</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Brief venue description…"></textarea>
+          <mat-icon matPrefix>description</mat-icon>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Stage / Screen Label</mat-label>
+            <input matInput formControlName="stage_label" placeholder="STAGE">
+            <mat-icon matPrefix>tv</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Stage Orientation</mat-label>
+            <mat-select formControlName="orientation">
+              <mat-option value="North">North (top)</mat-option>
+              <mat-option value="South">South (bottom)</mat-option>
+              <mat-option value="East">East (right)</mat-option>
+              <mat-option value="West">West (left)</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>explore</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="step-actions">
+          <button mat-flat-button matStepperNext class="next-btn"
+                  [disabled]="infoForm.invalid">
+            Next <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- ── Step 2: Sections & Rows ─────────────────────────────────────── -->
+    <mat-step label="Sections & Rows">
+      <div class="sections-builder">
+
+        <div *ngFor="let section of sections; let si = index" class="section-card">
+          <div class="section-header">
+            <div class="section-title-row">
+              <div class="color-dot" [style.background]="section.color_hex"></div>
+              <input class="section-name-input"
+                     [(ngModel)]="section.name"
+                     placeholder="Section name e.g. Floor A" />
+            </div>
+            <div class="section-header-actions">
+              <input type="color" class="color-picker"
+                     [(ngModel)]="section.color_hex"
+                     title="Section colour" />
+              <button mat-icon-button color="warn"
+                      (click)="removeSection(si)"
+                      [disabled]="sections.length === 1"
+                      title="Remove section">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Rows inside this section -->
+          <div class="rows-list">
+            <div *ngFor="let row of section.rows; let ri = index" class="row-item">
+              <input class="row-label-input"
+                     [(ngModel)]="row.row_label"
+                     placeholder="Row label e.g. A" />
+              <div class="seat-count-control">
+                <button mat-icon-button (click)="decrementSeats(row)" [disabled]="row.seat_count <= 1">
+                  <mat-icon>remove</mat-icon>
+                </button>
+                <span class="seat-count-display">{{ row.seat_count }} seats</span>
+                <button mat-icon-button (click)="incrementSeats(row)" [disabled]="row.seat_count >= 200">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+              <button mat-icon-button color="warn"
+                      (click)="removeRow(section, ri)"
+                      [disabled]="section.rows.length === 1"
+                      title="Remove row">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <button mat-stroked-button class="add-row-btn" (click)="addRow(section)">
+            <mat-icon>add</mat-icon> Add Row
+          </button>
+        </div>
+
+        <button mat-stroked-button class="add-section-btn" (click)="addSection()">
+          <mat-icon>add_circle_outline</mat-icon> Add Section
+        </button>
+
+        <div *ngIf="sectionError" class="field-error">{{ sectionError }}</div>
+
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-flat-button class="next-btn"
+                  (click)="validateSectionsAndNext(stepper)">
+            Next <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- ── Step 3: Category Prices ─────────────────────────────────────── -->
+    <mat-step label="Category Prices">
+      <div class="categories-builder">
+        <p class="step-hint">Assign a price tier to each section. You can change these per-event later.</p>
+
+        <div *ngFor="let cat of sectionCategories; let ci = index" class="category-row">
+          <div class="color-dot" [style.background]="cat.color_hex"></div>
+          <span class="cat-section-name">{{ cat.sectionName }}</span>
+
+          <input class="cat-name-input"
+                 [(ngModel)]="cat.name"
+                 placeholder="Tier name e.g. VIP" />
+
+          <div class="price-input-wrap">
+            <span class="currency-sym">$</span>
+            <input class="price-input"
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   [(ngModel)]="cat.price"
+                   placeholder="0.00" />
+          </div>
+
+          <input type="color" class="color-picker" [(ngModel)]="cat.color_hex" title="Category colour" />
+        </div>
+
+        <div *ngIf="categoryError" class="field-error">{{ categoryError }}</div>
+
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-flat-button class="next-btn"
+                  (click)="validateCategoriesAndNext(stepper)">
+            Preview <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- ── Step 4: Preview & Submit ────────────────────────────────────── -->
+    <mat-step label="Preview & Create">
+      <div class="preview-step">
+        <div class="preview-header-info">
+          <span class="preview-venue-name">{{ infoForm.value.name }}</span>
+          <span class="preview-orientation">Stage: {{ infoForm.value.stage_label || 'STAGE' }} ({{ infoForm.value.orientation }})</span>
+        </div>
+
+        <!-- Simple grid preview of the layout -->
+        <app-seat-map-preview
+          [sections]="sections"
+          [categoryColors]="categoryColorMap"
+          [stageLabel]="infoForm.value.stage_label || 'STAGE'"
+          [orientation]="infoForm.value.orientation">
+        </app-seat-map-preview>
+
+        <div class="step-actions">
+          <button mat-button matStepperPrevious>Back</button>
+          <button mat-flat-button class="next-btn submit-btn"
+                  (click)="onSubmit()"
+                  [disabled]="isSubmitting">
+            <mat-icon *ngIf="!isSubmitting">save</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
+            <span>{{ isSubmitting ? 'Creating…' : 'Create Venue Template' }}</span>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+  </mat-stepper>
+</div>
