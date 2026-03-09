@@ -163,6 +163,16 @@ pub struct EventSeatInventory {
     pub status: SeatStatus,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct SeatHold {
+    pub id: Uuid,
+    pub event_id: Uuid,
+    pub seat_id: Uuid,
+    pub user_id: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+}
+
 // ─── Venue creation request DTOs ─────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -207,6 +217,13 @@ pub struct AssignSeatCategoryRequest {
     pub name: String,
     pub price: f64,
     pub color_hex: Option<String>,
+}
+
+// ─── Seat Hold DTOs ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct HoldSeatsRequest {
+    pub seat_ids: Vec<Uuid>,
 }
 
 // ─── Frontend-ready seat layout response ─────────────────────────────────────

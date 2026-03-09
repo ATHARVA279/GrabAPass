@@ -8,6 +8,8 @@ pub fn public_router() -> Router<AppState> {
         .route("/{id}", get(event::get_event))
         // GET /api/events/:id/seat-layout — public, used by booking page
         .route("/{id}/seat-layout", get(venue::get_seat_layout))
+        // POST /api/events/:id/holds — Requires Customer auth (or any logged-in user)
+        .route("/{id}/holds", post(crate::handlers::hold::hold_seats))
 }
 
 pub fn organizer_router() -> Router<AppState> {

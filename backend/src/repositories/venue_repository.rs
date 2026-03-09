@@ -287,9 +287,17 @@ pub async fn list_inventory_for_event(
 ) -> Result<Vec<EventSeatInventory>, sqlx::Error> {
     sqlx::query_as::<_, EventSeatInventory>(
         r#"
-        SELECT id, event_id, seat_id, status
-        FROM event_seat_inventory
-        WHERE event_id = $1
+        SELECT
+            esi.id,
+            esi.event_id,
+            esi.seat_id,
+            CASE 
+                WHEN esi.status = 'Held'::seat_status AND sh.expires_at <= NOW() THEN 'Available'::seat_status
+                ELSE esi.status
+            END as "status"
+        FROM event_seat_inventory esi
+        LEFT JOIN seat_holds sh ON esi.seat_id = sh.seat_id AND esi.event_id = sh.event_id
+        WHERE esi.event_id = $1
         "#,
     )
     .bind(event_id)

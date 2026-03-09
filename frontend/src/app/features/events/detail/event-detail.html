@@ -1,4 +1,9 @@
 <div class="detail-container">
+  <div *ngIf="holdExpiresAt" class="hold-timer-banner">
+    <mat-icon>timer</mat-icon>
+    <span>Seats Held! Complete checkout in: <strong>{{ holdTimeRemaining }}</strong></span>
+  </div>
+
   <button mat-button class="back-btn" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
     Back to Events
@@ -88,9 +93,25 @@
       <app-seat-map-renderer
         *ngIf="seatLayout && !layoutLoading"
         [layout]="seatLayout"
-        (seatSelected)="onSeatSelected($event)">
+        (selectedSeatsChanged)="onSelectedSeatsChanged($event)">
       </app-seat-map-renderer>
     </div>
 
+  </div>
+</div>
+
+<!-- ── Floating Action Bar for Seat Holding ────────────────────────────────── -->
+<div class="action-bar-container" *ngIf="selectedSeats.length > 0 && !holdExpiresAt">
+  <div class="action-bar">
+    <div class="selection-info">
+      <span class="seat-count">{{ selectedSeats.length }} Seat{{ selectedSeats.length > 1 ? 's' : '' }} Selected</span>
+      <span class="total-price">${{ totalSelectedPrice | number:'1.2-2' }}</span>
+    </div>
+    <div class="action-buttons">
+      <button mat-flat-button color="primary" [disabled]="isHolding" (click)="onHoldSeats()">
+        <span *ngIf="!isHolding">Hold Seats & Continue</span>
+        <mat-spinner *ngIf="isHolding" diameter="20" color="accent"></mat-spinner>
+      </button>
+    </div>
   </div>
 </div>

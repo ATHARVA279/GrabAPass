@@ -37,4 +37,8 @@ export class EventService {
   createEvent(payload: CreateEventRequest): Observable<Event> {
     return this.http.post<Event>(this.organizerApiUrl, payload);
   }
+
+  holdSeats(eventId: string, seatIds: string[]): Observable<any[]> {
+    return this.http.post<any[]>(`${this.publicApiUrl}/${eventId}/holds`, { seat_ids: seatIds });
+  }
 }
