@@ -17,6 +17,10 @@
       <mat-icon>dashboard</mat-icon>
       Dashboard
     </button>
+    <button mat-button *ngIf="user.role === 'Customer'" routerLink="/orders">
+      <mat-icon>local_activity</mat-icon>
+      My Tickets
+    </button>
     <button mat-icon-button (click)="logout()" title="Logout">
       <mat-icon>logout</mat-icon>
     </button>

@@ -1,0 +1,53 @@
+<div class="orders-container">
+  <div class="header-section">
+    <h1>My Tickets</h1>
+    <p>View access passes and completed orders.</p>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading your tickets...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>We couldn't load your orders. Please try again later.</p>
+  </div>
+
+  <div *ngIf="!loading && !error && orders.length === 0" class="empty-state">
+    <mat-icon>confirmation_number</mat-icon>
+    <h3>No Tickets Found</h3>
+    <p>You haven't purchased any tickets yet.</p>
+    <a mat-flat-button color="primary" routerLink="/events">Browse Events</a>
+  </div>
+
+  <div *ngIf="!loading && !error && orders.length > 0" class="orders-grid">
+    <mat-card *ngFor="let order of orders" class="order-card">
+      <div class="order-status-bar"></div>
+      <mat-card-header>
+        <div mat-card-avatar class="ticket-icon">
+          <mat-icon>local_activity</mat-icon>
+        </div>
+        <mat-card-title>Order #{{ order.id.substring(0, 8) | uppercase }}</mat-card-title>
+        <mat-card-subtitle>{{ order.created_at | date:'medium' }}</mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="order-details">
+          <div class="detail-row">
+            <span class="label">Amount Paid:</span>
+            <span class="value total">₹{{ order.total_amount | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Status:</span>
+            <span class="value status completed">{{ order.status }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Event Link:</span>
+            <a class="value link" [routerLink]="['/events', order.event_id]">View Event Page</a>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

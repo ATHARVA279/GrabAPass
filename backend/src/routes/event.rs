@@ -10,6 +10,8 @@ pub fn public_router() -> Router<AppState> {
         .route("/{id}/seat-layout", get(venue::get_seat_layout))
         // POST /api/events/:id/holds — Requires Customer auth (or any logged-in user)
         .route("/{id}/holds", post(crate::handlers::hold::hold_seats))
+        // POST /api/events/:id/checkout — Converts holds to orders
+        .route("/{id}/checkout", post(crate::handlers::order::checkout))
 }
 
 pub fn organizer_router() -> Router<AppState> {
