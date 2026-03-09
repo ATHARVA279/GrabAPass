@@ -24,7 +24,7 @@ export interface SelectedSeat {
 })
 export class SeatMapRenderer implements OnChanges {
   @Input() layout!: SeatLayoutResponse;
-  @Output() seatSelected = new EventEmitter<SelectedSeat>();
+  @Output() selectedSeatsChanged = new EventEmitter<SelectedSeat[]>();
 
   selectedSeatIds = new Set<string>();
   selectedSeats: SelectedSeat[] = [];
@@ -70,8 +70,8 @@ export class SeatMapRenderer implements OnChanges {
       };
       this.selectedSeatIds.add(seat.id);
       this.selectedSeats.push(selected);
-      this.seatSelected.emit(selected);
     }
+    this.selectedSeatsChanged.emit([...this.selectedSeats]);
   }
 
   isSeatClickable(seat: SeatLayout): boolean {

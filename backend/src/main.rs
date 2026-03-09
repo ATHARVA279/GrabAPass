@@ -46,6 +46,18 @@ async fn main() {
 
     let state = AppState { pool, jwt_secret };
 
+    // Spawn background task to clean up expired holds every 10 seconds
+    let bg_pool = state.pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10));
+        loop {
+            interval.tick().await;
+            if let Err(e) = crate::services::hold_service::HoldService::release_expired_holds(&bg_pool).await {
+                tracing::error!("Failed to release expired holds in background task: {:?}", e);
+            }
+        }
+    });
+
     // Set up CORS — restrict to frontend origin
     let allowed_origin =
         env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:4200".to_string());
