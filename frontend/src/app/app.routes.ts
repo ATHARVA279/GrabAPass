@@ -39,6 +39,12 @@ export const routes: Routes = [
     path: 'events/:id',
     loadComponent: () => import('./features/events/detail/event-detail').then(m => m.EventDetail)
   },
+  {
+    path: 'orders',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/orders/order-list/order-list').then(m => m.OrderList)
+  },
   { 
     path: '', 
     redirectTo: '/events',

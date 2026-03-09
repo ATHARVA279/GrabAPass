@@ -97,6 +97,31 @@
               <span *ngIf="venueTemplates.length">Attach a seating chart so attendees can pick seats.</span>
             </mat-hint>
           </mat-form-field>
+
+          <!-- CATEGORY PRICING -->
+          <div *ngIf="categories.controls.length > 0" class="category-pricing-section fade-in" formArrayName="categories">
+            <h4>Seat Pricing</h4>
+            <p class="subtitle">Set the price for each section in your selected venue layout.</p>
+            
+            <div class="category-grid">
+              <div *ngFor="let catCtrl of categories.controls; let i = index" [formGroupName]="i" class="category-card" [style.border-top-color]="catCtrl.get('color_hex')?.value">
+                <div class="cat-header">
+                  <div class="color-dot" [style.background-color]="catCtrl.get('color_hex')?.value"></div>
+                  <mat-form-field appearance="outline" class="dense-field cat-name">
+                    <mat-label>Category Name</mat-label>
+                    <input matInput formControlName="name">
+                  </mat-form-field>
+                </div>
+                
+                <mat-form-field appearance="outline" class="dense-field cat-price">
+                  <mat-label>Price (₹)</mat-label>
+                  <input matInput type="number" formControlName="price" min="0">
+                  <span matTextPrefix>₹&nbsp;</span>
+                  <mat-error *ngIf="catCtrl.get('price')?.hasError('required')">Required</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="form-actions">

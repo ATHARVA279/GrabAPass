@@ -13,7 +13,7 @@
         <div class="section-info">
           <span class="section-name">{{ section.name }}</span>
           <span *ngIf="section.category" class="section-category">
-            {{ section.category.name }} &mdash; ${{ section.category.price | number:'1.2-2' }}
+            {{ section.category.name }} &mdash; ₹{{ section.category.price | number:'1.2-2' }}
           </span>
         </div>
       </div>

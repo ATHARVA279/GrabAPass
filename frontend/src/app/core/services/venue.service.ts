@@ -30,6 +30,10 @@ export class VenueService {
     return this.http.get<VenueTemplate>(`${this.venueApiUrl}/${id}`);
   }
 
+  listVenueTemplateSections(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.venueApiUrl}/${id}/sections`);
+  }
+
   // ── Seat categories ────────────────────────────────────────────────────────
 
   assignSeatCategories(

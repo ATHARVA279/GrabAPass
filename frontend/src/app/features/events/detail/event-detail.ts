@@ -40,7 +40,10 @@ export class EventDetail implements OnInit, OnDestroy {
   
   // Seat hold state
   selectedSeats: SelectedSeat[] = [];
+  heldSeatIds: string[] = [];
+  heldTotalPrice = 0;
   isHolding = false;
+  isCheckingOut = false;
   holdExpiresAt: Date | null = null;
   holdTimeRemaining = '';
   private timerInterval: any;
@@ -102,7 +105,8 @@ export class EventDetail implements OnInit, OnDestroy {
     ).subscribe({
       next: (holds) => {
         this.toastr.success(`Successfully held ${holds.length} seats!`, 'Seats Held');
-        this.selectedSeats = [];
+        this.heldSeatIds = seatIds;
+        this.heldTotalPrice = this.totalSelectedPrice;
         this.startHoldTimer(new Date(holds[0].expires_at));
         this.loadSeatLayout(this.event!.id);
       },
@@ -146,6 +150,38 @@ export class EventDetail implements OnInit, OnDestroy {
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     this.holdTimeRemaining = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  onCheckout(): void {
+    if (!this.event || this.heldSeatIds.length === 0) return;
+
+    this.isCheckingOut = true;
+    const seatIds = this.heldSeatIds;
+
+    this.eventService.checkout(this.event.id, seatIds).pipe(
+      finalize(() => (this.isCheckingOut = false))
+    ).subscribe({
+      next: (order) => {
+        this.toastr.success(`Successfully purchased ${seatIds.length} tickets!`, 'Order Complete');
+        
+        // Clear holds and timer
+        clearInterval(this.timerInterval);
+        this.holdExpiresAt = null;
+        this.selectedSeats = [];
+        this.heldSeatIds = [];
+        this.heldTotalPrice = 0;
+        this.holdTimeRemaining = '';
+        
+        // Reload seat map to reflect 'Sold' status
+        this.loadSeatLayout(this.event!.id);
+        
+        // Normally we might redirect to an Order Confirmation page here
+      },
+      error: (err) => {
+        this.toastr.error(err.error?.message || 'Checkout failed.', 'Error');
+        this.loadSeatLayout(this.event!.id);
+      }
+    });
   }
 
   ngOnDestroy(): void {

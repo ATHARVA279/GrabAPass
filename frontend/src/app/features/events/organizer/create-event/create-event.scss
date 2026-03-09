@@ -13,7 +13,10 @@
             font-family: var(--font);
             font-weight: 500;
             transition: color 0.2s;
-            &:hover { color: var(--yellow) !important; }
+
+            &:hover {
+                color: var(--yellow) !important;
+            }
         }
 
         h2 {
@@ -71,8 +74,13 @@
         gap: 1.25rem;
         width: 100%;
 
-        .half-width { flex: 1; }
-        .quarter-width { flex: 1; }
+        .half-width {
+            flex: 1;
+        }
+
+        .quarter-width {
+            flex: 1;
+        }
 
         @media (max-width: 768px) {
             flex-direction: column;
@@ -85,7 +93,9 @@
         color: var(--text-muted) !important;
     }
 
-    .align-top { margin-top: 8px; }
+    .align-top {
+        margin-top: 8px;
+    }
 
     .form-actions {
         margin-top: 1.25rem;
@@ -127,7 +137,10 @@
         margin-bottom: 1.25rem;
         font-family: var(--font);
 
-        mat-icon { color: var(--pink); flex-shrink: 0; }
+        mat-icon {
+            color: var(--pink);
+            flex-shrink: 0;
+        }
     }
 }
 
@@ -169,6 +182,73 @@
     mat-hint a {
         color: var(--yellow);
         text-decoration: none;
-        &:hover { text-decoration: underline; }
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+// ─── Category Pricing ────────────────────────────────────────────────────────
+.category-pricing-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--black-border);
+
+    h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+        color: var(--text-primary);
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0 0 1.25rem;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+    }
+
+    .category-card {
+        background: var(--black-soft);
+        border: 1px solid var(--black-border);
+        border-top: 3px solid;
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+
+        .cat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+
+            .color-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+
+            .cat-name {
+                flex: 1;
+            }
+        }
+
+        .cat-price {
+            width: 100%;
+        }
+
+        .dense-field {
+            ::ng-deep .mat-mdc-form-field-infix {
+                padding-top: 8px;
+                padding-bottom: 8px;
+                min-height: unset;
+            }
+        }
     }
 }

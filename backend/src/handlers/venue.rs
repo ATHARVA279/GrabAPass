@@ -35,7 +35,6 @@ pub async fn list_venues(
     Ok(Json(templates))
 }
 
-// ─── GET /api/organizer/venues/:id ───────────────────────────────────────────
 pub async fn get_venue(
     State(state): State<AppState>,
     RequireOrganizer(claims): RequireOrganizer,
@@ -43,6 +42,20 @@ pub async fn get_venue(
 ) -> Result<Json<VenueTemplate>, (StatusCode, String)> {
     let template = venue_service::get_venue_template(&state, id, claims.sub).await?;
     Ok(Json(template))
+}
+
+// ─── GET /api/organizer/venues/:id/sections ──────────────────────────────────
+pub async fn list_venue_sections(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<crate::db::models::VenueSection>>, (StatusCode, String)> {
+    // Check permission
+    let _ = venue_service::get_venue_template(&state, id, claims.sub).await?;
+    let sections = crate::repositories::venue_repository::list_sections_for_template(&state.pool, id)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    Ok(Json(sections))
 }
 
 // ─── POST /api/organizer/events/:id/seat-categories ──────────────────────────

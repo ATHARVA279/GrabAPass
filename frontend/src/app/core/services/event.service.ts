@@ -41,4 +41,8 @@ export class EventService {
   holdSeats(eventId: string, seatIds: string[]): Observable<any[]> {
     return this.http.post<any[]>(`${this.publicApiUrl}/${eventId}/holds`, { seat_ids: seatIds });
   }
+
+  checkout(eventId: string, seatIds: string[]): Observable<any> {
+    return this.http.post<any>(`${this.publicApiUrl}/${eventId}/checkout`, { seat_ids: seatIds });
+  }
 }

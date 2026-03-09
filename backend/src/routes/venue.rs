@@ -7,4 +7,5 @@ pub fn organizer_venue_router() -> Router<AppState> {
     Router::new()
         .route("/", get(venue::list_venues).post(venue::create_venue))
         .route("/{id}", get(venue::get_venue))
+        .route("/{id}/sections", get(venue::list_venue_sections))
 }

@@ -75,6 +75,7 @@ async fn main() {
         .merge(routes::health::router())
         .nest("/api/auth", routes::auth::router())
         .nest("/api/events", routes::event::public_router())
+        .nest("/api/orders", routes::order::router())
         .nest("/api/organizer/events", routes::event::organizer_router())
         .nest("/api/organizer/venues", routes::venue::organizer_venue_router())
         .layer(cors)

@@ -1,7 +1,13 @@
 <div class="detail-container">
   <div *ngIf="holdExpiresAt" class="hold-timer-banner">
-    <mat-icon>timer</mat-icon>
-    <span>Seats Held! Complete checkout in: <strong>{{ holdTimeRemaining }}</strong></span>
+    <div class="timer-info">
+      <mat-icon>timer</mat-icon>
+      <span>Seats Held! Complete checkout in: <strong>{{ holdTimeRemaining }}</strong></span>
+    </div>
+    <button mat-flat-button color="primary" [disabled]="isCheckingOut" (click)="onCheckout()" class="checkout-btn">
+      <span *ngIf="!isCheckingOut">Pay {{ heldTotalPrice | currency:'INR':'symbol' }}</span>
+      <mat-spinner *ngIf="isCheckingOut" diameter="20" color="accent"></mat-spinner>
+    </button>
   </div>
 
   <button mat-button class="back-btn" (click)="goBack()">
@@ -105,7 +111,7 @@
   <div class="action-bar">
     <div class="selection-info">
       <span class="seat-count">{{ selectedSeats.length }} Seat{{ selectedSeats.length > 1 ? 's' : '' }} Selected</span>
-      <span class="total-price">${{ totalSelectedPrice | number:'1.2-2' }}</span>
+      <span class="total-price">₹{{ totalSelectedPrice | number:'1.2-2' }}</span>
     </div>
     <div class="action-buttons">
       <button mat-flat-button color="primary" [disabled]="isHolding" (click)="onHoldSeats()">

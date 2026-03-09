@@ -275,3 +275,27 @@ pub struct SeatLayout {
     pub is_companion: bool,
 }
 
+// ─── Order and Checkout DTOs ─────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct Order {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub event_id: Uuid,
+    pub total_amount: f64,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct OrderItem {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub seat_id: Uuid,
+    pub price: f64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CheckoutRequest {
+    pub seat_ids: Vec<Uuid>,
+}

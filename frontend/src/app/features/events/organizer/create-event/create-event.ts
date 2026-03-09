@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -20,7 +20,7 @@ import { TimePickerDialog } from '../../../../shared/components/time-picker-dial
 import { EventService } from '../../../../core/services/event.service';
 import { VenueService } from '../../../../core/services/venue.service';
 import { CreateEventRequest } from '../../../../shared/models/event';
-import { VenueTemplate } from '../../../../shared/models/venue';
+import { AssignSeatCategoryRequest, VenueTemplate } from '../../../../shared/models/venue';
 
 @Component({
   selector: 'app-create-event',
@@ -65,7 +65,8 @@ export class CreateEvent implements OnInit {
       start_date: [null, Validators.required],
       start_time_input: ['', [Validators.required, Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/)]],
       description: [''],
-      venue_template_id: [null]
+      venue_template_id: [null],
+      categories: this.fb.array([])
     });
   }
 
@@ -74,6 +75,28 @@ export class CreateEvent implements OnInit {
       next: (templates) => (this.venueTemplates = templates),
       error: () => {} // non-fatal — organizer may have no templates yet
     });
+
+    this.eventForm.get('venue_template_id')?.valueChanges.subscribe(templateId => {
+      this.categories.clear();
+      if (!templateId) return;
+      
+      this.venueService.listVenueTemplateSections(templateId).subscribe({
+        next: (sections) => {
+          sections.forEach(section => {
+            this.categories.push(this.fb.group({
+              section_id: [section.id],
+              name: [section.name, Validators.required],
+              price: [0, [Validators.required, Validators.min(0)]],
+              color_hex: [section.color_hex || '#4A90D9']
+            }));
+          });
+        }
+      });
+    });
+  }
+
+  get categories(): FormArray {
+    return this.eventForm.get('categories') as FormArray;
   }
 
   openTimePicker(): void {
@@ -113,7 +136,7 @@ export class CreateEvent implements OnInit {
     const date: Date = new Date(formValue.start_date);
     const [hours, minutes] = (formValue.start_time_input as string).split(':').map(Number);
     date.setHours(hours, minutes, 0, 0);
-    const { start_date, start_time_input, ...rest } = formValue;
+    const { start_date, start_time_input, categories: categoriesData, ...rest } = formValue;
     const payload: CreateEventRequest = {
       ...rest,
       start_time: date.toISOString(),
@@ -121,14 +144,32 @@ export class CreateEvent implements OnInit {
       seating_mode: rest.venue_template_id ? 'Reserved' as const : undefined
     };
 
-    this.eventService.createEvent(payload).pipe(
-      finalize(() => (this.isSubmitting = false))
-    ).subscribe({
-      next: () => {
-        this.toastr.success('Event created successfully!', 'Success');
-        this.router.navigate(['/organizer']);
+    const categoryPayload: AssignSeatCategoryRequest[] = categoriesData || [];
+
+    this.eventService.createEvent(payload).subscribe({
+      next: (event) => {
+        // If there are categories, upload them now
+        if (categoryPayload.length > 0 && event.id) {
+          this.venueService.assignSeatCategories(event.id, categoryPayload).pipe(
+            finalize(() => (this.isSubmitting = false))
+          ).subscribe({
+            next: () => {
+              this.toastr.success('Event and pricing created successfully!', 'Success');
+              this.router.navigate(['/organizer']);
+            },
+            error: (err) => {
+              this.toastr.error('Event created, but failed to save pricing.', 'Warning');
+              this.router.navigate(['/organizer']);
+            }
+          });
+        } else {
+          this.isSubmitting = false;
+          this.toastr.success('Event created successfully!', 'Success');
+          this.router.navigate(['/organizer']);
+        }
       },
       error: (err) => {
+        this.isSubmitting = false;
         const msg = typeof err.error === 'string'
           ? err.error
           : (err.error?.message ?? 'Failed to create event.');

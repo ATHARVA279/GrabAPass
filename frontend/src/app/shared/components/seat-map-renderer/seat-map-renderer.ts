@@ -41,7 +41,7 @@ export class SeatMapRenderer implements OnChanges {
     for (const section of this.layout.sections) {
       if (section.category) {
         items.push({
-          label: `${section.name} — ${section.category.name} ($${section.category.price.toFixed(2)})`,
+          label: `${section.name} — ${section.category.name} (₹${section.category.price.toFixed(2)})`,
           color: section.category.color_hex,
         });
       }
@@ -90,7 +90,7 @@ export class SeatMapRenderer implements OnChanges {
 
   seatTitle(seat: SeatLayout, section: SectionLayout): string {
     const parts: string[] = [seat.seat_label];
-    if (section.category) parts.push(`${section.category.name} $${section.category.price.toFixed(2)}`);
+    if (section.category) parts.push(`${section.category.name} ₹${section.category.price.toFixed(2)}`);
     if (seat.is_accessible) parts.push('♿ Accessible');
     if (seat.is_vip)        parts.push('⭐ VIP');
     if (seat.is_aisle)      parts.push('Aisle');
