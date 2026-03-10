@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { finalize, timeout } from 'rxjs';
+import { finalize, timeout, Subject, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,19 +28,29 @@ import { Event } from '../../../shared/models/event';
 export class Home implements OnInit {
   events: Event[] = [];
   loading = true;
+  searchQuery = '';
 
   private readonly eventService = inject(EventService);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
+  private searchSubject = new Subject<string>();
 
   ngOnInit(): void {
     this.fetchPublishedEvents();
+
+    this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged(),
+    ).subscribe(query => {
+      this.searchQuery = query;
+      this.fetchPublishedEvents(query);
+    });
   }
 
-  fetchPublishedEvents(): void {
+  fetchPublishedEvents(search?: string): void {
     this.loading = true;
 
-    this.eventService.getPublishedEvents().pipe(
+    this.eventService.getPublishedEvents(undefined, search).pipe(
       timeout(10000),
       finalize(() => (this.loading = false))
     ).subscribe({
@@ -54,6 +64,11 @@ export class Home implements OnInit {
         this.toastr.error(msg, 'Error');
       }
     });
+  }
+
+  onSearch(event: globalThis.Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchSubject.next(value);
   }
 
   goToEvent(eventId: string): void {

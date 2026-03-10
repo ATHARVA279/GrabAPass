@@ -1,7 +1,10 @@
 <div class="orders-container">
   <div class="header-section">
+    <div class="header-icon">
+      <mat-icon>local_activity</mat-icon>
+    </div>
     <h1>My Tickets</h1>
-    <p>View access passes and completed orders.</p>
+    <p>View your booked tickets and past orders.</p>
   </div>
 
   <div *ngIf="loading" class="loading-state">
@@ -16,38 +19,65 @@
 
   <div *ngIf="!loading && !error && orders.length === 0" class="empty-state">
     <mat-icon>confirmation_number</mat-icon>
-    <h3>No Tickets Found</h3>
-    <p>You haven't purchased any tickets yet.</p>
-    <a mat-flat-button color="primary" routerLink="/events">Browse Events</a>
+    <h3>No Tickets Yet</h3>
+    <p>You haven't booked any events yet. Browse and book your first event!</p>
+    <a mat-flat-button color="primary" routerLink="/events" class="browse-btn">
+      <mat-icon>search</mat-icon>
+      Browse Events
+    </a>
   </div>
 
   <div *ngIf="!loading && !error && orders.length > 0" class="orders-grid">
-    <mat-card *ngFor="let order of orders" class="order-card">
-      <div class="order-status-bar"></div>
-      <mat-card-header>
-        <div mat-card-avatar class="ticket-icon">
-          <mat-icon>local_activity</mat-icon>
-        </div>
-        <mat-card-title>Order #{{ order.id.substring(0, 8) | uppercase }}</mat-card-title>
-        <mat-card-subtitle>{{ order.created_at | date:'medium' }}</mat-card-subtitle>
-      </mat-card-header>
+    <div *ngFor="let order of orders" class="ticket-card">
+      <!-- Top accent -->
+      <div class="ticket-accent"></div>
       
-      <mat-card-content>
-        <div class="order-details">
-          <div class="detail-row">
-            <span class="label">Amount Paid:</span>
-            <span class="value total">₹{{ order.total_amount | number:'1.2-2' }}</span>
+      <!-- Ticket Header -->
+      <div class="ticket-header">
+        <div class="brand-row">
+          <div class="brand">
+            <mat-icon>event</mat-icon>
+            <span>GrabAPass</span>
           </div>
-          <div class="detail-row">
-            <span class="label">Status:</span>
-            <span class="value status completed">{{ order.status }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Event Link:</span>
-            <a class="value link" [routerLink]="['/events', order.event_id]">View Event Page</a>
-          </div>
+          <span class="status-badge" [class]="order.status.toLowerCase()">
+            {{ order.status }}
+          </span>
         </div>
-      </mat-card-content>
-    </mat-card>
+        <div class="order-id">Order #{{ order.id.substring(0, 8) | uppercase }}</div>
+      </div>
+
+      <!-- Perforated Divider -->
+      <div class="perforation">
+        <div class="hole left"></div>
+        <div class="dash"></div>
+        <div class="hole right"></div>
+      </div>
+
+      <!-- Ticket Details -->
+      <div class="ticket-details">
+        <div class="detail-row">
+          <div class="detail-label">
+            <mat-icon>calendar_today</mat-icon>
+            <span>Booked On</span>
+          </div>
+          <span class="detail-value">{{ order.created_at | date:'mediumDate' }}</span>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">
+            <mat-icon>payments</mat-icon>
+            <span>Amount Paid</span>
+          </div>
+          <span class="detail-value total">₹{{ order.total_amount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Ticket Action -->
+      <div class="ticket-action">
+        <a class="view-link" [routerLink]="['/events', order.event_id]">
+          <span>View Event</span>
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
+      </div>
+    </div>
   </div>
 </div>

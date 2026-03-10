@@ -1,27 +1,36 @@
 <mat-toolbar color="primary" class="app-toolbar">
   <a class="logo" routerLink="/">
-    <mat-icon>event</mat-icon>
+    <mat-icon>confirmation_number</mat-icon>
     <span>GrabAPass</span>
   </a>
+
+  <div class="nav-links">
+    <a mat-button routerLink="/events" routerLinkActive="nav-active" class="nav-link">
+      <mat-icon>explore</mat-icon>
+      Events
+    </a>
+  </div>
 
   <span class="spacer"></span>
 
   <ng-container *ngIf="!user">
-    <button mat-button routerLink="/login">Login</button>
-    <button mat-stroked-button routerLink="/register">Register</button>
+    <button mat-button routerLink="/login" class="auth-btn">Login</button>
+    <button mat-flat-button color="primary" routerLink="/register" class="register-btn">Sign Up</button>
   </ng-container>
 
   <ng-container *ngIf="user">
     <span class="user-greeting">Hi, {{ user.name }}</span>
-    <button mat-button *ngIf="user.role === 'Organizer'" routerLink="/organizer">
+    <button mat-button *ngIf="user.role === 'Organizer'" routerLink="/organizer"
+            routerLinkActive="nav-active" class="nav-link">
       <mat-icon>dashboard</mat-icon>
       Dashboard
     </button>
-    <button mat-button *ngIf="user.role === 'Customer'" routerLink="/orders">
+    <button mat-button *ngIf="user.role === 'Customer'" routerLink="/orders"
+            routerLinkActive="nav-active" class="nav-link">
       <mat-icon>local_activity</mat-icon>
       My Tickets
     </button>
-    <button mat-icon-button (click)="logout()" title="Logout">
+    <button mat-icon-button (click)="logout()" title="Logout" class="logout-btn">
       <mat-icon>logout</mat-icon>
     </button>
   </ng-container>
