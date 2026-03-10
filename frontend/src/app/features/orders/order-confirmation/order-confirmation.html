@@ -1,0 +1,53 @@
+<div class="confirmation-page">
+
+  <div class="success-container">
+
+    <!-- Animated Checkmark -->
+    <div class="checkmark-circle">
+      <div class="checkmark-bg"></div>
+      <mat-icon class="check-icon">check</mat-icon>
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+    </div>
+
+    <h1>Booking Confirmed!</h1>
+    <p class="subtitle">Your tickets have been booked successfully. You'll receive a confirmation shortly.</p>
+
+    <!-- Ticket Card -->
+    <div class="ticket-card">
+      <div class="ticket-top">
+        <div class="ticket-brand">
+          <mat-icon>event</mat-icon>
+          <span>GrabAPass</span>
+        </div>
+        <div class="ticket-badge">CONFIRMED</div>
+      </div>
+
+      <div class="ticket-divider">
+        <div class="punch-hole left"></div>
+        <div class="dash-line"></div>
+        <div class="punch-hole right"></div>
+      </div>
+
+      <div class="ticket-bottom">
+        <div class="ticket-info-row">
+          <mat-icon>confirmation_number</mat-icon>
+          <span>Your tickets are ready in <strong>My Tickets</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-buttons">
+      <a mat-flat-button color="primary" routerLink="/orders" class="primary-action">
+        <mat-icon>local_activity</mat-icon>
+        View My Tickets
+      </a>
+      <a mat-button routerLink="/events" class="secondary-action">
+        Browse More Events
+      </a>
+    </div>
+
+  </div>
+</div>

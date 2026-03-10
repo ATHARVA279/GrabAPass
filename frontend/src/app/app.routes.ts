@@ -37,13 +37,30 @@ export const routes: Routes = [
   },
   {
     path: 'events/:id',
-    loadComponent: () => import('./features/events/detail/event-detail').then(m => m.EventDetail)
+    loadComponent: () => import('./features/events/detail/event-detail').then(m => m.EventDetail),
+    pathMatch: 'full'
+  },
+  {
+    path: 'events/:id/seats',
+    loadComponent: () => import('./features/events/seat-selection/seat-selection').then(m => m.SeatSelection)
+  },
+  {
+    path: 'events/:id/checkout',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/events/checkout/checkout').then(m => m.Checkout)
   },
   {
     path: 'orders',
     canActivate: [authGuard],
     data: { role: 'Customer' },
     loadComponent: () => import('./features/orders/order-list/order-list').then(m => m.OrderList)
+  },
+  {
+    path: 'orders/:id/confirmation',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/orders/order-confirmation/order-confirmation').then(m => m.OrderConfirmation)
   },
   { 
     path: '', 

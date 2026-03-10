@@ -1,7 +1,20 @@
 <div class="hero-section">
+  <div class="hero-particles">
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+  </div>
   <div class="hero-tag"><mat-icon>bolt</mat-icon> Live Events</div>
-  <h1><span class="gradient-text">GrabAPass</span> Live Events</h1>
-  <p>Discover and book tickets to amazing events happening near you.</p>
+  <h1><span class="gradient-text">GrabAPass</span></h1>
+  <p class="hero-subtitle">Discover and book tickets to amazing events near you.</p>
+
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <mat-icon>search</mat-icon>
+    <input type="text" placeholder="Search events, artists, venues..." 
+           (input)="onSearch($event)" 
+           [value]="searchQuery" />
+  </div>
 </div>
 
 <div class="events-container">
@@ -14,35 +27,46 @@
   <div *ngIf="!loading && events.length === 0" class="empty-state">
     <mat-icon>event_busy</mat-icon>
     <h3>No Events Available</h3>
-    <p>We couldn't take find any active events at the moment. Please check back later.</p>
+    <p>We couldn't find any active events at the moment. Please check back later.</p>
   </div>
 
   <!-- Events Grid -->
   <div *ngIf="!loading && events.length > 0" class="events-grid">
-    <mat-card *ngFor="let event of events" class="event-card" (click)="goToEvent(event.id)">
-      <div class="card-image-placeholder">
-        <mat-icon>event</mat-icon>
-      </div>
+    <div *ngFor="let event of events" class="event-card" (click)="goToEvent(event.id)">
       
-      <mat-card-header>
-        <div mat-card-avatar class="event-avatar-icon">
-          <mat-icon>confirmation_number</mat-icon>
+      <!-- Card Image Area -->
+      <div class="card-visual">
+        <div class="card-gradient"></div>
+        <mat-icon class="card-bg-icon">event</mat-icon>
+        <div class="date-badge">
+          <span class="day">{{ event.start_time | date:'dd' }}</span>
+          <span class="month">{{ event.start_time | date:'MMM' }}</span>
         </div>
-        <mat-card-title>{{ event.title }}</mat-card-title>
-        <mat-card-subtitle class="category-badge">{{ event.category }}</mat-card-subtitle>
-      </mat-card-header>
+      </div>
 
-      <mat-card-content>
+      <!-- Card Body -->
+      <div class="card-body">
+        <span class="category-tag">{{ event.category }}</span>
+        <h3 class="event-title">{{ event.title }}</h3>
         <div class="event-meta">
-          <p><mat-icon>schedule</mat-icon> {{ event.start_time | date:'medium' }}</p>
-          <p><mat-icon>place</mat-icon> {{ event.venue_name }}</p>
+          <div class="meta-item">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ event.start_time | date:'EEE, h:mm a' }}</span>
+          </div>
+          <div class="meta-item">
+            <mat-icon>place</mat-icon>
+            <span>{{ event.venue_name }}</span>
+          </div>
         </div>
-      </mat-card-content>
+      </div>
 
-      <mat-card-actions align="end">
-        <button mat-button color="primary">View Details</button>
-        <button mat-flat-button color="primary">Book Now</button>
-      </mat-card-actions>
-    </mat-card>
+      <!-- Card Footer -->
+      <div class="card-footer">
+        <button class="book-btn">
+          <mat-icon>confirmation_number</mat-icon>
+          Book Now
+        </button>
+      </div>
+    </div>
   </div>
 </div>

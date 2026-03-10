@@ -1,14 +1,4 @@
 <div class="detail-container">
-  <div *ngIf="holdExpiresAt" class="hold-timer-banner">
-    <div class="timer-info">
-      <mat-icon>timer</mat-icon>
-      <span>Seats Held! Complete checkout in: <strong>{{ holdTimeRemaining }}</strong></span>
-    </div>
-    <button mat-flat-button color="primary" [disabled]="isCheckingOut" (click)="onCheckout()" class="checkout-btn">
-      <span *ngIf="!isCheckingOut">Pay {{ heldTotalPrice | currency:'INR':'symbol' }}</span>
-      <mat-spinner *ngIf="isCheckingOut" diameter="20" color="accent"></mat-spinner>
-    </button>
-  </div>
 
   <button mat-button class="back-btn" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
@@ -22,6 +12,7 @@
 
   <div *ngIf="event" class="event-content">
     
+    <!-- Hero -->
     <div class="event-hero">
       <div class="hero-overlay"></div>
       <div class="hero-content">
@@ -45,6 +36,31 @@
             <p class="description">{{ event.description || 'No description provided by the organizer.' }}</p>
           </mat-card-content>
         </mat-card>
+
+        <!-- Highlights -->
+        <div class="highlights-grid">
+          <div class="highlight-item">
+            <mat-icon>verified</mat-icon>
+            <div>
+              <strong>Verified Event</strong>
+              <span>Organized by a verified host</span>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <mat-icon>flash_on</mat-icon>
+            <div>
+              <strong>Instant Confirmation</strong>
+              <span>Get your tickets immediately</span>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <mat-icon>security</mat-icon>
+            <div>
+              <strong>Secure Booking</strong>
+              <span>Safe and encrypted checkout</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="sidebar">
@@ -55,7 +71,7 @@
             <mat-card-title>Date & Time</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <p>{{ event.start_time | date:'fullDate' }}</p>
+            <p><strong>{{ event.start_time | date:'fullDate' }}</strong></p>
             <p>{{ event.start_time | date:'shortTime' }}</p>
           </mat-card-content>
         </mat-card>
@@ -71,53 +87,36 @@
           </mat-card-content>
         </mat-card>
 
+        <!-- Booking CTA Card -->
         <mat-card class="booking-card">
           <mat-card-content>
+            <div *ngIf="priceRange" class="price-display">
+              <span class="price-label">Starting from</span>
+              <span class="price-value">₹{{ priceRange.min | number:'1.0-0' }}</span>
+              <span *ngIf="priceRange.min !== priceRange.max" class="price-range">
+                — ₹{{ priceRange.max | number:'1.0-0' }}
+              </span>
+            </div>
             <button mat-flat-button color="primary" class="buy-btn"
-                    [disabled]="!seatLayout && !!event.venue_template_id"
-                    (click)="seatLayout ? null : null">
-              {{ event.venue_template_id ? 'Select Seats Below' : 'Buy Tickets (Next Phase)' }}
+                    *ngIf="event.venue_template_id"
+                    (click)="goToSelectSeats()">
+              <mat-icon>chair</mat-icon>
+              Select Seats
             </button>
+            <button mat-flat-button color="primary" class="buy-btn"
+                    *ngIf="!event.venue_template_id"
+                    disabled>
+              Tickets Coming Soon
+            </button>
+            <p class="cta-note">
+              <mat-icon>info</mat-icon>
+              Seats are held for 5 minutes during checkout
+            </p>
           </mat-card-content>
         </mat-card>
 
       </div>
     </div>
 
-    <!-- ── Seat Map ──────────────────────────────────────────────────────── -->
-    <div *ngIf="event.venue_template_id" class="seat-map-section">
-      <div class="seat-map-heading">
-        <mat-icon>chair</mat-icon>
-        <h3>Select Your Seats</h3>
-      </div>
-
-      <div *ngIf="layoutLoading" class="layout-loading">
-        <mat-spinner diameter="32"></mat-spinner>
-        <span>Loading seat map…</span>
-      </div>
-
-      <app-seat-map-renderer
-        *ngIf="seatLayout && !layoutLoading"
-        [layout]="seatLayout"
-        (selectedSeatsChanged)="onSelectedSeatsChanged($event)">
-      </app-seat-map-renderer>
-    </div>
-
-  </div>
-</div>
-
-<!-- ── Floating Action Bar for Seat Holding ────────────────────────────────── -->
-<div class="action-bar-container" *ngIf="selectedSeats.length > 0 && !holdExpiresAt">
-  <div class="action-bar">
-    <div class="selection-info">
-      <span class="seat-count">{{ selectedSeats.length }} Seat{{ selectedSeats.length > 1 ? 's' : '' }} Selected</span>
-      <span class="total-price">₹{{ totalSelectedPrice | number:'1.2-2' }}</span>
-    </div>
-    <div class="action-buttons">
-      <button mat-flat-button color="primary" [disabled]="isHolding" (click)="onHoldSeats()">
-        <span *ngIf="!isHolding">Hold Seats & Continue</span>
-        <mat-spinner *ngIf="isHolding" diameter="20" color="accent"></mat-spinner>
-      </button>
-    </div>
   </div>
 </div>

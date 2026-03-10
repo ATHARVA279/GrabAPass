@@ -13,8 +13,7 @@
         }
     }
 
-    .loading-state,
-    .error-state {
+    .loading-state {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -29,25 +28,12 @@
             color: var(--text-secondary);
         }
     }
-
-    .error-state {
-        color: #ff8ab8;
-        background: var(--error-subtle);
-        border-color: rgba(255, 46, 136, 0.2);
-
-        mat-icon {
-            font-size: 3rem;
-            width: 3rem;
-            height: 3rem;
-            color: var(--pink);
-        }
-    }
 }
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
 .event-hero {
     position: relative;
-    height: 280px;
+    height: 300px;
     border-radius: var(--radius-xl);
     overflow: hidden;
     margin-bottom: 2rem;
@@ -57,7 +43,6 @@
     padding: 2.5rem;
     border: 1px solid var(--black-border);
 
-    // Gradient mesh background
     &::before {
         content: '';
         position: absolute;
@@ -65,13 +50,13 @@
         background:
             radial-gradient(ellipse at 20% 50%, var(--yellow-glow) 0%, transparent 60%),
             radial-gradient(ellipse at 80% 30%, var(--pink-glow) 0%, transparent 60%);
+        animation: heroShimmer 6s ease-in-out infinite alternate;
     }
 
-    // Bottom fade to readable text
     .hero-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(to top, rgba(13, 13, 13, 0.9) 0%, rgba(13, 13, 13, 0.2) 60%, transparent 100%);
+        background: linear-gradient(to top, rgba(13, 13, 13, 0.92) 0%, rgba(13, 13, 13, 0.3) 50%, transparent 100%);
     }
 
     .hero-content {
@@ -86,6 +71,16 @@
             color: #fff;
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
         }
+    }
+}
+
+@keyframes heroShimmer {
+    from {
+        opacity: 0.8;
+    }
+
+    to {
+        opacity: 1;
     }
 }
 
@@ -106,6 +101,7 @@
         background: var(--black-card) !important;
         border-radius: var(--radius-lg) !important;
         border: 1px solid var(--black-border) !important;
+        margin-bottom: 1.5rem;
 
         mat-card-header {
             padding-bottom: 0.5rem;
@@ -142,45 +138,58 @@
     }
 }
 
-// ─── Seat Map Section ─────────────────────────────────────────────────────────
-.seat-map-section {
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--black-border);
+// ─── Highlights Grid ──────────────────────────────────────────────────────────
+.highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 
-    .seat-map-heading {
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+
+    .highlight-item {
         display: flex;
-        align-items: center;
-        justify-content: center;
+        align-items: flex-start;
         gap: 0.75rem;
-        margin-bottom: 2rem;
+        padding: 1.25rem;
+        background: var(--black-card);
+        border: 1px solid var(--black-border);
+        border-radius: var(--radius-md);
+        transition: border-color 0.2s;
+
+        &:hover {
+            border-color: rgba(255, 214, 10, 0.2);
+        }
 
         mat-icon {
             color: var(--yellow);
-            font-size: 1.5rem;
-            width: 1.5rem;
-            height: 1.5rem;
+            font-size: 1.3rem;
+            width: 1.3rem;
+            height: 1.3rem;
+            flex-shrink: 0;
+            margin-top: 2px;
         }
 
-        h3 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 0;
-            font-family: var(--font);
-        }
-    }
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
 
-    .layout-loading {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 2rem;
-        background: var(--black-card);
-        border: 1px solid var(--black-border);
-        border-radius: var(--radius-lg);
-        color: var(--text-secondary);
-        font-family: var(--font);
+            strong {
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--text-primary);
+                font-family: var(--font);
+            }
+
+            span {
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                font-family: var(--font);
+            }
+        }
     }
 }
 
@@ -254,167 +263,71 @@
             pointer-events: none;
         }
 
+        .price-display {
+            text-align: center;
+            margin-bottom: 1rem;
+            position: relative;
+
+            .price-label {
+                display: block;
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                font-family: var(--font);
+                margin-bottom: 0.25rem;
+            }
+
+            .price-value {
+                font-size: 1.8rem;
+                font-weight: 800;
+                color: #fff;
+                font-family: var(--font);
+            }
+
+            .price-range {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                font-family: var(--font);
+            }
+        }
+
         .buy-btn {
             width: 100%;
-            height: 48px;
+            height: 52px;
             font-size: 1rem;
             font-weight: 700;
             font-family: var(--font);
             border-radius: var(--radius-sm);
-        }
-    }
-}
-
-// ─── Hold Timer Banner ────────────────────────────────────────────────────────
-.hold-timer-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    background: linear-gradient(135deg, rgba(255, 214, 10, 0.15) 0%, rgba(255, 214, 10, 0.05) 100%);
-    border: 1px solid rgba(255, 214, 10, 0.4);
-    border-radius: var(--radius-md);
-    padding: 1rem 1.5rem;
-    margin-bottom: 2rem;
-    color: var(--yellow);
-    box-shadow: 0 4px 20px rgba(255, 214, 10, 0.1);
-    animation: slideDown 0.3s ease-out;
-
-    .timer-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .checkout-btn {
-        height: 40px;
-        padding: 0 1.5rem;
-        font-family: var(--font);
-        font-weight: 700;
-        font-size: 0.95rem;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background-color: var(--primary) !important;
-        color: #fff !important;
-
-        &:hover {
-            box-shadow: 0 0 15px rgba(255, 214, 10, 0.4);
-        }
-    }
-
-    mat-icon {
-        font-size: 1.5rem;
-        width: 1.5rem;
-        height: 1.5rem;
-    }
-
-    span {
-        font-family: var(--font);
-        font-size: 1.05rem;
-
-        strong {
-            font-weight: 800;
-            margin-left: 0.5rem;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 1px;
-        }
-    }
-}
-
-// ─── Floating Action Bar ──────────────────────────────────────────────────────
-.action-bar-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
-    padding: 1.5rem;
-    display: flex;
-    justify-content: center;
-    background: linear-gradient(to top, rgba(13, 13, 13, 0.95) 0%, rgba(13, 13, 13, 0.8) 80%, transparent 100%);
-    backdrop-filter: blur(8px);
-    pointer-events: none; // Let clicks pass through background
-    animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-    .action-bar {
-        pointer-events: auto;
-        background: var(--black-card);
-        border: 1px solid var(--black-border);
-        border-radius: var(--radius-lg);
-        padding: 1rem 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 2rem;
-        width: 100%;
-        max-width: 800px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
-
-        .selection-info {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+
+            mat-icon {
+                font-size: 1.2rem;
+                width: 1.2rem;
+                height: 1.2rem;
+            }
+        }
+
+        .cta-note {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+            font-size: 0.72rem;
+            color: var(--text-muted);
             font-family: var(--font);
+            position: relative;
 
-            .seat-count {
-                color: var(--text-secondary);
-                font-size: 0.95rem;
-                font-weight: 500;
-            }
-
-            .total-price {
-                color: #fff;
-                font-size: 1.4rem;
-                font-weight: 700;
+            mat-icon {
+                font-size: 0.85rem;
+                width: 0.85rem;
+                height: 0.85rem;
             }
         }
-
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-
-            button {
-                height: 48px;
-                padding: 0 2rem;
-                font-family: var(--font);
-                font-weight: 700;
-                font-size: 1rem;
-                border-radius: var(--radius-md);
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-
-                mat-spinner {
-                    margin-left: 0.5rem;
-                }
-            }
-        }
-    }
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
     }
 }

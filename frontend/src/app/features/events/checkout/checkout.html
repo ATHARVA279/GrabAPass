@@ -1,0 +1,124 @@
+<div class="checkout-page">
+
+  <!-- Timer Bar -->
+  <div class="timer-bar" *ngIf="state?.holdExpiresAt">
+    <mat-icon>timer</mat-icon>
+    <span>Complete payment in <strong>{{ holdTimeRemaining }}</strong></span>
+  </div>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <button class="back-link" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to Seats</span>
+    </button>
+    <div class="step-indicator">
+      <span class="step done">✓</span>
+      <span class="step-line active"></span>
+      <span class="step active">2</span>
+      <span class="step-label">Checkout</span>
+    </div>
+  </div>
+
+  <div *ngIf="state" class="checkout-content">
+
+    <!-- Left Column: Order Summary -->
+    <div class="order-column">
+
+      <div class="section-card event-info-card">
+        <div class="card-header">
+          <mat-icon>event</mat-icon>
+          <h3>{{ state.event.title }}</h3>
+        </div>
+        <div class="event-meta">
+          <div class="meta-item">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ state.event.start_time | date:'fullDate' }} at {{ state.event.start_time | date:'shortTime' }}</span>
+          </div>
+          <div class="meta-item">
+            <mat-icon>place</mat-icon>
+            <span>{{ state.event.venue_name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card tickets-card">
+        <div class="card-header">
+          <mat-icon>confirmation_number</mat-icon>
+          <h3>Your Tickets ({{ state.selectedSeats.length }})</h3>
+        </div>
+        <div class="ticket-list">
+          <div *ngFor="let seat of state.selectedSeats" class="ticket-row">
+            <div class="ticket-dot" [style.background]="seat.colorHex"></div>
+            <div class="ticket-info">
+              <span class="ticket-seat">{{ seat.sectionName }} — {{ seat.seatLabel }}</span>
+              <span class="ticket-cat">{{ seat.categoryName }}</span>
+            </div>
+            <span class="ticket-price">₹{{ seat.price | number:'1.0-0' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card price-card">
+        <div class="card-header">
+          <mat-icon>receipt_long</mat-icon>
+          <h3>Price Details</h3>
+        </div>
+        <div class="price-rows">
+          <div class="price-row">
+            <span>Subtotal ({{ state.selectedSeats.length }} tickets)</span>
+            <span>₹{{ subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="price-row">
+            <span>Convenience Fee</span>
+            <span>₹{{ convenienceFee | number:'1.2-2' }}</span>
+          </div>
+          <div class="price-row total">
+            <span>Total Amount</span>
+            <span>₹{{ grandTotal | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Payment -->
+    <div class="payment-column">
+      <div class="payment-card">
+        <div class="payment-header">
+          <mat-icon>lock</mat-icon>
+          <h3>Secure Payment</h3>
+        </div>
+
+        <div class="payment-amount">
+          <span class="amount-label">Amount to Pay</span>
+          <span class="amount-value">₹{{ grandTotal | number:'1.2-2' }}</span>
+        </div>
+
+        <div class="payment-info">
+          <mat-icon>info</mat-icon>
+          <p>This is a demo checkout. No real payment will be charged.</p>
+        </div>
+
+        <button class="pay-btn" [disabled]="isProcessing" (click)="onConfirmPayment()">
+          <span *ngIf="!isProcessing">
+            <mat-icon>payment</mat-icon>
+            Confirm & Pay ₹{{ grandTotal | number:'1.2-2' }}
+          </span>
+          <mat-spinner *ngIf="isProcessing" diameter="22"></mat-spinner>
+        </button>
+
+        <div class="security-badges">
+          <div class="badge">
+            <mat-icon>verified_user</mat-icon>
+            <span>Secure Checkout</span>
+          </div>
+          <div class="badge">
+            <mat-icon>replay</mat-icon>
+            <span>Instant Confirmation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

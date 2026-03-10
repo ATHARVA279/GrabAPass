@@ -24,9 +24,9 @@
 
         mat-icon {
             color: var(--yellow);
-            font-size: 1.6rem;
-            width: 1.6rem;
-            height: 1.6rem;
+            font-size: 1.5rem;
+            width: 1.5rem;
+            height: 1.5rem;
         }
 
         span {
@@ -36,10 +36,45 @@
             -webkit-text-fill-color: transparent;
         }
 
-        &:hover { opacity: 0.85; }
+        &:hover {
+            opacity: 0.85;
+        }
     }
 
-    .spacer { flex: 1 1 auto; }
+    .nav-links {
+        display: flex;
+        align-items: center;
+        margin-left: 1.5rem;
+    }
+
+    .nav-link {
+        font-family: var(--font);
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-secondary) !important;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s;
+
+        mat-icon {
+            font-size: 1.1rem;
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+        &:hover {
+            color: var(--yellow) !important;
+        }
+
+        &.nav-active {
+            color: var(--yellow) !important;
+        }
+    }
+
+    .spacer {
+        flex: 1 1 auto;
+    }
 
     .user-greeting {
         margin-right: 12px;
@@ -49,22 +84,38 @@
         font-family: var(--font);
     }
 
-    // Nav buttons
-    button {
-        margin-left: 4px;
+    .auth-btn {
         font-family: var(--font);
         font-weight: 600;
         font-size: 0.875rem;
+        color: var(--text-secondary) !important;
         transition: color 0.2s;
 
-        &:hover:not([disabled]) {
+        &:hover {
             color: var(--yellow) !important;
         }
     }
 
-    // Active/dashboard nav button
-    .nav-active {
-        color: var(--yellow) !important;
+    .register-btn {
+        font-family: var(--font);
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-left: 4px;
+        border-radius: var(--radius-sm);
+    }
+
+    .logout-btn {
+        margin-left: 4px;
+        color: var(--text-muted) !important;
+        transition: color 0.2s;
+
+        &:hover {
+            color: var(--pink) !important;
+        }
+    }
+
+    button {
+        margin-left: 4px;
     }
 }
 
@@ -75,9 +126,17 @@
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    padding: 2rem;
 
-    // Auth pages must be full-bleed — escape the max-width constraint
+    // Auth pages must be full-bleed
     &:has(.auth-page) {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    // Seat selection & checkout need full width
+    &:has(.seat-selection-page),
+    &:has(.checkout-page) {
         max-width: 100%;
         padding: 0;
     }
@@ -85,7 +144,9 @@
     @media (max-width: 768px) {
         padding: 1.25rem;
 
-        &:has(.auth-page) {
+        &:has(.auth-page),
+        &:has(.seat-selection-page),
+        &:has(.checkout-page) {
             padding: 0;
         }
     }
