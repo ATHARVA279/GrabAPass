@@ -17,7 +17,7 @@ pub async fn checkout(
     Path(event_id): Path<Uuid>,
     Json(payload): Json<CheckoutRequest>,
 ) -> Result<(StatusCode, Json<Order>), (StatusCode, String)> {
-    let order = OrderService::checkout(&state.pool, event_id, claims.sub, payload).await?;
+    let order = OrderService::checkout(&state.pool, event_id, claims.sub, payload, &state.jwt_secret).await?;
     
     Ok((StatusCode::CREATED, Json(order)))
 }

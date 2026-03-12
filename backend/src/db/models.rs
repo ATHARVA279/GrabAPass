@@ -299,3 +299,36 @@ pub struct OrderItem {
 pub struct CheckoutRequest {
     pub seat_ids: Vec<Uuid>,
 }
+
+// ─── Ticket models ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct Ticket {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub order_item_id: Uuid,
+    pub event_id: Uuid,
+    pub seat_id: Uuid,
+    pub user_id: Uuid,
+    pub qr_secret: String,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+/// Rich ticket detail joining ticket + event + seat info for the frontend.
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct TicketDetail {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub event_id: Uuid,
+    pub event_title: String,
+    pub event_start_time: DateTime<Utc>,
+    pub venue_name: String,
+    pub seat_label: String,
+    pub section_name: String,
+    pub qr_payload: String,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
