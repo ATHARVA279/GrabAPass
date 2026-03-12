@@ -299,3 +299,65 @@ pub struct OrderItem {
 pub struct CheckoutRequest {
     pub seat_ids: Vec<Uuid>,
 }
+
+// ─── Ticket models ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct Ticket {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub event_id: Uuid,
+    pub user_id: Uuid,
+    pub qr_secret: String,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SeatInfo {
+    pub seat_id: Uuid,
+    pub seat_label: String,
+    pub section_name: String,
+}
+
+/// Rich ticket detail joining ticket + event + seat info for the frontend.
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct TicketDetail {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub event_id: Uuid,
+    pub event_title: String,
+    pub event_start_time: DateTime<Utc>,
+    pub venue_name: String,
+    pub seats: sqlx::types::Json<Vec<SeatInfo>>,
+    pub qr_payload: String,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+}
+// ─── Gate Validation DTOs ────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct ValidateTicketRequest {
+    pub qr_payload: String,
+    pub event_id: Uuid,
+}
+
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct ScanLog {
+    pub id: Uuid,
+    pub ticket_id: Option<Uuid>,
+    pub event_id: Uuid,
+    pub scanned_by: Uuid,
+    pub result: String,
+    pub reason: Option<String>,
+    pub scanned_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScanResultResponse {
+    pub success: bool,
+    pub message: String,
+    pub ticket_detail: Option<TicketDetail>,
+}

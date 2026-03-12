@@ -1,0 +1,226 @@
+.gate-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+
+  .header-section {
+    text-align: center;
+    margin-bottom: 2rem;
+    
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), #ffefb3);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0 0 0.5rem;
+    }
+    
+    p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+  }
+
+  .controls-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    
+    .event-select {
+      width: 100%;
+      max-width: 500px;
+    }
+  }
+
+  .scanner-work-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .scanner-card {
+    mat-card {
+      background: var(--black-card);
+      border: 1px solid var(--black-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .camera-wrapper {
+      position: relative;
+      background: #000;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      ngx-scanner-qrcode {
+        width: 100%;
+        height: 100%;
+      }
+
+      .camera-loading {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.7);
+        
+        p {
+          margin-top: 1rem;
+        }
+      }
+    }
+
+    .camera-controls {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+  }
+
+  .status-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .result-card {
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      color: white;
+
+      &.success {
+        background: rgba(46, 204, 113, 0.1);
+        border: 2px solid #4CAF50;
+
+        .result-header h3, .result-header mat-icon {
+          color: #4CAF50;
+        }
+      }
+
+      &.error {
+        background: rgba(231, 76, 60, 0.1);
+        border: 2px solid #F44336;
+
+        .result-header h3, .result-header mat-icon {
+          color: #F44336;
+        }
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+
+        mat-icon {
+          transform: scale(1.5);
+        }
+
+        h3 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+      }
+
+      .reason {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+      }
+
+      .ticket-info {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 12px;
+
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 0.5rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .label {
+            color: var(--text-secondary);
+          }
+
+          .value {
+            color: #fff;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    .history-card {
+      flex: 1;
+      background: var(--black-card);
+      border: 1px solid var(--black-border);
+      border-radius: var(--radius-lg);
+
+      mat-card-header {
+        margin-bottom: 1rem;
+      }
+
+      .empty-history {
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 2rem;
+      }
+
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+
+        .history-item {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.75rem;
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
+
+          &.admitted {
+            border-left: 4px solid #4CAF50;
+            mat-icon { color: #4CAF50; }
+          }
+
+          &.rejected {
+            border-left: 4px solid #F44336;
+            mat-icon { color: #F44336; }
+          }
+
+          .log-details {
+            display: flex;
+            flex-direction: column;
+
+            .result-text {
+              color: #fff;
+              font-weight: 500;
+            }
+
+            .time {
+              color: var(--text-secondary);
+              font-size: 0.85rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}

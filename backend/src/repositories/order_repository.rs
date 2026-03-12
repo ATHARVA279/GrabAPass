@@ -2,6 +2,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 use axum::http::StatusCode;
 use crate::db::models::Order;
+use crate::repositories::ticket_repository::TicketRepository;
 
 pub struct OrderRepository;
 
@@ -11,6 +12,7 @@ impl OrderRepository {
         event_id: Uuid,
         user_id: Uuid,
         seat_ids: &[Uuid],
+        jwt_secret: &str,
     ) -> Result<Order, (StatusCode, String)> {
         // 1. Validate that holds exist and are owned by the current user, and haven't expired
         #[derive(sqlx::FromRow)]
@@ -62,21 +64,37 @@ impl OrderRepository {
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        // 3. Insert Order Items
+        let mut ticket_seat_ids = Vec::new();
+
+        // 3. Insert Order Items and collect seat IDs for the single Ticket
         for seat in &held_seats {
-            sqlx::query!(
+            let order_item = sqlx::query_as::<_, crate::db::models::OrderItem>(
                 r#"
                 INSERT INTO order_items (order_id, seat_id, price)
                 VALUES ($1, $2, $3)
+                RETURNING id, order_id, seat_id, price
                 "#,
-                order.id,
-                seat.seat_id,
-                seat.price as f64
             )
-            .execute(&mut **tx)
+            .bind(order.id)
+            .bind(seat.seat_id)
+            .bind(seat.price as f64)
+            .fetch_one(&mut **tx)
             .await
             .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            ticket_seat_ids.push(seat.seat_id);
         }
+
+        // Generate a single consolidated ticket for this order
+        TicketRepository::create_ticket_in_tx(
+            tx,
+            order.id,
+            event_id,
+            &ticket_seat_ids,
+            user_id,
+            jwt_secret,
+        )
+        .await?;
 
         // 4. Update Inventory Status to Sold
         let result = sqlx::query!(

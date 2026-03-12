@@ -25,10 +25,15 @@
       <mat-icon>dashboard</mat-icon>
       Dashboard
     </button>
-    <button mat-button *ngIf="user.role === 'Customer'" routerLink="/orders"
+    <button mat-button *ngIf="user.role === 'Customer'" routerLink="/tickets"
             routerLinkActive="nav-active" class="nav-link">
-      <mat-icon>local_activity</mat-icon>
+      <mat-icon>confirmation_number</mat-icon>
       My Tickets
+    </button>
+    <button mat-button *ngIf="user.role === 'GateStaff'" routerLink="/gate"
+            routerLinkActive="nav-active" class="nav-link">
+      <mat-icon>qr_code_scanner</mat-icon>
+      Gate Scanner
     </button>
     <button mat-icon-button (click)="logout()" title="Logout" class="logout-btn">
       <mat-icon>logout</mat-icon>

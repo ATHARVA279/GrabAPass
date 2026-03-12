@@ -1,0 +1,201 @@
+.ticket-detail-container {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+
+  .loading-state,
+  .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    background: var(--black-card);
+    border: 1px solid var(--black-border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+
+    p {
+      margin-top: 1rem;
+      color: var(--text-secondary);
+    }
+
+    mat-icon {
+      font-size: 4rem;
+      width: 4rem;
+      height: 4rem;
+      color: var(--black-border);
+    }
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--yellow);
+    }
+
+    mat-icon {
+      font-size: 1.1rem;
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+  }
+
+  .ticket-pass {
+    background: var(--black-card);
+    border: 1px solid var(--black-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+
+    .pass-accent {
+      height: 4px;
+      background: linear-gradient(90deg, var(--yellow), var(--pink));
+    }
+
+    // ─── QR Section ──────────────────────────────────────────
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 2rem 1.5rem;
+
+      ::ng-deep .qr-image {
+        img, canvas {
+          border-radius: 12px;
+          background: #fff;
+          padding: 12px;
+        }
+      }
+
+      .qr-hint {
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+    }
+
+    // ─── Tear Line ───────────────────────────────────────────
+    .tear-line {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 24px;
+      margin: 0 -1px;
+
+      .tear-circle {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--black);
+
+        &.left { left: -12px; }
+        &.right { right: -12px; }
+      }
+
+      .tear-dashes {
+        flex: 1;
+        height: 0;
+        margin: 0 20px;
+        border-top: 2px dashed var(--black-border);
+      }
+    }
+
+    // ─── Details Section ─────────────────────────────────────
+    .details-section {
+      padding: 1.5rem 2rem 2rem;
+
+      .event-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin: 0 0 1.5rem;
+        color: #fff;
+        line-height: 1.3;
+      }
+
+      .detail-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+
+        .detail-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+
+          > mat-icon {
+            font-size: 1.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: var(--yellow);
+            margin-top: 2px;
+          }
+
+          > div {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+
+            .label {
+              font-size: 0.75rem;
+              color: var(--text-secondary);
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              font-weight: 600;
+            }
+
+            .value {
+              font-size: 0.95rem;
+              font-weight: 600;
+              color: #fff;
+            }
+          }
+        }
+      }
+
+      .ticket-id {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--black-border);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-align: center;
+        letter-spacing: 0.03em;
+      }
+    }
+  }
+
+  // Status badges
+  .status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .status-valid {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+  }
+
+  .status-used {
+    background: rgba(158, 158, 158, 0.15);
+    color: #9E9E9E;
+  }
+
+  .status-cancelled {
+    background: rgba(244, 67, 54, 0.15);
+    color: #F44336;
+  }
+}

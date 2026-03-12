@@ -28,7 +28,7 @@ export const routes: Routes = [
     path: 'gate',
     canActivate: [authGuard],
     data: { role: 'GateStaff' },
-    loadComponent: () => import('./features/events/home/home').then(m => m.Home)
+    loadComponent: () => import('./features/gate/gate-scan/gate-scan').then(m => m.GateScan)
   },
   {
     path: 'events',
@@ -49,6 +49,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { role: 'Customer' },
     loadComponent: () => import('./features/events/checkout/checkout').then(m => m.Checkout)
+  },
+  {
+    path: 'tickets',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/tickets/ticket-wallet/ticket-wallet').then(m => m.TicketWallet)
+  },
+  {
+    path: 'tickets/:id',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/tickets/ticket-detail/ticket-detail').then(m => m.TicketDetailPage)
   },
   {
     path: 'orders',
