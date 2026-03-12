@@ -1,0 +1,89 @@
+<div class="gate-container">
+  <div class="header-section">
+    <h1>Gate Scanner</h1>
+    <p>Select an event and scan ticket QR codes to admit attendees.</p>
+  </div>
+
+  <div class="controls-section">
+    <mat-form-field appearance="outline" class="event-select">
+      <mat-label>Select Event to Validate</mat-label>
+      <mat-select [(ngModel)]="selectedEventId" (selectionChange)="onEventChange()">
+        <mat-option *ngFor="let ev of events" [value]="ev.id">
+          {{ ev.title }} - {{ ev.start_time | date:'short' }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="selectedEventId" class="scanner-work-area">
+    <div class="scanner-card">
+      <mat-card>
+        <div class="camera-wrapper">
+          <ngx-scanner-qrcode 
+            #action="scanner"
+            [config]="{ isBeep: true }"
+            (event)="onScan($event)"
+          ></ngx-scanner-qrcode>
+
+          <div *ngIf="action.isLoading" class="camera-loading">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Starting camera...</p>
+          </div>
+        </div>
+
+        <div class="camera-controls">
+          <button mat-flat-button color="primary" [disabled]="action.isLoading || action.isStart" (click)="action.start()">
+            <mat-icon>play_arrow</mat-icon> Start Camera
+          </button>
+          <button mat-button color="warn" [disabled]="!action.isStart" (click)="action.stop()">
+            <mat-icon>stop</mat-icon> Stop
+          </button>
+        </div>
+      </mat-card>
+    </div>
+
+    <div class="status-panel">
+      <!-- Last Scan Result -->
+      <mat-card class="result-card" *ngIf="lastResult" [ngClass]="{'success': lastResult.success, 'error': !lastResult.success}">
+        <div class="result-header">
+          <mat-icon *ngIf="lastResult.success">check_circle</mat-icon>
+          <mat-icon *ngIf="!lastResult.success">cancel</mat-icon>
+          <h3>{{ lastResult.success ? 'Admitted' : 'Rejected' }}</h3>
+        </div>
+        <p class="reason">{{ lastResult.message }}</p>
+        
+        <div class="ticket-info" *ngIf="lastResult.ticket_detail">
+          <div class="info-row" *ngFor="let seat of lastResult.ticket_detail.seats">
+            <span class="label">Seat:</span>
+            <span class="value">{{ seat.seat_label }} (Section: {{ seat.section_name }})</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Ticket Status:</span>
+            <span class="value">{{ lastResult.ticket_detail.status }}</span>
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- Scan History -->
+      <mat-card class="history-card">
+        <mat-card-header>
+          <mat-card-title>Recent Scans</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="scanHistory.length === 0" class="empty-history">
+            No scans recorded yet for this event.
+          </div>
+          <div class="history-list">
+            <div class="history-item" *ngFor="let log of scanHistory" [ngClass]="log.result.toLowerCase()">
+              <mat-icon>{{ log.result === 'Admitted' ? 'check_circle' : 'cancel' }}</mat-icon>
+              <div class="log-details">
+                <span class="result-text">{{ log.result }} <span *ngIf="log.reason">- {{ log.reason }}</span></span>
+                <span class="time">{{ log.scanned_at | date:'mediumTime' }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

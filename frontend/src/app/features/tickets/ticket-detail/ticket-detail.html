@@ -1,0 +1,89 @@
+<div class="ticket-detail-container">
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading ticket...</p>
+  </div>
+
+  <div *ngIf="!loading && !ticket" class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>Ticket not found.</p>
+    <button mat-flat-button color="primary" (click)="goBack()">Back to Tickets</button>
+  </div>
+
+  <ng-container *ngIf="!loading && ticket">
+    <button mat-button class="back-btn" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Tickets
+    </button>
+
+    <div class="ticket-pass">
+      <!-- Top accent -->
+      <div class="pass-accent"></div>
+
+      <!-- QR Section -->
+      <div class="qr-section">
+        <qrcode
+          [qrdata]="ticket.qr_payload"
+          [width]="220"
+          [errorCorrectionLevel]="'M'"
+          [margin]="2"
+          cssClass="qr-image">
+        </qrcode>
+        <p class="qr-hint">Present this QR code at the gate for entry</p>
+      </div>
+
+      <!-- Tear line -->
+      <div class="tear-line">
+        <div class="tear-circle left"></div>
+        <div class="tear-dashes"></div>
+        <div class="tear-circle right"></div>
+      </div>
+
+      <!-- Details Section -->
+      <div class="details-section">
+        <h2 class="event-title">{{ ticket.event_title }}</h2>
+
+        <div class="detail-grid">
+          <div class="detail-item" *ngFor="let seat of ticket.seats">
+            <mat-icon>event_seat</mat-icon>
+            <div>
+              <span class="label">Seat</span>
+              <span class="value">{{ seat.section_name }} · {{ seat.seat_label }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <mat-icon>location_on</mat-icon>
+            <div>
+              <span class="label">Venue</span>
+              <span class="value">{{ ticket.venue_name }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <mat-icon>schedule</mat-icon>
+            <div>
+              <span class="label">Date & Time</span>
+              <span class="value">{{ ticket.event_start_time | date:'medium' }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <mat-icon>verified</mat-icon>
+            <div>
+              <span class="label">Status</span>
+              <span class="value status-badge" [ngClass]="getStatusClass(ticket.status)">
+                {{ ticket.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-id">
+          Ticket #{{ ticket.id.substring(0, 8) | uppercase }}
+          · Purchased {{ ticket.created_at | date:'shortDate' }}
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

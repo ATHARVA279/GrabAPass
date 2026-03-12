@@ -56,3 +56,22 @@ impl FromRequestParts<AppState> for RequireOrganizer {
         Ok(Self(require_auth.0))
     }
 }
+
+pub struct RequireGateStaff(pub Claims);
+
+impl FromRequestParts<AppState> for RequireGateStaff {
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let require_auth = RequireAuth::from_request_parts(parts, state).await?;
+
+        if require_auth.0.role != UserRole::GateStaff {
+            return Err((StatusCode::FORBIDDEN, "Requires GateStaff role".to_string()));
+        }
+
+        Ok(Self(require_auth.0))
+    }
+}

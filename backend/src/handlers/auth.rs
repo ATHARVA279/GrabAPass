@@ -53,7 +53,7 @@ pub async fn register(
         payload.organizer_company.as_deref(),
     )
     .await
-    .map_err(|error| {
+    .map_err(|error: sqlx::Error| {
         let message = error.to_string();
         if message.contains("duplicate key") || message.contains("unique") {
             (StatusCode::CONFLICT, "Email already in use".to_string())
@@ -88,7 +88,7 @@ pub async fn login(
 
     let user = auth_repository::find_user_by_email(&state.pool, &payload.email)
         .await
-        .map_err(|error| {
+        .map_err(|error: sqlx::Error| {
             tracing::error!(error = %error, "DB error during login");
             (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
         })?

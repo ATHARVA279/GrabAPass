@@ -28,7 +28,7 @@ export const routes: Routes = [
     path: 'gate',
     canActivate: [authGuard],
     data: { role: 'GateStaff' },
-    loadComponent: () => import('./features/events/home/home').then(m => m.Home)
+    loadComponent: () => import('./features/gate/gate-scan/gate-scan').then(m => m.GateScan)
   },
   {
     path: 'events',

@@ -64,7 +64,9 @@ impl OrderRepository {
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        // 3. Insert Order Items and generate Tickets
+        let mut ticket_seat_ids = Vec::new();
+
+        // 3. Insert Order Items and collect seat IDs for the single Ticket
         for seat in &held_seats {
             let order_item = sqlx::query_as::<_, crate::db::models::OrderItem>(
                 r#"
@@ -80,18 +82,19 @@ impl OrderRepository {
             .await
             .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-            // Generate ticket for this order item
-            TicketRepository::create_ticket_in_tx(
-                tx,
-                order.id,
-                order_item.id,
-                event_id,
-                seat.seat_id,
-                user_id,
-                jwt_secret,
-            )
-            .await?;
+            ticket_seat_ids.push(seat.seat_id);
         }
+
+        // Generate a single consolidated ticket for this order
+        TicketRepository::create_ticket_in_tx(
+            tx,
+            order.id,
+            event_id,
+            &ticket_seat_ids,
+            user_id,
+            jwt_secret,
+        )
+        .await?;
 
         // 4. Update Inventory Status to Sold
         let result = sqlx::query!(
