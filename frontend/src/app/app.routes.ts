@@ -64,15 +64,13 @@ export const routes: Routes = [
   },
   {
     path: 'orders',
-    canActivate: [authGuard],
-    data: { role: 'Customer' },
-    loadComponent: () => import('./features/orders/order-list/order-list').then(m => m.OrderList)
+    redirectTo: '/tickets',
+    pathMatch: 'full'
   },
   {
     path: 'orders/:id/confirmation',
-    canActivate: [authGuard],
-    data: { role: 'Customer' },
-    loadComponent: () => import('./features/orders/order-confirmation/order-confirmation').then(m => m.OrderConfirmation)
+    redirectTo: '/tickets',
+    pathMatch: 'full'
   },
   { 
     path: '', 

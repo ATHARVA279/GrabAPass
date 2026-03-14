@@ -24,6 +24,7 @@ export interface SelectedSeat {
 })
 export class SeatMapRenderer implements OnChanges {
   @Input() layout!: SeatLayoutResponse;
+  @Input() isInteractive = true;
   @Output() selectedSeatsChanged = new EventEmitter<SelectedSeat[]>();
 
   selectedSeatIds = new Set<string>();
@@ -75,7 +76,7 @@ export class SeatMapRenderer implements OnChanges {
   }
 
   isSeatClickable(seat: SeatLayout): boolean {
-    return seat.status === 'Available';
+    return this.isInteractive && seat.status === 'Available';
   }
 
   // ── Template helpers ───────────────────────────────────────────────────────

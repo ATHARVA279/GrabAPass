@@ -96,13 +96,13 @@
 
         <div class="payment-info">
           <mat-icon>info</mat-icon>
-          <p>This is a demo checkout. No real payment will be charged.</p>
+          <p>Razorpay Test Mode is enabled. Use sandbox cards or UPI IDs. No real money will be charged.</p>
         </div>
 
         <button class="pay-btn" [disabled]="isProcessing" (click)="onConfirmPayment()">
           <span *ngIf="!isProcessing">
             <mat-icon>payment</mat-icon>
-            Confirm & Pay ₹{{ grandTotal | number:'1.2-2' }}
+            Pay Securely with Razorpay
           </span>
           <mat-spinner *ngIf="isProcessing" diameter="22"></mat-spinner>
         </button>

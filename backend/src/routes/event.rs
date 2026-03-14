@@ -10,8 +10,12 @@ pub fn public_router() -> Router<AppState> {
         .route("/{id}/seat-layout", get(venue::get_seat_layout))
         // POST /api/events/:id/holds — Requires Customer auth (or any logged-in user)
         .route("/{id}/holds", post(crate::handlers::hold::hold_seats))
-        // POST /api/events/:id/checkout — Converts holds to orders
-        .route("/{id}/checkout", post(crate::handlers::order::checkout))
+        // POST /api/events/:id/checkout/initialize — Creates a pending order and Razorpay order
+        .route("/{id}/checkout/initialize", post(crate::handlers::order::initialize_checkout))
+        // POST /api/events/:id/checkout/verify — Verifies Razorpay payment and fulfills tickets
+        .route("/{id}/checkout/verify", post(crate::handlers::order::verify_checkout))
+        // POST /api/events/:id/checkout/failure — Stores failed checkout details
+        .route("/{id}/checkout/failure", post(crate::handlers::order::record_checkout_failure))
 }
 
 pub fn organizer_router() -> Router<AppState> {
@@ -20,4 +24,3 @@ pub fn organizer_router() -> Router<AppState> {
         // POST /api/organizer/events/:id/seat-categories
         .route("/{id}/seat-categories", post(venue::assign_seat_categories))
 }
-

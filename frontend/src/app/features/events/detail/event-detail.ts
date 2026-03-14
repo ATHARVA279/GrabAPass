@@ -12,6 +12,7 @@ import { MatChipsModule } from '@angular/material/chips';
 
 import { EventService } from '../../../core/services/event.service';
 import { VenueService } from '../../../core/services/venue.service';
+import { AuthService } from '../../../core/auth/auth';
 import { Event } from '../../../shared/models/event';
 import { SeatLayoutResponse } from '../../../shared/models/venue';
 
@@ -39,7 +40,12 @@ export class EventDetail implements OnInit {
   private readonly router = inject(Router);
   private readonly eventService = inject(EventService);
   private readonly venueService = inject(VenueService);
+  private readonly authService = inject(AuthService);
   private readonly toastr = inject(ToastrService);
+
+  get isLoggedIn(): boolean {
+    return !!this.authService.currentUserValue;
+  }
 
   ngOnInit(): void {
     const eventId = this.route.snapshot.paramMap.get('id');
@@ -79,6 +85,12 @@ export class EventDetail implements OnInit {
 
   goToSelectSeats(): void {
     if (this.event) {
+      if (!this.isLoggedIn) {
+        this.router.navigate(['/login'], {
+          queryParams: { returnUrl: `/events/${this.event.id}/seats` }
+        });
+        return;
+      }
       this.router.navigate(['/events', this.event.id, 'seats']);
     }
   }

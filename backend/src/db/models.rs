@@ -282,8 +282,18 @@ pub struct Order {
     pub id: Uuid,
     pub user_id: Uuid,
     pub event_id: Uuid,
+    pub subtotal_amount: f64,
+    pub fee_amount: f64,
     pub total_amount: f64,
+    pub currency: String,
     pub status: String,
+    pub gateway: Option<String>,
+    pub gateway_order_id: Option<String>,
+    pub gateway_payment_id: Option<String>,
+    pub payment_signature: Option<String>,
+    pub payment_verified_at: Option<DateTime<Utc>>,
+    pub receipt: Option<String>,
+    pub failure_reason: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -298,6 +308,41 @@ pub struct OrderItem {
 #[derive(Debug, Deserialize)]
 pub struct CheckoutRequest {
     pub seat_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InitializeCheckoutRequest {
+    pub seat_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InitializeCheckoutResponse {
+    pub order: Order,
+    pub gateway: String,
+    pub gateway_key_id: String,
+    pub gateway_order_id: String,
+    pub amount: i64,
+    pub currency: String,
+    pub description: String,
+    pub customer_name: String,
+    pub customer_email: String,
+    pub hold_expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VerifyCheckoutRequest {
+    pub order_id: Uuid,
+    pub razorpay_order_id: String,
+    pub razorpay_payment_id: String,
+    pub razorpay_signature: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CheckoutFailureRequest {
+    pub order_id: Uuid,
+    pub razorpay_order_id: Option<String>,
+    pub razorpay_payment_id: Option<String>,
+    pub reason: Option<String>,
 }
 
 // ─── Ticket models ───────────────────────────────────────────────────────────

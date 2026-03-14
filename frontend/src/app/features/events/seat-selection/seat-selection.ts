@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EventService } from '../../../core/services/event.service';
 import { VenueService } from '../../../core/services/venue.service';
 import { BookingService } from '../../../core/services/booking.service';
+import { AuthService } from '../../../core/auth/auth';
 import { Event } from '../../../shared/models/event';
 import { SeatLayoutResponse } from '../../../shared/models/venue';
 import { SeatMapRenderer, SelectedSeat } from '../../../shared/components/seat-map-renderer/seat-map-renderer';
@@ -43,7 +44,12 @@ export class SeatSelection implements OnInit {
   private readonly eventService = inject(EventService);
   private readonly venueService = inject(VenueService);
   private readonly bookingService = inject(BookingService);
+  private readonly authService = inject(AuthService);
   private readonly toastr = inject(ToastrService);
+
+  get isLoggedIn(): boolean {
+    return !!this.authService.currentUserValue;
+  }
 
   ngOnInit(): void {
     const eventId = this.route.snapshot.paramMap.get('id');
@@ -77,6 +83,10 @@ export class SeatSelection implements OnInit {
   }
 
   onSelectedSeatsChanged(seats: SelectedSeat[]): void {
+    if (!this.isLoggedIn) {
+      this.selectedSeats = [];
+      return;
+    }
     this.selectedSeats = seats;
   }
 
@@ -86,6 +96,13 @@ export class SeatSelection implements OnInit {
 
   onHoldAndContinue(): void {
     if (!this.event || this.selectedSeats.length === 0) return;
+
+    if (!this.isLoggedIn) {
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: `/events/${this.event.id}/seats` }
+      });
+      return;
+    }
 
     this.isHolding = true;
     const seatIds = this.selectedSeats.map(s => s.seatId);

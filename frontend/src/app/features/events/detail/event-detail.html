@@ -101,7 +101,7 @@
                     *ngIf="event.venue_template_id"
                     (click)="goToSelectSeats()">
               <mat-icon>chair</mat-icon>
-              Select Seats
+              {{ isLoggedIn ? 'Select Seats' : 'Login to Select Seats' }}
             </button>
             <button mat-flat-button color="primary" class="buy-btn"
                     *ngIf="!event.venue_template_id"
