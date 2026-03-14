@@ -56,5 +56,25 @@ export interface OrganizerDashboardSummaryResponse {
   seats_held: number;
   seats_blocked: number;
   seats_total: number;
+  suspicious_alerts: number;
+  recent_alerts: SuspiciousActivityEvent[];
   events: OrganizerEventDashboardSummary[];
+}
+
+export interface GateStaffSummary {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface SuspiciousActivityEvent {
+  id: string;
+  event_id: string;
+  user_id?: string | null;
+  ticket_id?: string | null;
+  activity_type: string;
+  severity: string;
+  message: string;
+  metadata: unknown;
+  created_at: string;
 }

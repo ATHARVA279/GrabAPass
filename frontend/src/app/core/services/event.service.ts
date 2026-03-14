@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
   CreateEventRequest,
   Event,
+  GateStaffSummary,
   OrganizerDashboardSummaryResponse,
 } from '../../shared/models/event';
 import { Order } from './order.service';
@@ -82,6 +83,20 @@ export class EventService {
 
   deleteEvent(eventId: string): Observable<void> {
     return this.http.delete<void>(`${this.organizerApiUrl}/${eventId}`);
+  }
+
+  listGateStaffUsers(): Observable<GateStaffSummary[]> {
+    return this.http.get<GateStaffSummary[]>(`${this.organizerApiUrl}/gate-staff/users`);
+  }
+
+  getAssignedGateStaff(eventId: string): Observable<GateStaffSummary[]> {
+    return this.http.get<GateStaffSummary[]>(`${this.organizerApiUrl}/${eventId}/gate-staff`);
+  }
+
+  assignGateStaff(eventId: string, gateStaffIds: string[]): Observable<void> {
+    return this.http.put<void>(`${this.organizerApiUrl}/${eventId}/gate-staff`, {
+      gate_staff_ids: gateStaffIds,
+    });
   }
 
   holdSeats(eventId: string, seatIds: string[]): Observable<any[]> {

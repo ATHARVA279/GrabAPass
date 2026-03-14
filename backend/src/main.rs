@@ -9,9 +9,12 @@ use axum::Router;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{HeaderValue, Method};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use std::collections::{HashMap, VecDeque};
 use std::env;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 
 #[derive(Clone)]
@@ -19,6 +22,7 @@ pub struct AppState {
     pub pool: sqlx::PgPool,
     pub jwt_secret: String,
     pub razorpay: Option<RazorpayConfig>,
+    pub rate_limiter: SharedRateLimiter,
 }
 
 #[derive(Clone)]
@@ -29,6 +33,8 @@ pub struct RazorpayConfig {
     pub checkout_name: String,
     pub client: reqwest::Client,
 }
+
+pub type SharedRateLimiter = Arc<Mutex<HashMap<String, VecDeque<std::time::Instant>>>>;
 
 #[tokio::main]
 async fn main() {
@@ -76,6 +82,7 @@ async fn main() {
         pool,
         jwt_secret,
         razorpay,
+        rate_limiter: Arc::new(Mutex::new(HashMap::new())),
     };
 
     // Spawn background task to clean up expired holds every 10 seconds

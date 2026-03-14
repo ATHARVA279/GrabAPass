@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    db::models::{CreateEventRequest, Event, OrganizerDashboardSummaryResponse},
+    db::models::{AssignGateStaffRequest, CreateEventRequest, Event, GateStaffSummary, OrganizerDashboardSummaryResponse},
     middleware::auth::RequireOrganizer,
     services::event_service,
 };
@@ -88,4 +88,31 @@ pub async fn get_organizer_dashboard_summary(
 ) -> Result<Json<OrganizerDashboardSummaryResponse>, (StatusCode, String)> {
     let summary = event_service::get_organizer_dashboard_summary(&state, claims.sub).await?;
     Ok(Json(summary))
+}
+
+pub async fn list_gate_staff_users(
+    State(state): State<AppState>,
+    RequireOrganizer(_claims): RequireOrganizer,
+) -> Result<Json<Vec<GateStaffSummary>>, (StatusCode, String)> {
+    let users = event_service::list_gate_staff_users(&state).await?;
+    Ok(Json(users))
+}
+
+pub async fn list_assigned_gate_staff(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<GateStaffSummary>>, (StatusCode, String)> {
+    let assigned = event_service::list_assigned_gate_staff(&state, claims.sub, id).await?;
+    Ok(Json(assigned))
+}
+
+pub async fn assign_gate_staff(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<AssignGateStaffRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    event_service::assign_gate_staff(&state, claims.sub, id, payload).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

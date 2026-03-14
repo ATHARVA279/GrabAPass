@@ -48,9 +48,7 @@ export class GateScan implements OnInit {
   }
 
   loadEvents() {
-    // Gate staff should ideally only see events they're assigned to or all active events.
-    // For now, we'll fetch all published events.
-    this.eventService.getPublishedEvents().subscribe({
+    this.gateService.getAssignedEvents().subscribe({
       next: (events) => {
         this.events = events;
         if (this.events.length > 0) {
@@ -58,7 +56,7 @@ export class GateScan implements OnInit {
           this.loadHistory();
         }
       },
-      error: () => this.toastr.error('Failed to load events')
+      error: () => this.toastr.error('Failed to load assigned events')
     });
   }
 

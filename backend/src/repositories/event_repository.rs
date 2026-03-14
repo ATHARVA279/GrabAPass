@@ -1,7 +1,7 @@
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::db::models::{Event, OrganizerEventDashboardSummary, OrganizerDashboardSummaryResponse, SeatingMode};
+use crate::db::models::{Event, GateStaffSummary, OrganizerEventDashboardSummary, OrganizerDashboardSummaryResponse, SeatingMode};
 
 pub async fn list_published_events(
     pool: &PgPool,
@@ -339,6 +339,98 @@ pub async fn get_organizer_dashboard_summary(
         seats_held,
         seats_blocked,
         seats_total,
+        suspicious_alerts: 0,
+        recent_alerts: Vec::new(),
         events,
     })
+}
+
+pub async fn list_assigned_gate_staff(
+    pool: &PgPool,
+    event_id: Uuid,
+    organizer_id: Uuid,
+) -> Result<Vec<GateStaffSummary>, sqlx::Error> {
+    sqlx::query_as::<_, GateStaffSummary>(
+        r#"
+        SELECT u.id, u.email, u.name
+        FROM gate_staff_event_assignments gsea
+        JOIN users u ON u.id = gsea.gate_staff_id
+        JOIN events e ON e.id = gsea.event_id
+        WHERE gsea.event_id = $1
+          AND e.organizer_id = $2
+        ORDER BY u.name ASC, u.email ASC
+        "#,
+    )
+    .bind(event_id)
+    .bind(organizer_id)
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn replace_gate_staff_assignments(
+    tx: &mut Transaction<'_, Postgres>,
+    event_id: Uuid,
+    organizer_id: Uuid,
+    gate_staff_ids: &[Uuid],
+) -> Result<(), sqlx::Error> {
+    let owns_event = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM events
+        WHERE id = $1 AND organizer_id = $2
+        "#,
+    )
+    .bind(event_id)
+    .bind(organizer_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    if owns_event == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    sqlx::query(
+        r#"
+        DELETE FROM gate_staff_event_assignments
+        WHERE event_id = $1
+        "#,
+    )
+    .bind(event_id)
+    .execute(&mut **tx)
+    .await?;
+
+    for gate_staff_id in gate_staff_ids {
+        sqlx::query(
+            r#"
+            INSERT INTO gate_staff_event_assignments (event_id, gate_staff_id, assigned_by)
+            VALUES ($1, $2, $3)
+            "#,
+        )
+        .bind(event_id)
+        .bind(gate_staff_id)
+        .bind(organizer_id)
+        .execute(&mut **tx)
+        .await?;
+    }
+
+    Ok(())
+}
+
+pub async fn list_assigned_events_for_gate_staff(
+    pool: &PgPool,
+    gate_staff_id: Uuid,
+) -> Result<Vec<Event>, sqlx::Error> {
+    sqlx::query_as::<_, Event>(
+        r#"
+        SELECT e.id, e.organizer_id, e.title, e.description, e.category, e.venue_name, e.venue_address,
+               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode
+        FROM gate_staff_event_assignments gsea
+        JOIN events e ON e.id = gsea.event_id
+        WHERE gsea.gate_staff_id = $1
+        ORDER BY e.start_time ASC
+        "#,
+    )
+    .bind(gate_staff_id)
+    .fetch_all(pool)
+    .await
 }

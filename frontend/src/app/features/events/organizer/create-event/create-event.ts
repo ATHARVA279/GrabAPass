@@ -19,7 +19,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { TimePickerDialog } from '../../../../shared/components/time-picker-dialog/time-picker-dialog';
 import { EventService } from '../../../../core/services/event.service';
 import { VenueService } from '../../../../core/services/venue.service';
-import { CreateEventRequest } from '../../../../shared/models/event';
+import { CreateEventRequest, GateStaffSummary } from '../../../../shared/models/event';
 import { AssignSeatCategoryRequest, VenueTemplate } from '../../../../shared/models/venue';
 
 @Component({
@@ -51,6 +51,7 @@ export class CreateEvent implements OnInit {
   loadingEvent = false;
   displayTime = '';
   venueTemplates: VenueTemplate[] = [];
+  gateStaffUsers: GateStaffSummary[] = [];
 
   private readonly fb = inject(FormBuilder);
   private readonly eventService = inject(EventService);
@@ -70,6 +71,7 @@ export class CreateEvent implements OnInit {
       start_time_input: ['', [Validators.required, Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/)]],
       description: [''],
       venue_template_id: [null],
+      gate_staff_ids: [[]],
       categories: this.fb.array([])
     });
   }
@@ -81,6 +83,11 @@ export class CreateEvent implements OnInit {
     this.venueService.listVenueTemplates().subscribe({
       next: (templates) => (this.venueTemplates = templates),
       error: () => {} // non-fatal — organizer may have no templates yet
+    });
+
+    this.eventService.listGateStaffUsers().subscribe({
+      next: (users) => (this.gateStaffUsers = users),
+      error: () => {}
     });
 
     this.eventForm.get('venue_template_id')?.valueChanges.subscribe(templateId => {
@@ -147,7 +154,7 @@ export class CreateEvent implements OnInit {
     const date: Date = new Date(formValue.start_date);
     const [hours, minutes] = (formValue.start_time_input as string).split(':').map(Number);
     date.setHours(hours, minutes, 0, 0);
-    const { start_date, start_time_input, categories: categoriesData, ...rest } = formValue;
+    const { start_date, start_time_input, categories: categoriesData, gate_staff_ids, ...rest } = formValue;
     const payload: CreateEventRequest = {
       ...rest,
       start_time: date.toISOString(),
@@ -169,11 +176,7 @@ export class CreateEvent implements OnInit {
             finalize(() => (this.isSubmitting = false))
           ).subscribe({
             next: () => {
-              this.toastr.success(
-                this.isEditMode ? 'Event updated successfully!' : 'Event and pricing created successfully!',
-                'Success'
-              );
-              this.router.navigate(['/organizer']);
+              this.saveGateStaffAssignments(event.id, gate_staff_ids || []);
             },
             error: (err) => {
               this.toastr.error(
@@ -184,12 +187,7 @@ export class CreateEvent implements OnInit {
             }
           });
         } else {
-          this.isSubmitting = false;
-          this.toastr.success(
-            this.isEditMode ? 'Event updated successfully!' : 'Event created successfully!',
-            'Success'
-          );
-          this.router.navigate(['/organizer']);
+          this.saveGateStaffAssignments(event.id, gate_staff_ids || []);
         }
       },
       error: (err) => {
@@ -227,9 +225,36 @@ export class CreateEvent implements OnInit {
           description: event.description ?? '',
           venue_template_id: event.venue_template_id ?? null,
         });
+
+        this.eventService.getAssignedGateStaff(eventId).subscribe({
+          next: (assigned) => {
+            this.eventForm.patchValue({
+              gate_staff_ids: assigned.map((user) => user.id),
+            });
+          },
+          error: () => {}
+        });
       },
       error: () => {
         this.toastr.error('Failed to load event for editing.', 'Error');
+        this.router.navigate(['/organizer']);
+      }
+    });
+  }
+
+  private saveGateStaffAssignments(eventId: string, gateStaffIds: string[]): void {
+    this.eventService.assignGateStaff(eventId, gateStaffIds).pipe(
+      finalize(() => (this.isSubmitting = false))
+    ).subscribe({
+      next: () => {
+        this.toastr.success(
+          this.isEditMode ? 'Event updated successfully!' : 'Event created successfully!',
+          'Success'
+        );
+        this.router.navigate(['/organizer']);
+      },
+      error: () => {
+        this.toastr.error('Event saved, but failed to assign gate staff.', 'Warning');
         this.router.navigate(['/organizer']);
       }
     });

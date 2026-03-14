@@ -10,6 +10,7 @@ use crate::{
     },
     repositories::order_repository::OrderRepository,
     services::payment_service::{PaymentService, RazorpayCreateOrderRequest},
+    services::suspicious_activity_service::SuspiciousActivityService,
 };
 
 pub struct OrderService;
@@ -190,7 +191,18 @@ impl OrderService {
             req.reason.as_deref(),
             req.razorpay_payment_id.as_deref(),
         )
-        .await
+        .await?;
+
+        SuspiciousActivityService::record_payment_failure_if_suspicious(
+            &state.pool,
+            event_id,
+            user_id,
+            req.order_id,
+            req.reason.as_deref(),
+        )
+        .await?;
+
+        Ok(())
     }
 
     pub async fn get_user_orders(
@@ -265,6 +277,15 @@ impl OrderService {
                         order.user_id,
                         Some("Payment failed according to Razorpay webhook."),
                         Some(&payment.id),
+                    )
+                    .await?;
+
+                    SuspiciousActivityService::record_payment_failure_if_suspicious(
+                        &state.pool,
+                        order.event_id,
+                        order.user_id,
+                        order.id,
+                        Some("payment.failed webhook"),
                     )
                     .await?;
                 }
