@@ -23,8 +23,7 @@ impl HoldService {
         let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         let mut holds = Vec::new();
 
-        // Expire in 1 minute (for testing)
-        let expires_at = Utc::now() + Duration::minutes(1);
+        let expires_at = Utc::now() + Duration::minutes(10);
 
         for seat_id in req.seat_ids {
             let hold = HoldRepository::create_hold_transaction(&mut tx, event_id, seat_id, user_id, expires_at).await?;

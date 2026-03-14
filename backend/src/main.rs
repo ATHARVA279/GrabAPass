@@ -18,6 +18,15 @@ use tower_http::cors::CorsLayer;
 pub struct AppState {
     pub pool: sqlx::PgPool,
     pub jwt_secret: String,
+    pub razorpay: Option<RazorpayConfig>,
+}
+
+#[derive(Clone)]
+pub struct RazorpayConfig {
+    pub key_id: String,
+    pub key_secret: String,
+    pub checkout_name: String,
+    pub client: reqwest::Client,
 }
 
 #[tokio::main]
@@ -32,6 +41,23 @@ async fn main() {
 
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
+    let razorpay = match (
+        env::var("RAZORPAY_KEY_ID").ok(),
+        env::var("RAZORPAY_KEY_SECRET").ok(),
+    ) {
+        (Some(key_id), Some(key_secret)) => Some(RazorpayConfig {
+            key_id,
+            key_secret,
+            checkout_name: env::var("RAZORPAY_CHECKOUT_NAME")
+                .unwrap_or_else(|_| "GrabAPass".to_string()),
+            client: reqwest::Client::new(),
+        }),
+        _ => {
+            tracing::warn!("Razorpay is not configured. Payment initialization endpoints will be unavailable.");
+            None
+        }
+    };
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .min_connections(1)
@@ -44,7 +70,11 @@ async fn main() {
         .await
         .expect("Failed to create Postgres connection pool!");
 
-    let state = AppState { pool, jwt_secret };
+    let state = AppState {
+        pool,
+        jwt_secret,
+        razorpay,
+    };
 
     // Spawn background task to clean up expired holds every 10 seconds
     let bg_pool = state.pool.clone();
