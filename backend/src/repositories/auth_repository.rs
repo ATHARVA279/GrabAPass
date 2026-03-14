@@ -1,6 +1,6 @@
 use sqlx::PgPool;
 
-use crate::db::models::{User, UserRole};
+use crate::db::models::{GateStaffSummary, User, UserRole};
 
 pub async fn create_user(
     pool: &PgPool,
@@ -38,5 +38,18 @@ pub async fn find_user_by_email(pool: &PgPool, email: &str) -> Result<Option<Use
     )
     .bind(email)
     .fetch_optional(pool)
+    .await
+}
+
+pub async fn list_gate_staff_users(pool: &PgPool) -> Result<Vec<GateStaffSummary>, sqlx::Error> {
+    sqlx::query_as::<_, GateStaffSummary>(
+        r#"
+        SELECT id, email, name
+        FROM users
+        WHERE role = 'GateStaff'
+        ORDER BY name ASC, email ASC
+        "#,
+    )
+    .fetch_all(pool)
     .await
 }

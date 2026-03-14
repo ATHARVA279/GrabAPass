@@ -3,8 +3,9 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    db::models::{CreateEventRequest, Event, OrganizerDashboardSummaryResponse},
-    repositories::event_repository,
+    db::models::{AssignGateStaffRequest, CreateEventRequest, Event, GateStaffSummary, OrganizerDashboardSummaryResponse},
+    repositories::{auth_repository, event_repository},
+    services::suspicious_activity_service::SuspiciousActivityService,
     services::venue_service,
 };
 
@@ -120,7 +121,58 @@ pub async fn get_organizer_dashboard_summary(
     state: &AppState,
     organizer_id: Uuid,
 ) -> Result<OrganizerDashboardSummaryResponse, (StatusCode, String)> {
-    event_repository::get_organizer_dashboard_summary(&state.pool, organizer_id)
+    let mut summary = event_repository::get_organizer_dashboard_summary(&state.pool, organizer_id)
+        .await
+        .map_err(internal_error)?;
+
+    summary.suspicious_alerts =
+        SuspiciousActivityService::count_recent_for_organizer(&state.pool, organizer_id).await?;
+    summary.recent_alerts =
+        SuspiciousActivityService::list_recent_for_organizer(&state.pool, organizer_id).await?;
+
+    Ok(summary)
+}
+
+pub async fn list_gate_staff_users(
+    state: &AppState,
+) -> Result<Vec<GateStaffSummary>, (StatusCode, String)> {
+    auth_repository::list_gate_staff_users(&state.pool)
+        .await
+        .map_err(internal_error)
+}
+
+pub async fn list_assigned_gate_staff(
+    state: &AppState,
+    organizer_id: Uuid,
+    event_id: Uuid,
+) -> Result<Vec<GateStaffSummary>, (StatusCode, String)> {
+    event_repository::list_assigned_gate_staff(&state.pool, event_id, organizer_id)
+        .await
+        .map_err(internal_error)
+}
+
+pub async fn assign_gate_staff(
+    state: &AppState,
+    organizer_id: Uuid,
+    event_id: Uuid,
+    payload: AssignGateStaffRequest,
+) -> Result<(), (StatusCode, String)> {
+    let mut tx = state.pool.begin().await.map_err(internal_error)?;
+    event_repository::replace_gate_staff_assignments(&mut tx, event_id, organizer_id, &payload.gate_staff_ids)
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => (StatusCode::NOT_FOUND, "Event not found".to_string()),
+            _ => internal_error(error),
+        })?;
+    tx.commit().await.map_err(internal_error)?;
+    Ok(())
+}
+
+pub async fn list_gate_staff_events(
+    state: &AppState,
+    gate_staff_id: Uuid,
+) -> Result<Vec<Event>, (StatusCode, String)> {
+    event_repository::list_assigned_events_for_gate_staff(&state.pool, gate_staff_id)
         .await
         .map_err(internal_error)
 }

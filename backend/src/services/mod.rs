@@ -4,5 +4,7 @@ pub mod gate_service;
 pub mod hold_service;
 pub mod order_service;
 pub mod payment_service;
+pub mod rate_limit_service;
+pub mod suspicious_activity_service;
 pub mod ticket_service;
 pub mod venue_service;

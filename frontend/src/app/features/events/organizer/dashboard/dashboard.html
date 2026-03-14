@@ -58,11 +58,32 @@
         <strong>{{ summary.seats_available }}</strong>
         <span class="meta">available / {{ summary.seats_blocked }} blocked</span>
       </div>
+      <div class="insight-card warning">
+        <span class="label">Suspicious Alerts</span>
+        <strong>{{ summary.suspicious_alerts }}</strong>
+        <span class="meta">last 24 hours</span>
+      </div>
     </div>
 
     <div *ngIf="viewState === 'success' && summary" class="refresh-note">
       <mat-icon>update</mat-icon>
       <span>Auto-refreshing every 30 seconds<span *ngIf="lastUpdatedAt"> · Last updated {{ lastUpdatedAt | date:'shortTime' }}</span></span>
+    </div>
+
+    <div *ngIf="viewState === 'success' && summary && summary.recent_alerts.length > 0" class="alerts-panel">
+      <div class="alerts-header">
+        <mat-icon>warning</mat-icon>
+        <h3>Recent Security Alerts</h3>
+      </div>
+      <div class="alerts-list">
+        <div class="alert-item" *ngFor="let alert of summary.recent_alerts" [ngClass]="alert.severity.toLowerCase()">
+          <div class="alert-top">
+            <span class="alert-type">{{ alert.activity_type.replaceAll('_', ' ') }}</span>
+            <span class="alert-time">{{ alert.created_at | date:'short' }}</span>
+          </div>
+          <p>{{ alert.message }}</p>
+        </div>
+      </div>
     </div>
 
     <div

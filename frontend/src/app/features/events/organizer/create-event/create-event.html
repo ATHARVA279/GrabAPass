@@ -129,6 +129,26 @@
           </div>
         </div>
 
+        <div class="seating-section">
+          <div class="seating-header">
+            <mat-icon>badge</mat-icon>
+            <span>Gate Staff Assignment <span class="optional">(optional)</span></span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Assigned Gate Staff</mat-label>
+            <mat-select formControlName="gate_staff_ids" multiple>
+              <mat-option *ngFor="let staff of gateStaffUsers" [value]="staff.id">
+                {{ staff.name }} · {{ staff.email }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>
+              <span *ngIf="!gateStaffUsers.length">No gate staff users available yet.</span>
+              <span *ngIf="gateStaffUsers.length">Only assigned staff will be able to scan tickets for this event.</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
         <div class="form-actions">
           <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting || eventForm.invalid" class="submit-btn">
             <mat-icon *ngIf="!isSubmitting">{{ isEditMode ? 'save' : 'publish' }}</mat-icon>

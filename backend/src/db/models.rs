@@ -61,6 +61,13 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct GateStaffSummary {
+    pub id: Uuid,
+    pub email: String,
+    pub name: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct Event {
     pub id: Uuid,
@@ -107,7 +114,27 @@ pub struct OrganizerDashboardSummaryResponse {
     pub seats_held: i64,
     pub seats_blocked: i64,
     pub seats_total: i64,
+    pub suspicious_alerts: i64,
+    pub recent_alerts: Vec<SuspiciousActivityEvent>,
     pub events: Vec<OrganizerEventDashboardSummary>,
+}
+
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct SuspiciousActivityEvent {
+    pub id: Uuid,
+    pub event_id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub ticket_id: Option<Uuid>,
+    pub activity_type: String,
+    pub severity: String,
+    pub message: String,
+    pub metadata: sqlx::types::Json<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AssignGateStaffRequest {
+    pub gate_staff_ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

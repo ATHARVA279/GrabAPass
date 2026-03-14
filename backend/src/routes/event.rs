@@ -21,8 +21,10 @@ pub fn public_router() -> Router<AppState> {
 pub fn organizer_router() -> Router<AppState> {
     Router::new()
         .route("/dashboard/summary", get(event::get_organizer_dashboard_summary))
+        .route("/gate-staff/users", get(event::list_gate_staff_users))
         .route("/", get(event::get_organizer_events).post(event::create_event))
         .route("/{id}", put(event::update_event).delete(event::delete_event))
+        .route("/{id}/gate-staff", get(event::list_assigned_gate_staff).put(event::assign_gate_staff))
         // POST /api/organizer/events/:id/seat-categories
         .route("/{id}/seat-categories", post(venue::assign_seat_categories))
 }

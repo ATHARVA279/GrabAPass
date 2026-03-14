@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TicketDetail } from './ticket.service';
+import { Event } from '../../shared/models/event';
 
 export interface ScanResultResponse {
   success: boolean;
@@ -33,5 +34,9 @@ export class GateService {
 
   getScanHistory(eventId: string): Observable<ScanLog[]> {
     return this.http.get<ScanLog[]>(`${this.apiUrl}/events/${eventId}/scans`);
+  }
+
+  getAssignedEvents(): Observable<Event[]> {
+    return this.http.get<Event[]>(`${this.apiUrl}/events`);
   }
 }

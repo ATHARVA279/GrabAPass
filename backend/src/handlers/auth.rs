@@ -1,8 +1,9 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State, http::{HeaderMap, StatusCode}};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState, db::models::UserRole, repositories::auth_repository, services::auth_service,
+    services::rate_limit_service::RateLimitService,
 };
 
 #[derive(Deserialize)]
@@ -37,8 +38,19 @@ pub struct UserResponse {
 
 pub async fn register(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, String)> {
+    let actor = RateLimitService::actor_from_headers(&headers);
+    RateLimitService::check_limit(
+        &state.rate_limiter,
+        "auth_register",
+        &actor,
+        5,
+        std::time::Duration::from_secs(60),
+    )
+    .await?;
+
     tracing::info!(email = %payload.email, role = ?payload.role, "Register attempt");
 
     let password_hash = auth_service::hash_password(&payload.password)?;
@@ -82,8 +94,19 @@ pub async fn register(
 
 pub async fn login(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, String)> {
+    let actor = RateLimitService::actor_from_headers(&headers);
+    RateLimitService::check_limit(
+        &state.rate_limiter,
+        "auth_login",
+        &actor,
+        10,
+        std::time::Duration::from_secs(60),
+    )
+    .await?;
+
     tracing::info!(email = %payload.email, "Login attempt");
 
     let user = auth_repository::find_user_by_email(&state.pool, &payload.email)
