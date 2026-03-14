@@ -4,12 +4,17 @@
       <mat-icon>arrow_back</mat-icon>
       Back to Dashboard
     </button>
-    <h2>Create New Event</h2>
-    <p>Publish an event to the public GrabAPass marketplace.</p>
+    <h2>{{ isEditMode ? 'Edit Event' : 'Create New Event' }}</h2>
+    <p>{{ isEditMode ? 'Update event details and pricing.' : 'Publish an event to the public GrabAPass marketplace.' }}</p>
   </div>
 
   <mat-card class="event-form-card">
     <mat-card-content>
+      <div *ngIf="loadingEvent" class="loading-inline">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Loading event details...</span>
+      </div>
+
       <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="event-form">
         
         <mat-form-field appearance="outline" class="full-width">
@@ -126,10 +131,10 @@
 
         <div class="form-actions">
           <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting || eventForm.invalid" class="submit-btn">
-            <mat-icon *ngIf="!isSubmitting">publish</mat-icon>
+            <mat-icon *ngIf="!isSubmitting">{{ isEditMode ? 'save' : 'publish' }}</mat-icon>
             <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
-            <span *ngIf="isSubmitting" style="margin-left: 8px">Publishing Event...</span>
-            <span *ngIf="!isSubmitting">Publish Event</span>
+            <span *ngIf="isSubmitting" style="margin-left: 8px">{{ isEditMode ? 'Saving Changes...' : 'Publishing Event...' }}</span>
+            <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Publish Event' }}</span>
           </button>
         </div>
       </form>

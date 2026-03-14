@@ -25,6 +25,7 @@ pub struct AppState {
 pub struct RazorpayConfig {
     pub key_id: String,
     pub key_secret: String,
+    pub webhook_secret: Option<String>,
     pub checkout_name: String,
     pub client: reqwest::Client,
 }
@@ -48,6 +49,7 @@ async fn main() {
         (Some(key_id), Some(key_secret)) => Some(RazorpayConfig {
             key_id,
             key_secret,
+            webhook_secret: env::var("RAZORPAY_WEBHOOK_SECRET").ok(),
             checkout_name: env::var("RAZORPAY_CHECKOUT_NAME")
                 .unwrap_or_else(|_| "GrabAPass".to_string()),
             client: reqwest::Client::new(),
@@ -106,6 +108,7 @@ async fn main() {
         .nest("/api/auth", routes::auth::router())
         .nest("/api/events", routes::event::public_router())
         .nest("/api/orders", routes::order::router())
+        .nest("/api/payments", routes::payment::router())
         .nest("/api/tickets", routes::ticket::router())
         .nest("/api/gate", routes::gate::router())
         .nest("/api/organizer/events", routes::event::organizer_router())

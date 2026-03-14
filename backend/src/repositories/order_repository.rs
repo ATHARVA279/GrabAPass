@@ -297,6 +297,42 @@ impl OrderRepository {
         })
     }
 
+    pub async fn get_order_by_gateway_order_id(
+        pool: &PgPool,
+        gateway_order_id: &str,
+    ) -> Result<Order, (StatusCode, String)> {
+        sqlx::query_as::<_, Order>(
+            r#"
+            SELECT
+                id,
+                user_id,
+                event_id,
+                subtotal_amount,
+                fee_amount,
+                total_amount,
+                currency,
+                status,
+                gateway,
+                gateway_order_id,
+                gateway_payment_id,
+                payment_signature,
+                payment_verified_at,
+                receipt,
+                failure_reason,
+                created_at
+            FROM orders
+            WHERE gateway_order_id = $1
+            "#,
+        )
+        .bind(gateway_order_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e: sqlx::Error| match e {
+            sqlx::Error::RowNotFound => (StatusCode::NOT_FOUND, "Order not found for gateway order.".to_string()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+        })
+    }
+
     pub async fn list_user_orders(
         pool: &PgPool,
         user_id: Uuid,
@@ -506,5 +542,28 @@ impl OrderRepository {
         .fetch_one(&mut **tx)
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    }
+
+    pub async fn record_webhook_event(
+        pool: &PgPool,
+        event_id: &str,
+        event_type: &str,
+        payload: &serde_json::Value,
+    ) -> Result<bool, (StatusCode, String)> {
+        let result = sqlx::query(
+            r#"
+            INSERT INTO payment_webhook_events (provider_event_id, event_type, payload)
+            VALUES ($1, $2, $3::jsonb)
+            ON CONFLICT (provider_event_id) DO NOTHING
+            "#,
+        )
+        .bind(event_id)
+        .bind(event_type)
+        .bind(payload)
+        .execute(pool)
+        .await
+        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+        Ok(result.rows_affected() == 1)
     }
 }

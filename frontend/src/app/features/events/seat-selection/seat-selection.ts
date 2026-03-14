@@ -36,6 +36,7 @@ export class SeatSelection implements OnInit {
   loading = true;
   layoutLoading = false;
   isHolding = false;
+  hasActiveHold = false;
 
   selectedSeats: SelectedSeat[] = [];
 
@@ -64,6 +65,7 @@ export class SeatSelection implements OnInit {
     ).subscribe({
       next: (event) => {
         this.event = event;
+        this.restoreExistingBooking(event);
         if (event.venue_template_id) {
           this.loadSeatLayout(eventId);
         }
@@ -94,6 +96,10 @@ export class SeatSelection implements OnInit {
     return this.selectedSeats.reduce((sum, s) => sum + s.price, 0);
   }
 
+  get actionLabel(): string {
+    return this.hasActiveHold ? 'Continue to Checkout' : 'Hold & Continue';
+  }
+
   onHoldAndContinue(): void {
     if (!this.event || this.selectedSeats.length === 0) return;
 
@@ -101,6 +107,11 @@ export class SeatSelection implements OnInit {
       this.router.navigate(['/login'], {
         queryParams: { returnUrl: `/events/${this.event.id}/seats` }
       });
+      return;
+    }
+
+    if (this.hasActiveHold) {
+      this.router.navigate(['/events', this.event.id, 'checkout']);
       return;
     }
 
@@ -118,6 +129,7 @@ export class SeatSelection implements OnInit {
       },
       error: (err) => {
         this.toastr.error(err.error?.message || 'Failed to hold seats.', 'Hold Failed');
+        this.hasActiveHold = false;
         if (this.event) this.loadSeatLayout(this.event.id);
       },
     });
@@ -128,6 +140,24 @@ export class SeatSelection implements OnInit {
       this.router.navigate(['/events', this.event.id]);
     } else {
       this.router.navigate(['/events']);
+    }
+  }
+
+  private restoreExistingBooking(event: Event): void {
+    const bookingState = this.bookingService.getState();
+    if (!bookingState || bookingState.event.id !== event.id) {
+      this.hasActiveHold = false;
+      return;
+    }
+
+    const holdExpiresAt = bookingState.holdExpiresAt;
+    const holdStillActive = !!holdExpiresAt && holdExpiresAt.getTime() > Date.now();
+
+    this.selectedSeats = [...bookingState.selectedSeats];
+    this.hasActiveHold = holdStillActive && bookingState.heldSeatIds.length > 0;
+
+    if (!holdStillActive) {
+      this.hasActiveHold = false;
     }
   }
 }
