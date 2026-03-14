@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    db::models::{CreateEventRequest, Event},
+    db::models::{CreateEventRequest, Event, OrganizerDashboardSummaryResponse},
     middleware::auth::RequireOrganizer,
     services::event_service,
 };
@@ -54,6 +54,25 @@ pub async fn create_event(
     Ok((StatusCode::CREATED, Json(event)))
 }
 
+pub async fn update_event(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<CreateEventRequest>,
+) -> Result<Json<Event>, (StatusCode, String)> {
+    let event = event_service::update_event(&state, claims.sub, id, payload).await?;
+    Ok(Json(event))
+}
+
+pub async fn delete_event(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    event_service::delete_event(&state, claims.sub, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn get_organizer_events(
     State(state): State<AppState>,
     RequireOrganizer(claims): RequireOrganizer,
@@ -61,4 +80,12 @@ pub async fn get_organizer_events(
     tracing::debug!(organizer_id = %claims.sub, "Fetching organizer events");
     let events = event_service::list_organizer_events(&state, claims.sub).await?;
     Ok(Json(events))
+}
+
+pub async fn get_organizer_dashboard_summary(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+) -> Result<Json<OrganizerDashboardSummaryResponse>, (StatusCode, String)> {
+    let summary = event_service::get_organizer_dashboard_summary(&state, claims.sub).await?;
+    Ok(Json(summary))
 }

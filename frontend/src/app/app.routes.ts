@@ -19,6 +19,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/events/organizer/create-event/create-event').then(m => m.CreateEvent)
   },
   {
+    path: 'organizer/events/:id/edit',
+    canActivate: [authGuard],
+    data: { role: 'Organizer' },
+    loadComponent: () => import('./features/events/organizer/create-event/create-event').then(m => m.CreateEvent)
+  },
+  {
     path: 'organizer/create-venue',
     canActivate: [authGuard],
     data: { role: 'Organizer' },

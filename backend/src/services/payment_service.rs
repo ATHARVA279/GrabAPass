@@ -109,6 +109,23 @@ impl PaymentService {
         }
     }
 
+    pub fn verify_webhook_signature(
+        webhook_secret: &str,
+        body: &[u8],
+        signature: &str,
+    ) -> Result<(), (StatusCode, String)> {
+        let mut mac = HmacSha256::new_from_slice(webhook_secret.as_bytes())
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Unable to initialize HMAC: {e}")))?;
+        mac.update(body);
+        let expected = hex::encode(mac.finalize().into_bytes());
+
+        if expected == signature {
+            Ok(())
+        } else {
+            Err((StatusCode::UNAUTHORIZED, "Webhook signature verification failed.".to_string()))
+        }
+    }
+
     async fn parse_json_response<T: for<'de> Deserialize<'de>>(
         response: reqwest::Response,
     ) -> Result<T, (StatusCode, String)> {

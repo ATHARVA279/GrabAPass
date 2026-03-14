@@ -28,6 +28,7 @@ Set these in the backend environment before starting the Rust API:
 ```env
 RAZORPAY_KEY_ID=rzp_test_your_key_id
 RAZORPAY_KEY_SECRET=your_test_secret
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
 RAZORPAY_CHECKOUT_NAME=GrabAPass
 ```
 
@@ -43,3 +44,19 @@ sqlx migrate run
 ### Sandbox testing
 
 Use Razorpay Test Mode in the dashboard. The checkout page now launches the Razorpay-hosted payment modal and supports sandbox cards and test UPI flows.
+
+### Razorpay webhook
+
+Configure a Razorpay webhook pointing to:
+
+```text
+POST /api/payments/razorpay/webhook
+```
+
+Subscribe at minimum to:
+
+- `payment.authorized`
+- `payment.captured`
+- `payment.failed`
+
+This lets GrabAPass reconcile payments even if the browser callback is interrupted or retried.

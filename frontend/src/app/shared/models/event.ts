@@ -28,3 +28,33 @@ export interface CreateEventRequest {
   seating_mode?: SeatingMode;
 }
 
+export interface OrganizerEventDashboardSummary {
+  event_id: string;
+  title: string;
+  category: string;
+  venue_name: string;
+  start_time: string;
+  status: EventStatus;
+  gross_revenue: number;
+  orders_completed: number;
+  tickets_sold: number;
+  tickets_scanned: number;
+  rejected_scans: number;
+  seats_available: number;
+  seats_held: number;
+  seats_blocked: number;
+  seats_total: number;
+}
+
+export interface OrganizerDashboardSummaryResponse {
+  total_events: number;
+  published_events: number;
+  gross_revenue: number;
+  tickets_sold: number;
+  tickets_scanned: number;
+  seats_available: number;
+  seats_held: number;
+  seats_blocked: number;
+  seats_total: number;
+  events: OrganizerEventDashboardSummary[];
+}

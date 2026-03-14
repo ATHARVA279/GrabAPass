@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
@@ -46,12 +46,16 @@ import { AssignSeatCategoryRequest, VenueTemplate } from '../../../../shared/mod
 export class CreateEvent implements OnInit {
   readonly eventForm: FormGroup;
   isSubmitting = false;
+  isEditMode = false;
+  editingEventId: string | null = null;
+  loadingEvent = false;
   displayTime = '';
   venueTemplates: VenueTemplate[] = [];
 
   private readonly fb = inject(FormBuilder);
   private readonly eventService = inject(EventService);
   private readonly venueService = inject(VenueService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
   private readonly dialog = inject(MatDialog);
@@ -71,6 +75,9 @@ export class CreateEvent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.editingEventId = this.route.snapshot.paramMap.get('id');
+    this.isEditMode = !!this.editingEventId;
+
     this.venueService.listVenueTemplates().subscribe({
       next: (templates) => (this.venueTemplates = templates),
       error: () => {} // non-fatal — organizer may have no templates yet
@@ -93,6 +100,10 @@ export class CreateEvent implements OnInit {
         }
       });
     });
+
+    if (this.editingEventId) {
+      this.loadEventForEdit(this.editingEventId);
+    }
   }
 
   get categories(): FormArray {
@@ -146,7 +157,11 @@ export class CreateEvent implements OnInit {
 
     const categoryPayload: AssignSeatCategoryRequest[] = categoriesData || [];
 
-    this.eventService.createEvent(payload).subscribe({
+    const request$ = this.isEditMode && this.editingEventId
+      ? this.eventService.updateEvent(this.editingEventId, payload)
+      : this.eventService.createEvent(payload);
+
+    request$.subscribe({
       next: (event) => {
         // If there are categories, upload them now
         if (categoryPayload.length > 0 && event.id) {
@@ -154,17 +169,26 @@ export class CreateEvent implements OnInit {
             finalize(() => (this.isSubmitting = false))
           ).subscribe({
             next: () => {
-              this.toastr.success('Event and pricing created successfully!', 'Success');
+              this.toastr.success(
+                this.isEditMode ? 'Event updated successfully!' : 'Event and pricing created successfully!',
+                'Success'
+              );
               this.router.navigate(['/organizer']);
             },
             error: (err) => {
-              this.toastr.error('Event created, but failed to save pricing.', 'Warning');
+              this.toastr.error(
+                this.isEditMode ? 'Event updated, but failed to save pricing.' : 'Event created, but failed to save pricing.',
+                'Warning'
+              );
               this.router.navigate(['/organizer']);
             }
           });
         } else {
           this.isSubmitting = false;
-          this.toastr.success('Event created successfully!', 'Success');
+          this.toastr.success(
+            this.isEditMode ? 'Event updated successfully!' : 'Event created successfully!',
+            'Success'
+          );
           this.router.navigate(['/organizer']);
         }
       },
@@ -174,6 +198,39 @@ export class CreateEvent implements OnInit {
           ? err.error
           : (err.error?.message ?? 'Failed to create event.');
         this.toastr.error(msg, 'Error');
+      }
+    });
+  }
+
+  private loadEventForEdit(eventId: string): void {
+    this.loadingEvent = true;
+    this.eventService.getEventById(eventId).pipe(
+      finalize(() => (this.loadingEvent = false))
+    ).subscribe({
+      next: (event) => {
+        const startDate = new Date(event.start_time);
+        const hours = startDate.getHours();
+        const minutes = startDate.getMinutes();
+        const hourText = String(hours).padStart(2, '0');
+        const minuteText = String(minutes).padStart(2, '0');
+        const isPM = hours >= 12;
+        const h12 = hours % 12 === 0 ? 12 : hours % 12;
+        this.displayTime = `${String(h12).padStart(2,'0')}:${minuteText} ${isPM ? 'PM' : 'AM'}`;
+
+        this.eventForm.patchValue({
+          title: event.title,
+          category: event.category,
+          venue_name: event.venue_name,
+          venue_address: event.venue_address,
+          start_date: startDate,
+          start_time_input: `${hourText}:${minuteText}`,
+          description: event.description ?? '',
+          venue_template_id: event.venue_template_id ?? null,
+        });
+      },
+      error: () => {
+        this.toastr.error('Failed to load event for editing.', 'Error');
+        this.router.navigate(['/organizer']);
       }
     });
   }

@@ -2,7 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { CreateEventRequest, Event } from '../../shared/models/event';
+import {
+  CreateEventRequest,
+  Event,
+  OrganizerDashboardSummaryResponse,
+} from '../../shared/models/event';
 import { Order } from './order.service';
 
 export interface CheckoutInitialization {
@@ -62,8 +66,22 @@ export class EventService {
     return this.http.get<Event[]>(this.organizerApiUrl);
   }
 
+  getOrganizerDashboardSummary(): Observable<OrganizerDashboardSummaryResponse> {
+    return this.http.get<OrganizerDashboardSummaryResponse>(
+      `${this.organizerApiUrl}/dashboard/summary`
+    );
+  }
+
   createEvent(payload: CreateEventRequest): Observable<Event> {
     return this.http.post<Event>(this.organizerApiUrl, payload);
+  }
+
+  updateEvent(eventId: string, payload: CreateEventRequest): Observable<Event> {
+    return this.http.put<Event>(`${this.organizerApiUrl}/${eventId}`, payload);
+  }
+
+  deleteEvent(eventId: string): Observable<void> {
+    return this.http.delete<void>(`${this.organizerApiUrl}/${eventId}`);
   }
 
   holdSeats(eventId: string, seatIds: string[]): Observable<any[]> {

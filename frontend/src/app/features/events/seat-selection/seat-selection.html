@@ -67,8 +67,11 @@
             <span>₹{{ totalPrice | number:'1.2-2' }}</span>
           </div>
         </div>
+        <p *ngIf="hasActiveHold" class="active-hold-note">
+          Your previous seat hold is still active. Continue to checkout to complete payment.
+        </p>
         <button class="hold-btn" [disabled]="isHolding || !isLoggedIn" (click)="onHoldAndContinue()">
-          <span *ngIf="!isHolding">Hold & Continue</span>
+          <span *ngIf="!isHolding">{{ actionLabel }}</span>
           <mat-spinner *ngIf="isHolding" diameter="20"></mat-spinner>
           <mat-icon *ngIf="!isHolding">arrow_forward</mat-icon>
         </button>
@@ -83,7 +86,7 @@
       <span class="price">₹{{ totalPrice | number:'1.2-2' }}</span>
     </div>
     <button class="mobile-hold-btn" [disabled]="isHolding" (click)="onHoldAndContinue()">
-      <span *ngIf="!isHolding">Hold & Continue</span>
+      <span *ngIf="!isHolding">{{ actionLabel }}</span>
       <mat-spinner *ngIf="isHolding" diameter="18"></mat-spinner>
     </button>
   </div>

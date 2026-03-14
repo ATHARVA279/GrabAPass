@@ -77,6 +77,39 @@ pub struct Event {
     pub seating_mode: Option<SeatingMode>,
 }
 
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct OrganizerEventDashboardSummary {
+    pub event_id: Uuid,
+    pub title: String,
+    pub category: String,
+    pub venue_name: String,
+    pub start_time: DateTime<Utc>,
+    pub status: EventStatus,
+    pub gross_revenue: f64,
+    pub orders_completed: i64,
+    pub tickets_sold: i64,
+    pub tickets_scanned: i64,
+    pub rejected_scans: i64,
+    pub seats_available: i64,
+    pub seats_held: i64,
+    pub seats_blocked: i64,
+    pub seats_total: i64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct OrganizerDashboardSummaryResponse {
+    pub total_events: i64,
+    pub published_events: i64,
+    pub gross_revenue: f64,
+    pub tickets_sold: i64,
+    pub tickets_scanned: i64,
+    pub seats_available: i64,
+    pub seats_held: i64,
+    pub seats_blocked: i64,
+    pub seats_total: i64,
+    pub events: Vec<OrganizerEventDashboardSummary>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: Uuid,
@@ -343,6 +376,31 @@ pub struct CheckoutFailureRequest {
     pub razorpay_order_id: Option<String>,
     pub razorpay_payment_id: Option<String>,
     pub reason: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RazorpayWebhookPayload {
+    pub event: String,
+    pub payload: RazorpayWebhookData,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RazorpayWebhookData {
+    pub payment: Option<RazorpayWebhookPaymentContainer>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RazorpayWebhookPaymentContainer {
+    pub entity: RazorpayWebhookPaymentEntity,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RazorpayWebhookPaymentEntity {
+    pub id: String,
+    pub order_id: Option<String>,
+    pub status: String,
+    pub amount: i64,
+    pub currency: String,
 }
 
 // ─── Ticket models ───────────────────────────────────────────────────────────
