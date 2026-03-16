@@ -1,4 +1,4 @@
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::db::models::{
@@ -29,6 +29,30 @@ pub async fn create_venue_template(
     .bind(stage_label)
     .bind(orientation)
     .fetch_one(pool)
+    .await
+}
+
+pub async fn create_venue_template_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    organizer_id: Uuid,
+    name: &str,
+    description: Option<&str>,
+    stage_label: &str,
+    orientation: &StageOrientation,
+) -> Result<VenueTemplate, sqlx::Error> {
+    sqlx::query_as::<_, VenueTemplate>(
+        r#"
+        INSERT INTO venue_templates (organizer_id, name, description, stage_label, orientation)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, organizer_id, name, description, stage_label, orientation, created_at
+        "#,
+    )
+    .bind(organizer_id)
+    .bind(name)
+    .bind(description)
+    .bind(stage_label)
+    .bind(orientation)
+    .fetch_one(&mut **tx)
     .await
 }
 
@@ -89,6 +113,28 @@ pub async fn create_section(
     .await
 }
 
+pub async fn create_section_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    venue_template_id: Uuid,
+    name: &str,
+    display_order: i32,
+    color_hex: &str,
+) -> Result<VenueSection, sqlx::Error> {
+    sqlx::query_as::<_, VenueSection>(
+        r#"
+        INSERT INTO venue_sections (venue_template_id, name, display_order, color_hex)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, venue_template_id, name, display_order, color_hex
+        "#,
+    )
+    .bind(venue_template_id)
+    .bind(name)
+    .bind(display_order)
+    .bind(color_hex)
+    .fetch_one(&mut **tx)
+    .await
+}
+
 pub async fn list_sections_for_template(
     pool: &PgPool,
     venue_template_id: Uuid,
@@ -127,6 +173,28 @@ pub async fn create_row(
     .bind(seat_count)
     .bind(display_order)
     .fetch_one(pool)
+    .await
+}
+
+pub async fn create_row_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    section_id: Uuid,
+    row_label: &str,
+    seat_count: i32,
+    display_order: i32,
+) -> Result<VenueRow, sqlx::Error> {
+    sqlx::query_as::<_, VenueRow>(
+        r#"
+        INSERT INTO venue_rows (section_id, row_label, seat_count, display_order)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, section_id, row_label, seat_count, display_order
+        "#,
+    )
+    .bind(section_id)
+    .bind(row_label)
+    .bind(seat_count)
+    .bind(display_order)
+    .fetch_one(&mut **tx)
     .await
 }
 
@@ -177,6 +245,37 @@ pub async fn create_seat(
     .bind(is_companion)
     .bind(blocked_default)
     .fetch_one(pool)
+    .await
+}
+
+pub async fn create_seat_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    row_id: Uuid,
+    seat_number: i32,
+    seat_label: &str,
+    is_accessible: bool,
+    is_aisle: bool,
+    is_vip: bool,
+    is_companion: bool,
+    blocked_default: bool,
+) -> Result<VenueSeat, sqlx::Error> {
+    sqlx::query_as::<_, VenueSeat>(
+        r#"
+        INSERT INTO venue_seats
+            (row_id, seat_number, seat_label, is_accessible, is_aisle, is_vip, is_companion, blocked_default)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, row_id, seat_number, seat_label, is_accessible, is_aisle, is_vip, is_companion, blocked_default
+        "#,
+    )
+    .bind(row_id)
+    .bind(seat_number)
+    .bind(seat_label)
+    .bind(is_accessible)
+    .bind(is_aisle)
+    .bind(is_vip)
+    .bind(is_companion)
+    .bind(blocked_default)
+    .fetch_one(&mut **tx)
     .await
 }
 
@@ -276,6 +375,35 @@ pub async fn initialise_seat_inventory(
     .bind(seat_ids)
     .bind(&statuses)
     .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+pub async fn initialise_seat_inventory_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    event_id: Uuid,
+    seat_ids: &[Uuid],
+    blocked_defaults: &[bool],
+) -> Result<u64, sqlx::Error> {
+    let statuses: Vec<SeatStatus> = blocked_defaults
+        .iter()
+        .map(|&b| if b { SeatStatus::Blocked } else { SeatStatus::Available })
+        .collect();
+
+    let event_ids: Vec<Uuid> = std::iter::repeat(event_id).take(seat_ids.len()).collect();
+
+    let result = sqlx::query(
+        r#"
+        INSERT INTO event_seat_inventory (event_id, seat_id, status)
+        SELECT * FROM UNNEST($1::uuid[], $2::uuid[], $3::seat_status[])
+        ON CONFLICT (event_id, seat_id) DO NOTHING
+        "#,
+    )
+    .bind(&event_ids)
+    .bind(seat_ids)
+    .bind(&statuses)
+    .execute(&mut **tx)
     .await?;
 
     Ok(result.rows_affected())

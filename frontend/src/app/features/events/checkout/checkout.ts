@@ -10,9 +10,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { BookingService, BookingState } from '../../../core/services/booking.service';
 import {
+  CheckoutService,
   CheckoutInitialization,
-  EventService,
-} from '../../../core/services/event.service';
+} from '../../../core/services/checkout.service';
 
 interface RazorpaySuccessResponse {
   razorpay_payment_id: string;
@@ -87,7 +87,7 @@ export class Checkout implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly bookingService = inject(BookingService);
-  private readonly eventService = inject(EventService);
+  private readonly checkoutService = inject(CheckoutService);
   private readonly toastr = inject(ToastrService);
 
   ngOnInit(): void {
@@ -139,7 +139,7 @@ export class Checkout implements OnInit, OnDestroy {
     if (!this.state || this.isProcessing) return;
     this.isProcessing = true;
 
-    this.eventService.initializeCheckout(this.state.event.id, this.state.heldSeatIds).subscribe({
+    this.checkoutService.initializeCheckout(this.state.event.id, this.state.heldSeatIds).subscribe({
       next: async (session) => {
         this.bookingService.setHoldData(this.state!.heldSeatIds, new Date(session.hold_expires_at));
         this.state = this.bookingService.getState();
@@ -269,7 +269,7 @@ export class Checkout implements OnInit, OnDestroy {
     session: CheckoutInitialization,
     response: RazorpaySuccessResponse
   ): void {
-    this.eventService
+    this.checkoutService
       .verifyCheckout(this.state!.event.id, {
         order_id: session.order.id,
         razorpay_order_id: response.razorpay_order_id,
@@ -299,7 +299,7 @@ export class Checkout implements OnInit, OnDestroy {
     reason: string,
     paymentId?: string
   ): void {
-    this.eventService
+    this.checkoutService
       .recordCheckoutFailure(this.state!.event.id, {
         order_id: session.order.id,
         razorpay_order_id: session.gateway_order_id,

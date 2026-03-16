@@ -1,4 +1,5 @@
 pub mod db;
+pub mod constants;
 pub mod handlers;
 pub mod middleware;
 pub mod repositories;

@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 
-import { EventService } from '../../../core/services/event.service';
+import { PublicEventService } from '../../../core/services/public-event.service';
 import { VenueService } from '../../../core/services/venue.service';
 import { AuthService } from '../../../core/auth/auth';
 import { Event } from '../../../shared/models/event';
@@ -38,7 +38,7 @@ export class EventDetail implements OnInit {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(PublicEventService);
   private readonly venueService = inject(VenueService);
   private readonly authService = inject(AuthService);
   private readonly toastr = inject(ToastrService);

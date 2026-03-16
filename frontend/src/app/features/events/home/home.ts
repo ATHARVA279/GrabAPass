@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { EventService } from '../../../core/services/event.service';
+import { PublicEventService } from '../../../core/services/public-event.service';
 import { Event } from '../../../shared/models/event';
 
 @Component({
@@ -30,7 +30,7 @@ export class Home implements OnInit {
   loading = true;
   searchQuery = '';
 
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(PublicEventService);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
   private searchSubject = new Subject<string>();

@@ -1,9 +1,13 @@
 use axum::http::StatusCode;
+use chrono::Utc;
 use uuid::Uuid;
 
 use crate::{
     AppState,
-    db::models::{AssignGateStaffRequest, CreateEventRequest, Event, GateStaffSummary, OrganizerDashboardSummaryResponse},
+    db::models::{
+        AssignGateStaffRequest, CreateEventRequest, Event, EventStatus, GateStaffSummary,
+        OrganizerDashboardSummaryResponse,
+    },
     repositories::{auth_repository, event_repository},
     services::suspicious_activity_service::SuspiciousActivityService,
     services::venue_service,
@@ -20,10 +24,33 @@ pub async fn list_published_events(
 }
 
 pub async fn get_event(state: &AppState, id: Uuid) -> Result<Event, (StatusCode, String)> {
-    event_repository::find_event_by_id(&state.pool, id)
+    let event = event_repository::find_event_by_id(&state.pool, id)
         .await
         .map_err(internal_error)?
-        .ok_or((StatusCode::NOT_FOUND, "Event not found".to_string()))
+        .ok_or((StatusCode::NOT_FOUND, "Event not found".to_string()))?;
+
+    if event.status != EventStatus::Published {
+        return Err((StatusCode::NOT_FOUND, "Event not found".to_string()));
+    }
+
+    Ok(event)
+}
+
+pub async fn get_organizer_event(
+    state: &AppState,
+    organizer_id: Uuid,
+    event_id: Uuid,
+) -> Result<Event, (StatusCode, String)> {
+    let event = event_repository::find_event_by_id(&state.pool, event_id)
+        .await
+        .map_err(internal_error)?
+        .ok_or((StatusCode::NOT_FOUND, "Event not found".to_string()))?;
+
+    if event.organizer_id != organizer_id {
+        return Err((StatusCode::NOT_FOUND, "Event not found".to_string()));
+    }
+
+    Ok(event)
 }
 
 pub async fn create_event(
@@ -34,8 +61,10 @@ pub async fn create_event(
     let seating_mode =
         venue_service::resolve_seating_mode(payload.seating_mode, payload.venue_template_id.is_some());
 
-    let event = event_repository::create_event(
-        &state.pool,
+    let mut tx = state.pool.begin().await.map_err(internal_error)?;
+
+    let event = event_repository::create_event_tx(
+        &mut tx,
         organizer_id,
         &payload.title,
         payload.description.as_deref(),
@@ -51,8 +80,10 @@ pub async fn create_event(
 
     // If a venue template was attached, initialise the seat inventory immediately
     if let Some(template_id) = event.venue_template_id {
-        venue_service::initialise_event_inventory(state, event.id, template_id).await?;
+        venue_service::initialise_event_inventory_tx(&mut tx, state, event.id, template_id).await?;
     }
+
+    tx.commit().await.map_err(internal_error)?;
 
     Ok(event)
 }
@@ -106,6 +137,38 @@ pub async fn delete_event(
     tx.commit().await.map_err(internal_error)?;
 
     Ok(())
+}
+
+pub async fn cancel_event(
+    state: &AppState,
+    organizer_id: Uuid,
+    event_id: Uuid,
+) -> Result<Event, (StatusCode, String)> {
+    let existing = event_repository::find_event_by_id(&state.pool, event_id)
+        .await
+        .map_err(internal_error)?
+        .ok_or((StatusCode::NOT_FOUND, "Event not found".to_string()))?;
+
+    if existing.organizer_id != organizer_id {
+        return Err((StatusCode::NOT_FOUND, "Event not found".to_string()));
+    }
+
+    if existing.status == crate::db::models::EventStatus::Cancelled {
+        return Err((StatusCode::CONFLICT, "Event is already cancelled.".to_string()));
+    }
+
+    if existing.start_time <= Utc::now() {
+        return Err((StatusCode::CONFLICT, "Started events cannot be cancelled.".to_string()));
+    }
+
+    let mut tx = state.pool.begin().await.map_err(internal_error)?;
+    let event = event_repository::cancel_event_transaction(&mut tx, event_id, organizer_id)
+        .await
+        .map_err(internal_error)?
+        .ok_or((StatusCode::NOT_FOUND, "Event not found".to_string()))?;
+    tx.commit().await.map_err(internal_error)?;
+
+    Ok(event)
 }
 
 pub async fn list_organizer_events(
@@ -166,15 +229,6 @@ pub async fn assign_gate_staff(
         })?;
     tx.commit().await.map_err(internal_error)?;
     Ok(())
-}
-
-pub async fn list_gate_staff_events(
-    state: &AppState,
-    gate_staff_id: Uuid,
-) -> Result<Vec<Event>, (StatusCode, String)> {
-    event_repository::list_assigned_events_for_gate_staff(&state.pool, gate_staff_id)
-        .await
-        .map_err(internal_error)
 }
 
 fn internal_error(error: sqlx::Error) -> (StatusCode, String) {

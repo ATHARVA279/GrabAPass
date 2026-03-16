@@ -9,6 +9,7 @@ import { QRCodeComponent } from 'angularx-qrcode';
 import { ToastrService } from 'ngx-toastr';
 import { TicketService, TicketDetail } from '../../../core/services/ticket.service';
 import { finalize } from 'rxjs';
+import { getTicketStatusClass } from '../../../shared/utils/ticket-status';
 
 @Component({
   selector: 'app-ticket-detail',
@@ -28,6 +29,7 @@ import { finalize } from 'rxjs';
 export class TicketDetailPage implements OnInit {
   ticket: TicketDetail | null = null;
   loading = true;
+  cancelling = false;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -53,15 +55,38 @@ export class TicketDetailPage implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    switch (status.toLowerCase()) {
-      case 'valid': return 'status-valid';
-      case 'used': return 'status-used';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
+    return getTicketStatusClass(status);
   }
 
   goBack(): void {
     this.router.navigate(['/tickets']);
+  }
+
+  cancelTicket(): void {
+    if (!this.ticket || !this.ticket.can_cancel || this.cancelling) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Cancel "${this.ticket.event_title}" and invalidate this ticket?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.cancelling = true;
+    this.ticketService.cancelTicket(this.ticket.id)
+      .pipe(finalize(() => this.cancelling = false))
+      .subscribe({
+        next: (ticket) => {
+          this.ticket = ticket;
+          this.toastr.success('Ticket cancelled successfully.', 'Cancelled');
+        },
+        error: (err) => {
+          const message = err.error?.message || 'Failed to cancel ticket.';
+          this.toastr.error(message, 'Error');
+        }
+      });
   }
 }

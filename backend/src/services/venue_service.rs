@@ -1,13 +1,14 @@
 use axum::http::StatusCode;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
+use sqlx::{Postgres, Transaction};
 
 use crate::{
     AppState,
     db::models::{
-        AssignSeatCategoryRequest, CategoryInfo, CreateVenueRequest, RowLayout,
-        SeatingMode, SeatLayout, SeatStatus, SectionLayout, SeatLayoutResponse,
-        StageOrientation, VenueTemplate,
+        AssignSeatCategoryRequest, CategoryInfo, CreateVenueRequest, EventStatus, RowLayout,
+        SeatingMode, SeatLayout, SeatLayoutResponse, SeatStatus, SectionLayout, StageOrientation,
+        VenueTemplate,
     },
     repositories::venue_repository,
 };
@@ -30,8 +31,6 @@ pub async fn create_venue_template(
     organizer_id: Uuid,
     req: CreateVenueRequest,
 ) -> ServiceResult<VenueTemplate> {
-    let pool = &state.pool;
-
     // Validate
     if req.name.trim().is_empty() {
         return Err((StatusCode::BAD_REQUEST, "Venue name is required".into()));
@@ -62,9 +61,10 @@ pub async fn create_venue_template(
     let stage_label = req.stage_label.as_deref().unwrap_or("STAGE");
     let orientation = req.orientation.unwrap_or(StageOrientation::North);
 
-    // Create the template header
-    let template = venue_repository::create_venue_template(
-        pool,
+    let mut tx = state.pool.begin().await.map_err(db_err)?;
+
+    let template = venue_repository::create_venue_template_tx(
+        &mut tx,
         organizer_id,
         req.name.trim(),
         req.description.as_deref(),
@@ -81,8 +81,8 @@ pub async fn create_venue_template(
             .as_deref()
             .unwrap_or("#4A90D9");
 
-        let section = venue_repository::create_section(
-            pool,
+        let section = venue_repository::create_section_tx(
+            &mut tx,
             template.id,
             section_req.name.trim(),
             si as i32,
@@ -92,8 +92,8 @@ pub async fn create_venue_template(
         .map_err(db_err)?;
 
         for (ri, row_req) in section_req.rows.into_iter().enumerate() {
-            let row = venue_repository::create_row(
-                pool,
+            let row = venue_repository::create_row_tx(
+                &mut tx,
                 section.id,
                 &row_req.row_label,
                 row_req.seat_count,
@@ -114,8 +114,8 @@ pub async fn create_venue_template(
                 let meta = seat_meta.get(&seat_num);
                 let seat_label = format!("{}{}", row_req.row_label, seat_num);
 
-                venue_repository::create_seat(
-                    pool,
+                venue_repository::create_seat_tx(
+                    &mut tx,
                     row.id,
                     seat_num,
                     &seat_label,
@@ -130,6 +130,8 @@ pub async fn create_venue_template(
             }
         }
     }
+
+    tx.commit().await.map_err(db_err)?;
 
     Ok(template)
 }
@@ -168,17 +170,53 @@ pub async fn list_venue_templates(
 
 pub async fn assign_seat_categories(
     state: &AppState,
+    organizer_id: Uuid,
     event_id: Uuid,
     categories: Vec<AssignSeatCategoryRequest>,
 ) -> ServiceResult<()> {
     let pool = &state.pool;
+
+    let event = crate::repositories::event_repository::find_event_by_id(pool, event_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| not_found("Event not found"))?;
+
+    if event.organizer_id != organizer_id {
+        return Err((StatusCode::FORBIDDEN, "Access denied".into()));
+    }
+
+    let template_id = event.venue_template_id.ok_or((
+        StatusCode::BAD_REQUEST,
+        "Seat categories can only be assigned to events with a venue template".into(),
+    ))?;
+
+    let sections = venue_repository::list_sections_for_template(pool, template_id)
+        .await
+        .map_err(db_err)?;
+    let allowed_section_ids: HashSet<Uuid> = sections.into_iter().map(|section| section.id).collect();
+
     for cat in categories {
+        if cat.name.trim().is_empty() {
+            return Err((StatusCode::BAD_REQUEST, "Seat category name is required".into()));
+        }
+
+        if cat.price < 0.0 {
+            return Err((StatusCode::BAD_REQUEST, "Seat category price cannot be negative".into()));
+        }
+
+        if !allowed_section_ids.contains(&cat.section_id) {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("Section {} does not belong to this event's venue template", cat.section_id),
+            ));
+        }
+
         let color = cat.color_hex.as_deref().unwrap_or("#4A90D9");
         venue_repository::upsert_seat_category(
             pool,
             event_id,
             cat.section_id,
-            &cat.name,
+            cat.name.trim(),
             cat.price,
             color,
         )
@@ -222,6 +260,36 @@ pub async fn initialise_event_inventory(
     Ok(())
 }
 
+pub async fn initialise_event_inventory_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    state: &AppState,
+    event_id: Uuid,
+    venue_template_id: Uuid,
+) -> ServiceResult<()> {
+    let sections = venue_repository::list_sections_for_template(&state.pool, venue_template_id)
+        .await
+        .map_err(db_err)?;
+
+    let section_ids: Vec<Uuid> = sections.iter().map(|s| s.id).collect();
+    let rows = venue_repository::list_rows_for_sections(&state.pool, &section_ids)
+        .await
+        .map_err(db_err)?;
+
+    let row_ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
+    let seats = venue_repository::list_seats_for_rows(&state.pool, &row_ids)
+        .await
+        .map_err(db_err)?;
+
+    let seat_ids: Vec<Uuid> = seats.iter().map(|s| s.id).collect();
+    let blocked: Vec<bool> = seats.iter().map(|s| s.blocked_default).collect();
+
+    venue_repository::initialise_seat_inventory_tx(tx, event_id, &seat_ids, &blocked)
+        .await
+        .map_err(db_err)?;
+
+    Ok(())
+}
+
 // ─── Build the frontend-ready seat layout response ───────────────────────────
 
 pub async fn get_seat_layout(
@@ -235,6 +303,10 @@ pub async fn get_seat_layout(
         .await
         .map_err(db_err)?
         .ok_or_else(|| not_found("Event not found"))?;
+
+    if event.status != EventStatus::Published {
+        return Err(not_found("Event not found"));
+    }
 
     let template_id = event
         .venue_template_id

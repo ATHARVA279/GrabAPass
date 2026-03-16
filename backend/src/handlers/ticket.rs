@@ -27,3 +27,12 @@ pub async fn get_ticket(
     let ticket = TicketService::get_ticket(&state.pool, claims.sub, ticket_id).await?;
     Ok((StatusCode::OK, Json(ticket)))
 }
+
+pub async fn cancel_ticket(
+    State(state): State<crate::AppState>,
+    RequireAuth(claims): RequireAuth,
+    Path(ticket_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<TicketDetail>), (StatusCode, String)> {
+    let ticket = TicketService::cancel_ticket(&state.pool, claims.sub, ticket_id).await?;
+    Ok((StatusCode::OK, Json(ticket)))
+}

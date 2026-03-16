@@ -21,7 +21,7 @@
       <div class="pass-accent"></div>
 
       <!-- QR Section -->
-      <div class="qr-section">
+      <div class="qr-section" *ngIf="ticket.status.toLowerCase() === 'valid'; else inactiveTicketState">
         <qrcode
           [qrdata]="ticket.qr_payload"
           [width]="220"
@@ -31,6 +31,19 @@
         </qrcode>
         <p class="qr-hint">Present this QR code at the gate for entry</p>
       </div>
+
+      <ng-template #inactiveTicketState>
+        <div class="qr-section inactive">
+          <mat-icon>{{ ticket.status.toLowerCase() === 'cancelled' ? 'event_busy' : 'verified' }}</mat-icon>
+          <p class="inactive-title">{{ ticket.status }}</p>
+          <p class="qr-hint" *ngIf="ticket.status.toLowerCase() === 'cancelled'">
+            This pass has been invalidated and can no longer be used for entry.
+          </p>
+          <p class="qr-hint" *ngIf="ticket.status.toLowerCase() === 'used'">
+            This ticket has already been scanned at the gate.
+          </p>
+        </div>
+      </ng-template>
 
       <!-- Tear line -->
       <div class="tear-line">
@@ -82,6 +95,20 @@
         <div class="ticket-id">
           Ticket #{{ ticket.id.substring(0, 8) | uppercase }}
           · Purchased {{ ticket.created_at | date:'shortDate' }}
+        </div>
+
+        <div class="ticket-actions" *ngIf="ticket.can_cancel">
+          <button
+            mat-stroked-button
+            color="warn"
+            type="button"
+            (click)="cancelTicket()"
+            [disabled]="cancelling"
+          >
+            <mat-icon>cancel</mat-icon>
+            {{ cancelling ? 'Cancelling...' : 'Cancel Ticket' }}
+          </button>
+          <p class="action-note">Cancelling refunds the order status and invalidates this QR code.</p>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use std::str::FromStr;
 use uuid::Uuid;
 
+use crate::constants::{scan_reason, scan_result, ticket_status};
 use crate::db::models::{ScanLog, Ticket, TicketDetail};
 use crate::repositories::ticket_repository::TicketRepository;
 use crate::services::suspicious_activity_service::SuspiciousActivityService;
@@ -42,12 +43,12 @@ impl GateRepository {
         // Parse payload "{ticket_id}:{qr_secret}"
         let parts: Vec<&str> = qr_payload.split(':').collect();
         if parts.len() != 2 {
-            Self::insert_scan_log(pool, None, event_id, staff_id, "Rejected", "Invalid QR format").await?;
+            Self::insert_scan_log(pool, None, event_id, staff_id, scan_result::REJECTED, scan_reason::INVALID_QR_FORMAT).await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
                 None,
-                "Invalid QR format",
+                scan_reason::INVALID_QR_FORMAT,
             )
             .await;
             return Ok((false, "Invalid QR code format".to_string(), None));
@@ -59,12 +60,12 @@ impl GateRepository {
         let ticket_id = match Uuid::from_str(ticket_id_str) {
             Ok(id) => id,
             Err(_) => {
-                Self::insert_scan_log(pool, None, event_id, staff_id, "Rejected", "Invalid Ticket ID").await?;
+                Self::insert_scan_log(pool, None, event_id, staff_id, scan_result::REJECTED, scan_reason::INVALID_TICKET_ID).await?;
                 let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                     pool,
                     event_id,
                     None,
-                    "Invalid Ticket ID",
+                    scan_reason::INVALID_TICKET_ID,
                 )
                 .await;
                 return Ok((false, "Invalid Ticket ID".to_string(), None));
@@ -74,12 +75,12 @@ impl GateRepository {
         // Recompute the HMAC and compare
         let expected_secret = TicketRepository::generate_qr_secret(&ticket_id, jwt_secret);
         if provided_secret != expected_secret {
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, "Rejected", "QR Secret mismatch").await?;
+            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::QR_SECRET_MISMATCH).await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
                 Some(ticket_id),
-                "QR Secret mismatch",
+                scan_reason::QR_SECRET_MISMATCH,
             )
             .await;
             return Ok((false, "Cryptographic signature invalid".to_string(), None));
@@ -110,12 +111,12 @@ impl GateRepository {
             Some(t) => t,
             None => {
                 let _ = tx.rollback().await;
-                Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, "Rejected", "Ticket not found").await?;
+                Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::TICKET_NOT_FOUND).await?;
                 let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                     pool,
                     event_id,
                     Some(ticket_id),
-                    "Ticket not found",
+                    scan_reason::TICKET_NOT_FOUND,
                 )
                 .await;
                 return Ok((false, "Ticket not found".to_string(), None));
@@ -125,40 +126,40 @@ impl GateRepository {
         // Validate event match
         if ticket.event_id != event_id {
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, "Rejected", "Wrong Event").await?;
+            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::WRONG_EVENT).await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
                 Some(ticket_id),
-                "Wrong Event",
+                scan_reason::WRONG_EVENT,
             )
             .await;
             return Ok((false, "Ticket is for a different event".to_string(), None));
         }
 
         // Validate status
-        if ticket.status == "Used" {
-            let ticket_detail = Self::get_ticket_detail(&mut tx, ticket_id).await?;
+        if ticket.status == ticket_status::USED {
+            let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, "Rejected", "Already Used").await?;
+            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::ALREADY_USED).await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
                 Some(ticket_id),
-                "Already Used",
+                scan_reason::ALREADY_USED,
             )
             .await;
             return Ok((false, "Ticket has already been used".to_string(), Some(ticket_detail)));
         }
-        if ticket.status == "Cancelled" {
-            let ticket_detail = Self::get_ticket_detail(&mut tx, ticket_id).await?;
+        if ticket.status == ticket_status::CANCELLED {
+            let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, "Rejected", "Cancelled").await?;
+            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::CANCELLED).await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
                 Some(ticket_id),
-                "Cancelled",
+                scan_reason::CANCELLED,
             )
             .await;
             return Ok((false, "Ticket is cancelled".to_string(), Some(ticket_detail)));
@@ -173,10 +174,10 @@ impl GateRepository {
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        Self::insert_scan_log_tx(&mut tx, Some(ticket_id), event_id, staff_id, "Admitted", "Valid Entry").await?;
+        Self::insert_scan_log_tx(&mut tx, Some(ticket_id), event_id, staff_id, scan_result::ADMITTED, scan_reason::VALID_ENTRY).await?;
         
         // Fetch detailed ticket info to return
-        let ticket_detail = Self::get_ticket_detail(&mut tx, ticket_id).await?;
+        let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
 
         tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -235,48 +236,6 @@ impl GateRepository {
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         Ok(())
-    }
-
-    /// Internal helper to construct TicketDetail inside the transaction
-    async fn get_ticket_detail(
-        tx: &mut Transaction<'_, Postgres>,
-        ticket_id: Uuid,
-    ) -> Result<TicketDetail, (StatusCode, String)> {
-        sqlx::query_as::<_, TicketDetail>(
-            r#"
-            SELECT
-                t.id,
-                t.order_id,
-                t.event_id,
-                e.title          AS event_title,
-                e.start_time     AS event_start_time,
-                e.venue_name,
-                (
-                    SELECT json_agg(json_build_object(
-                        'seat_id', vs.id,
-                        'seat_label', vs.seat_label,
-                        'section_name', sec.name
-                    ))
-                    FROM ticket_seats ts
-                    JOIN venue_seats vs ON vs.id = ts.seat_id
-                    JOIN venue_rows vr  ON vr.id = vs.row_id
-                    JOIN venue_sections sec ON sec.id = vr.section_id
-                    WHERE ts.ticket_id = t.id
-                ) AS seats,
-                (t.id::text || ':' || t.qr_secret) AS qr_payload,
-                t.status,
-                t.created_at,
-                t.used_at
-            FROM tickets t
-            JOIN events e       ON e.id  = t.event_id
-            WHERE t.id = $1
-            "#
-        )
-        .bind(ticket_id)
-        .fetch_optional(&mut **tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((StatusCode::NOT_FOUND, "Ticket details not found".to_string()))
     }
 
     /// List scan history for an event

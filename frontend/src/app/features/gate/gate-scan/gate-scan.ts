@@ -10,7 +10,6 @@ import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { GateService, ScanLog, ScanResultResponse } from '../../../core/services/gate.service';
-import { EventService } from '../../../core/services/event.service';
 import { Event } from '../../../shared/models/event';
 
 @Component({
@@ -40,7 +39,6 @@ export class GateScan implements OnInit {
   lastResult: ScanResultResponse | null = null;
 
   private readonly gateService = inject(GateService);
-  private readonly eventService = inject(EventService);
   private readonly toastr = inject(ToastrService);
 
   ngOnInit() {

@@ -73,6 +73,15 @@ pub async fn delete_event(
     Ok(StatusCode::NO_CONTENT)
 }
 
+pub async fn cancel_event(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Event>, (StatusCode, String)> {
+    let event = event_service::cancel_event(&state, claims.sub, id).await?;
+    Ok(Json(event))
+}
+
 pub async fn get_organizer_events(
     State(state): State<AppState>,
     RequireOrganizer(claims): RequireOrganizer,
@@ -80,6 +89,15 @@ pub async fn get_organizer_events(
     tracing::debug!(organizer_id = %claims.sub, "Fetching organizer events");
     let events = event_service::list_organizer_events(&state, claims.sub).await?;
     Ok(Json(events))
+}
+
+pub async fn get_organizer_event(
+    State(state): State<AppState>,
+    RequireOrganizer(claims): RequireOrganizer,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Event>, (StatusCode, String)> {
+    let event = event_service::get_organizer_event(&state, claims.sub, id).await?;
+    Ok(Json(event))
 }
 
 pub async fn get_organizer_dashboard_summary(

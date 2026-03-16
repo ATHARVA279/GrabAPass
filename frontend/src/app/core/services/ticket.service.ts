@@ -12,6 +12,7 @@ export interface TicketDetail {
   seats: { seat_id: string, seat_label: string, section_name: string }[];
   qr_payload: string;
   status: string;
+  can_cancel: boolean;
   created_at: string;
   used_at: string | null;
 }
@@ -29,5 +30,9 @@ export class TicketService {
 
   getTicket(id: string): Observable<TicketDetail> {
     return this.http.get<TicketDetail>(`${this.apiUrl}/${id}`);
+  }
+
+  cancelTicket(id: string): Observable<TicketDetail> {
+    return this.http.post<TicketDetail>(`${this.apiUrl}/${id}/cancel`, {});
   }
 }

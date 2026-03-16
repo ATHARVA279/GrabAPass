@@ -75,3 +75,22 @@ impl FromRequestParts<AppState> for RequireGateStaff {
         Ok(Self(require_auth.0))
     }
 }
+
+pub struct RequireCustomer(pub Claims);
+
+impl FromRequestParts<AppState> for RequireCustomer {
+    type Rejection = (StatusCode, String);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let require_auth = RequireAuth::from_request_parts(parts, state).await?;
+
+        if require_auth.0.role != UserRole::Customer {
+            return Err((StatusCode::FORBIDDEN, "Requires Customer role".to_string()));
+        }
+
+        Ok(Self(require_auth.0))
+    }
+}
