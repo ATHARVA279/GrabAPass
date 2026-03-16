@@ -8,7 +8,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { EventService } from '../../../core/services/event.service';
+import { PublicEventService } from '../../../core/services/public-event.service';
+import { CheckoutService } from '../../../core/services/checkout.service';
 import { VenueService } from '../../../core/services/venue.service';
 import { BookingService } from '../../../core/services/booking.service';
 import { AuthService } from '../../../core/auth/auth';
@@ -42,7 +43,8 @@ export class SeatSelection implements OnInit {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(PublicEventService);
+  private readonly checkoutService = inject(CheckoutService);
   private readonly venueService = inject(VenueService);
   private readonly bookingService = inject(BookingService);
   private readonly authService = inject(AuthService);
@@ -118,7 +120,7 @@ export class SeatSelection implements OnInit {
     this.isHolding = true;
     const seatIds = this.selectedSeats.map(s => s.seatId);
 
-    this.eventService.holdSeats(this.event.id, seatIds).pipe(
+    this.checkoutService.holdSeats(this.event.id, seatIds).pipe(
       finalize(() => (this.isHolding = false))
     ).subscribe({
       next: (holds) => {

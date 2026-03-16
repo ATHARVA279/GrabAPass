@@ -120,6 +120,41 @@ pub async fn create_event(
     .await
 }
 
+pub async fn create_event_tx(
+    tx: &mut Transaction<'_, Postgres>,
+    organizer_id: Uuid,
+    title: &str,
+    description: Option<&str>,
+    category: &str,
+    venue_name: &str,
+    venue_address: &str,
+    start_time: chrono::DateTime<chrono::Utc>,
+    venue_template_id: Option<Uuid>,
+    seating_mode: Option<SeatingMode>,
+) -> Result<Event, sqlx::Error> {
+    sqlx::query_as::<_, Event>(
+        r#"
+        INSERT INTO events
+            (organizer_id, title, description, category, venue_name, venue_address,
+             start_time, status, venue_template_id, seating_mode)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode)
+        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
+                  start_time, status, created_at, venue_template_id, seating_mode
+        "#,
+    )
+    .bind(organizer_id)
+    .bind(title)
+    .bind(description)
+    .bind(category)
+    .bind(venue_name)
+    .bind(venue_address)
+    .bind(start_time)
+    .bind(venue_template_id)
+    .bind(seating_mode)
+    .fetch_one(&mut **tx)
+    .await
+}
+
 pub async fn update_event(
     pool: &PgPool,
     event_id: Uuid,
@@ -268,7 +303,7 @@ pub async fn get_organizer_dashboard_summary(
         ticket_stats AS (
             SELECT
                 t.event_id,
-                COUNT(*)::bigint AS tickets_sold
+                COUNT(*) FILTER (WHERE t.status <> 'Cancelled')::bigint AS tickets_sold
             FROM tickets t
             GROUP BY t.event_id
         ),
@@ -433,4 +468,84 @@ pub async fn list_assigned_events_for_gate_staff(
     .bind(gate_staff_id)
     .fetch_all(pool)
     .await
+}
+
+pub async fn cancel_event_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    event_id: Uuid,
+    organizer_id: Uuid,
+) -> Result<Option<Event>, sqlx::Error> {
+    let event = sqlx::query_as::<_, Event>(
+        r#"
+        UPDATE events
+        SET status = 'Cancelled'
+        WHERE id = $1
+          AND organizer_id = $2
+          AND status <> 'Cancelled'
+        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
+                  start_time, status, created_at, venue_template_id, seating_mode
+        "#,
+    )
+    .bind(event_id)
+    .bind(organizer_id)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    if event.is_none() {
+        return Ok(None);
+    }
+
+    sqlx::query(
+        r#"
+        DELETE FROM seat_holds
+        WHERE event_id = $1
+        "#,
+    )
+    .bind(event_id)
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE event_seat_inventory
+        SET status = 'Blocked'::seat_status
+        WHERE event_id = $1
+          AND status IN ('Held'::seat_status, 'Sold'::seat_status)
+        "#,
+    )
+    .bind(event_id)
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE tickets
+        SET status = 'Cancelled',
+            used_at = NULL
+        WHERE event_id = $1
+          AND status = 'Valid'
+        "#,
+    )
+    .bind(event_id)
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE orders
+        SET status = CASE
+                WHEN status = 'Completed' THEN 'Refunded'
+                WHEN status = 'Refunded' THEN status
+                ELSE 'Cancelled'
+            END,
+            failure_reason = COALESCE(failure_reason, 'Event cancelled by organizer')
+        WHERE event_id = $1
+          AND status <> 'Refunded'
+        "#,
+    )
+    .bind(event_id)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(event)
 }

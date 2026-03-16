@@ -61,11 +61,11 @@ pub async fn list_venue_sections(
 // ─── POST /api/organizer/events/:id/seat-categories ──────────────────────────
 pub async fn assign_seat_categories(
     State(state): State<AppState>,
-    RequireOrganizer(_claims): RequireOrganizer,
+    RequireOrganizer(claims): RequireOrganizer,
     Path(event_id): Path<Uuid>,
     Json(payload): Json<Vec<AssignSeatCategoryRequest>>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    venue_service::assign_seat_categories(&state, event_id, payload).await?;
+    venue_service::assign_seat_categories(&state, claims.sub, event_id, payload).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

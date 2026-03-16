@@ -21,4 +21,12 @@ impl TicketService {
     ) -> Result<TicketDetail, (StatusCode, String)> {
         TicketRepository::get_ticket_by_id(pool, ticket_id, user_id).await
     }
+
+    pub async fn cancel_ticket(
+        pool: &PgPool,
+        user_id: Uuid,
+        ticket_id: Uuid,
+    ) -> Result<TicketDetail, (StatusCode, String)> {
+        TicketRepository::cancel_ticket(pool, ticket_id, user_id).await
+    }
 }

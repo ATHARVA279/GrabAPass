@@ -144,6 +144,15 @@
             <button mat-icon-button color="accent" title="Edit Event" (click)="editEvent(event.event_id)">
               <mat-icon>edit</mat-icon>
             </button>
+            <button
+              mat-icon-button
+              color="warn"
+              title="Cancel Event"
+              (click)="cancelEvent(event.event_id, event.title)"
+              [disabled]="event.status.toLowerCase() === 'cancelled'"
+            >
+              <mat-icon>event_busy</mat-icon>
+            </button>
             <button mat-icon-button color="warn" title="Delete Event" (click)="deleteEvent(event.event_id, event.title)">
               <mat-icon>delete</mat-icon>
             </button>

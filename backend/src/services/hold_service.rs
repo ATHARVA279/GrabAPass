@@ -36,22 +36,6 @@ impl HoldService {
 
     /// Background task function to release expired holds back to available.
     pub async fn release_expired_holds(pool: &PgPool) -> Result<usize, (StatusCode, String)> {
-        let expired_holds = HoldRepository::fetch_expired_holds(pool).await?;
-        let mut released_count = 0;
-
-        for hold in expired_holds {
-            let mut tx = match pool.begin().await {
-                Ok(tx) => tx,
-                Err(_) => continue, // Log or skip on failure
-            };
-            // Ignore error inside loop so we don't crash the whole sweeping job
-            if let Ok(_) = HoldRepository::remove_hold_and_release_seat_transaction(&mut tx, hold.id, hold.event_id, hold.seat_id).await {
-                if let Ok(_) = tx.commit().await {
-                    released_count += 1;
-                }
-            }
-        }
-
-        Ok(released_count)
+        HoldRepository::release_expired_holds(pool).await
     }
 }

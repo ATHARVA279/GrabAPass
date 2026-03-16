@@ -54,14 +54,6 @@ export class BookingService {
     this.clearPersistedState();
   }
 
-  get hasHeldSeats(): boolean {
-    return !!this.state && this.state.heldSeatIds.length > 0;
-  }
-
-  get hasSelectedSeats(): boolean {
-    return !!this.state && this.state.selectedSeats.length > 0;
-  }
-
   private persistState(): void {
     if (typeof window === 'undefined' || !this.state) return;
 

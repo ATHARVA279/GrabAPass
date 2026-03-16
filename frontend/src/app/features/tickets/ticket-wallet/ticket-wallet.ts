@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { TicketService, TicketDetail } from '../../../core/services/ticket.service';
 import { finalize } from 'rxjs';
+import { getTicketStatusClass } from '../../../shared/utils/ticket-status';
 
 @Component({
   selector: 'app-ticket-wallet',
@@ -41,11 +42,6 @@ export class TicketWallet implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    switch (status.toLowerCase()) {
-      case 'valid': return 'status-valid';
-      case 'used': return 'status-used';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
+    return getTicketStatusClass(status);
   }
 }

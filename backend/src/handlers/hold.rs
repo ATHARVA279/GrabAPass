@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     db::models::{HoldSeatsRequest, SeatHold},
-    middleware::auth::RequireAuth,
+    middleware::auth::RequireCustomer,
     services::hold_service::HoldService,
     services::rate_limit_service::RateLimitService,
 };
@@ -15,7 +15,7 @@ use crate::{
 pub async fn hold_seats(
     State(state): State<crate::AppState>,
     headers: HeaderMap,
-    RequireAuth(claims): RequireAuth,
+    RequireCustomer(claims): RequireCustomer,
     Path(event_id): Path<Uuid>,
     Json(payload): Json<HoldSeatsRequest>,
 ) -> Result<(StatusCode, Json<Vec<SeatHold>>), (StatusCode, String)> {

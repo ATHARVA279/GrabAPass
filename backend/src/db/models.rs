@@ -366,11 +366,6 @@ pub struct OrderItem {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CheckoutRequest {
-    pub seat_ids: Vec<Uuid>,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct InitializeCheckoutRequest {
     pub seat_ids: Vec<Uuid>,
 }
@@ -463,6 +458,7 @@ pub struct TicketDetail {
     pub seats: sqlx::types::Json<Vec<SeatInfo>>,
     pub qr_payload: String,
     pub status: String,
+    pub can_cancel: bool,
     pub created_at: DateTime<Utc>,
     pub used_at: Option<DateTime<Utc>>,
 }

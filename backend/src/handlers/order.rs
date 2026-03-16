@@ -10,7 +10,7 @@ use crate::{
         CheckoutFailureRequest, InitializeCheckoutRequest, InitializeCheckoutResponse, Order,
         VerifyCheckoutRequest,
     },
-    middleware::auth::RequireAuth,
+    middleware::auth::RequireCustomer,
     services::order_service::OrderService,
     services::rate_limit_service::RateLimitService,
 };
@@ -18,7 +18,7 @@ use crate::{
 pub async fn initialize_checkout(
     State(state): State<crate::AppState>,
     headers: HeaderMap,
-    RequireAuth(claims): RequireAuth,
+    RequireCustomer(claims): RequireCustomer,
     Path(event_id): Path<Uuid>,
     Json(payload): Json<InitializeCheckoutRequest>,
 ) -> Result<(StatusCode, Json<InitializeCheckoutResponse>), (StatusCode, String)> {
@@ -39,7 +39,7 @@ pub async fn initialize_checkout(
 pub async fn verify_checkout(
     State(state): State<crate::AppState>,
     headers: HeaderMap,
-    RequireAuth(claims): RequireAuth,
+    RequireCustomer(claims): RequireCustomer,
     Path(event_id): Path<Uuid>,
     Json(payload): Json<VerifyCheckoutRequest>,
 ) -> Result<(StatusCode, Json<Order>), (StatusCode, String)> {
@@ -59,7 +59,7 @@ pub async fn verify_checkout(
 
 pub async fn record_checkout_failure(
     State(state): State<crate::AppState>,
-    RequireAuth(claims): RequireAuth,
+    RequireCustomer(claims): RequireCustomer,
     Path(event_id): Path<Uuid>,
     Json(payload): Json<CheckoutFailureRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
@@ -69,7 +69,7 @@ pub async fn record_checkout_failure(
 
 pub async fn list_orders(
     State(state): State<crate::AppState>,
-    RequireAuth(claims): RequireAuth,
+    RequireCustomer(claims): RequireCustomer,
 ) -> Result<(StatusCode, Json<Vec<Order>>), (StatusCode, String)> {
     let orders = OrderService::get_user_orders(&state, claims.sub).await?;
     

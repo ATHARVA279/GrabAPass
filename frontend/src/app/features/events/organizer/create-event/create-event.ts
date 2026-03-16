@@ -17,7 +17,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 
 import { TimePickerDialog } from '../../../../shared/components/time-picker-dialog/time-picker-dialog';
-import { EventService } from '../../../../core/services/event.service';
+import { OrganizerEventService } from '../../../../core/services/organizer-event.service';
 import { VenueService } from '../../../../core/services/venue.service';
 import { CreateEventRequest, GateStaffSummary } from '../../../../shared/models/event';
 import { AssignSeatCategoryRequest, VenueTemplate } from '../../../../shared/models/venue';
@@ -54,7 +54,7 @@ export class CreateEvent implements OnInit {
   gateStaffUsers: GateStaffSummary[] = [];
 
   private readonly fb = inject(FormBuilder);
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(OrganizerEventService);
   private readonly venueService = inject(VenueService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -202,7 +202,7 @@ export class CreateEvent implements OnInit {
 
   private loadEventForEdit(eventId: string): void {
     this.loadingEvent = true;
-    this.eventService.getEventById(eventId).pipe(
+    this.eventService.getOrganizerEventById(eventId).pipe(
       finalize(() => (this.loadingEvent = false))
     ).subscribe({
       next: (event) => {

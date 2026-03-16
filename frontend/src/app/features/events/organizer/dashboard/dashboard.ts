@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService, User } from '../../../../core/auth/auth';
-import { EventService } from '../../../../core/services/event.service';
+import { OrganizerEventService } from '../../../../core/services/organizer-event.service';
 import { OrganizerDashboardSummaryResponse } from '../../../../shared/models/event';
 
 @Component({
@@ -38,7 +38,7 @@ export class Dashboard implements OnInit {
   private refreshSubscription?: Subscription;
 
   private readonly authService = inject(AuthService);
-  private readonly eventService = inject(EventService);
+  private readonly eventService = inject(OrganizerEventService);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
 
@@ -125,6 +125,24 @@ export class Dashboard implements OnInit {
       },
       error: (err) => {
         const msg = err.error?.message || 'Failed to delete event.';
+        this.toastr.error(msg, 'Error');
+      }
+    });
+  }
+
+  cancelEvent(eventId: string, title: string): void {
+    const confirmed = window.confirm(
+      `Cancel "${title}"? Unused tickets will be invalidated and customer orders will be marked refunded.`
+    );
+    if (!confirmed) return;
+
+    this.eventService.cancelEvent(eventId).subscribe({
+      next: () => {
+        this.toastr.success('Event cancelled successfully.', 'Cancelled');
+        this.loadDashboard();
+      },
+      error: (err) => {
+        const msg = err.error?.message || 'Failed to cancel event.';
         this.toastr.error(msg, 'Error');
       }
     });

@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
 use axum::http::StatusCode;
+use crate::constants::order_status;
 use crate::db::models::Order;
 use crate::repositories::ticket_repository::TicketRepository;
 
@@ -14,6 +15,38 @@ pub struct HeldSeat {
 }
 
 impl OrderRepository {
+    const ORDER_COLUMNS: &'static str = r#"
+        id,
+        user_id,
+        event_id,
+        subtotal_amount,
+        fee_amount,
+        total_amount,
+        currency,
+        status,
+        gateway,
+        gateway_order_id,
+        gateway_payment_id,
+        payment_signature,
+        payment_verified_at,
+        receipt,
+        failure_reason,
+        created_at
+    "#;
+
+    fn order_select_query(where_clause: &str) -> String {
+        format!("SELECT {} FROM orders {}", Self::ORDER_COLUMNS, where_clause)
+    }
+
+    fn order_update_returning_query(set_clause: &str, where_clause: &str) -> String {
+        format!(
+            "UPDATE orders SET {} {} RETURNING {}",
+            set_clause,
+            where_clause,
+            Self::ORDER_COLUMNS
+        )
+    }
+
     pub async fn get_active_held_seats(
         tx: &mut Transaction<'_, Postgres>,
         event_id: Uuid,
@@ -57,7 +90,7 @@ impl OrderRepository {
         total_amount: f64,
         currency: &str,
     ) -> Result<Order, (StatusCode, String)> {
-        sqlx::query_as::<_, Order>(
+        let query = format!(
             r#"
             INSERT INTO orders (
                 user_id,
@@ -68,26 +101,14 @@ impl OrderRepository {
                 currency,
                 status
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'Pending')
-            RETURNING
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
+            VALUES ($1, $2, $3, $4, $5, $6, '{}')
+            RETURNING {}
             "#,
-        )
+            order_status::PENDING,
+            Self::ORDER_COLUMNS,
+        );
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(user_id)
         .bind(event_id)
         .bind(subtotal_amount)
@@ -161,33 +182,12 @@ impl OrderRepository {
         gateway_order_id: &str,
         receipt: &str,
     ) -> Result<Order, (StatusCode, String)> {
-        sqlx::query_as::<_, Order>(
-            r#"
-            UPDATE orders
-            SET gateway = $2,
-                gateway_order_id = $3,
-                receipt = $4,
-                failure_reason = NULL
-            WHERE id = $1
-            RETURNING
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            "#,
-        )
+        let query = Self::order_update_returning_query(
+            "gateway = $2, gateway_order_id = $3, receipt = $4, failure_reason = NULL",
+            "WHERE id = $1",
+        );
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(order_id)
         .bind(gateway)
         .bind(gateway_order_id)
@@ -264,29 +264,9 @@ impl OrderRepository {
         order_id: Uuid,
         user_id: Uuid,
     ) -> Result<Order, (StatusCode, String)> {
-        sqlx::query_as::<_, Order>(
-            r#"
-            SELECT
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            FROM orders
-            WHERE id = $1 AND user_id = $2
-            "#,
-        )
+        let query = Self::order_select_query("WHERE id = $1 AND user_id = $2");
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(order_id)
         .bind(user_id)
         .fetch_one(pool)
@@ -301,29 +281,9 @@ impl OrderRepository {
         pool: &PgPool,
         gateway_order_id: &str,
     ) -> Result<Order, (StatusCode, String)> {
-        sqlx::query_as::<_, Order>(
-            r#"
-            SELECT
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            FROM orders
-            WHERE gateway_order_id = $1
-            "#,
-        )
+        let query = Self::order_select_query("WHERE gateway_order_id = $1");
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(gateway_order_id)
         .fetch_one(pool)
         .await
@@ -337,30 +297,9 @@ impl OrderRepository {
         pool: &PgPool,
         user_id: Uuid,
     ) -> Result<Vec<Order>, (StatusCode, String)> {
-        sqlx::query_as::<_, Order>(
-            r#"
-            SELECT
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            FROM orders
-            WHERE user_id = $1
-            ORDER BY created_at DESC
-            "#,
-        )
+        let query = Self::order_select_query("WHERE user_id = $1 ORDER BY created_at DESC");
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(user_id)
         .fetch_all(pool)
         .await
@@ -376,30 +315,9 @@ impl OrderRepository {
         gateway_payment_id: &str,
         payment_signature: &str,
     ) -> Result<Order, (StatusCode, String)> {
-        let order = sqlx::query_as::<_, Order>(
-            r#"
-            SELECT
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            FROM orders
-            WHERE id = $1 AND user_id = $2 AND event_id = $3
-            FOR UPDATE
-            "#,
-        )
+        let query = Self::order_select_query("WHERE id = $1 AND user_id = $2 AND event_id = $3 FOR UPDATE");
+
+        let order = sqlx::query_as::<_, Order>(&query)
         .bind(order_id)
         .bind(user_id)
         .bind(event_id)
@@ -410,7 +328,7 @@ impl OrderRepository {
             _ => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
         })?;
 
-        if order.status == "Completed" {
+        if order.status == order_status::COMPLETED {
             if order.gateway_payment_id.as_deref() == Some(gateway_payment_id) {
                 return Ok(order);
             }
@@ -418,7 +336,7 @@ impl OrderRepository {
             return Err((StatusCode::CONFLICT, "Order was already paid with a different payment id.".to_string()));
         }
 
-        if order.status != "Pending" && order.status != "Failed" {
+        if order.status != order_status::PENDING && order.status != order_status::FAILED {
             return Err((StatusCode::CONFLICT, format!("Order is not payable in its current state: {}.", order.status)));
         }
 
@@ -508,34 +426,15 @@ impl OrderRepository {
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        sqlx::query_as::<_, Order>(
-            r#"
-            UPDATE orders
-            SET status = 'Completed',
-                gateway_payment_id = $2,
-                payment_signature = $3,
-                payment_verified_at = NOW(),
-                failure_reason = NULL
-            WHERE id = $1
-            RETURNING
-                id,
-                user_id,
-                event_id,
-                subtotal_amount,
-                fee_amount,
-                total_amount,
-                currency,
-                status,
-                gateway,
-                gateway_order_id,
-                gateway_payment_id,
-                payment_signature,
-                payment_verified_at,
-                receipt,
-                failure_reason,
-                created_at
-            "#,
-        )
+        let query = Self::order_update_returning_query(
+            &format!(
+                "status = '{}', gateway_payment_id = $2, payment_signature = $3, payment_verified_at = NOW(), failure_reason = NULL",
+                order_status::COMPLETED
+            ),
+            "WHERE id = $1",
+        );
+
+        sqlx::query_as::<_, Order>(&query)
         .bind(order.id)
         .bind(gateway_payment_id)
         .bind(payment_signature)

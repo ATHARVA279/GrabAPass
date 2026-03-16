@@ -63,57 +63,36 @@ impl HoldRepository {
         Ok(hold)
     }
 
-    pub async fn fetch_expired_holds(
+    pub async fn release_expired_holds(
         pool: &PgPool,
-    ) -> Result<Vec<SeatHold>, (StatusCode, String)> {
-        let now = chrono::Utc::now();
-        let holds = sqlx::query_as!(
-            SeatHold,
+    ) -> Result<usize, (StatusCode, String)> {
+        let released = sqlx::query_scalar::<_, i64>(
             r#"
-            SELECT id, event_id, seat_id, user_id, created_at, expires_at
-            FROM seat_holds
-            WHERE expires_at <= $1
+            WITH expired_holds AS (
+                DELETE FROM seat_holds
+                WHERE expires_at <= NOW()
+                RETURNING event_id, seat_id
+            ),
+            released_inventory AS (
+                UPDATE event_seat_inventory esi
+                SET status = 'Available'::seat_status
+                WHERE esi.status = 'Held'::seat_status
+                  AND EXISTS (
+                      SELECT 1
+                      FROM expired_holds eh
+                      WHERE eh.event_id = esi.event_id
+                        AND eh.seat_id = esi.seat_id
+                  )
+                RETURNING esi.id
+            )
+            SELECT COUNT(*)::bigint
+            FROM released_inventory
             "#,
-            now
         )
-        .fetch_all(pool)
+        .fetch_one(pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        Ok(holds)
-    }
-
-    pub async fn remove_hold_and_release_seat_transaction(
-        tx: &mut Transaction<'_, Postgres>,
-        hold_id: Uuid,
-        event_id: Uuid,
-        seat_id: Uuid,
-    ) -> Result<(), (StatusCode, String)> {
-        // Delete the hold
-        sqlx::query!(
-            r#"
-            DELETE FROM seat_holds WHERE id = $1
-            "#,
-            hold_id
-        )
-        .execute(&mut **tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        // Return seat back to Available
-        sqlx::query!(
-            r#"
-            UPDATE event_seat_inventory
-            SET status = 'Available'::seat_status
-            WHERE event_id = $1 AND seat_id = $2 AND status = 'Held'::seat_status
-            "#,
-            event_id,
-            seat_id
-        )
-        .execute(&mut **tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-        Ok(())
+        Ok(released as usize)
     }
 }
