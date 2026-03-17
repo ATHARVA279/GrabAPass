@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 
 import { MatCardModule } from '@angular/material/card';
@@ -34,17 +34,18 @@ export class Login {
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly toastr = inject(ToastrService);
 
   onSubmit() {
     this.authService.login({ email: this.email, password: this.password }).subscribe({
-      next: (res) => {
-        if (res.user.role === UserRole.Organizer) {
-          this.router.navigate(['/organizer']);
-        } else if (res.user.role === UserRole.GateStaff) {
-          this.router.navigate(['/gate']);
-        } else {
-          this.router.navigate(['/events']);
+      next: async (res) => {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const targetUrl = returnUrl || this.authService.getDefaultRouteForRole(res.user.role);
+        const navigated = await this.router.navigateByUrl(targetUrl);
+
+        if (!navigated) {
+          this.toastr.error('Login succeeded, but navigation failed.', 'Navigation Error');
         }
       },
       error: (err) => {

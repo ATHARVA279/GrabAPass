@@ -79,6 +79,11 @@ async fn main() {
         .await
         .expect("Failed to create Postgres connection pool!");
 
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Failed to run database migrations");
+
     let state = AppState {
         pool,
         jwt_secret,
