@@ -64,6 +64,18 @@ export class AuthService {
     return localStorage.getItem('jwt_token');
   }
 
+  getDefaultRouteForRole(role: UserRole): string {
+    switch (role) {
+      case UserRole.Organizer:
+        return '/organizer';
+      case UserRole.GateStaff:
+        return '/gate';
+      case UserRole.Customer:
+      default:
+        return '/events';
+    }
+  }
+
   private setSession(authResult: AuthResponse) {
     localStorage.setItem('jwt_token', authResult.token);
     this.currentUserSubject.next(authResult.user);

@@ -59,13 +59,12 @@ export class Register {
     }
 
     this.authService.register(payload).subscribe({
-      next: (res) => {
-        if (res.user.role === UserRole.Organizer) {
-          this.router.navigate(['/organizer']);
-        } else if (res.user.role === UserRole.GateStaff) {
-          this.router.navigate(['/gate']);
-        } else {
-          this.router.navigate(['/events']);
+      next: async (res) => {
+        const targetUrl = this.authService.getDefaultRouteForRole(res.user.role);
+        const navigated = await this.router.navigateByUrl(targetUrl);
+
+        if (!navigated) {
+          this.toastr.error('Registration succeeded, but navigation failed.', 'Navigation Error');
         }
       },
       error: (err) => {
