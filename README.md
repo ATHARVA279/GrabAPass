@@ -409,6 +409,39 @@ The backend already binds to:
 
 That is correct for both local access and Docker containers.
 
+## Deploying Backend To Render
+
+Deploy the Rust API as a Render web service directly from the [backend](/Users/Atharva/Desktop/GrabAPass/backend) directory.
+
+### Render service settings
+
+- Root Directory: `backend`
+- Environment: `Rust`
+- Build Command: `cargo build --release --locked`
+- Start Command: `./target/release/backend`
+
+### Render environment variables
+
+Set these in the Render dashboard:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `FRONTEND_URL`
+- `RAZORPAY_KEY_ID` if you need payments enabled
+- `RAZORPAY_KEY_SECRET` if you need payments enabled
+- `RAZORPAY_WEBHOOK_SECRET` if you need webhook verification
+- `RAZORPAY_CHECKOUT_NAME` optional, defaults to `GrabAPass`
+
+Do not upload `backend/.env` to Render. The backend calls `dotenvy::dotenv().ok()`, so local `backend/.env` is loaded when present, and hosted environments simply continue with the variables already provided by Render.
+
+### Render port behavior
+
+The backend reads `PORT` from the environment and falls back to `3000` locally. Render automatically provides `PORT`, and the server listens on `0.0.0.0:$PORT`, which is the expected binding for Render.
+
+### SQLx and Render builds
+
+This repo no longer forces `SQLX_OFFLINE=true` during every Cargo build. That avoids Render build failures caused by stale offline query metadata while keeping normal local `cargo run` and `cargo check` behavior intact.
+
 ### Database migrations
 
 SQLx migrations run automatically during backend startup.

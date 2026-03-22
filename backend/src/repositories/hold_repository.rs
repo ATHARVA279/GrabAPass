@@ -15,7 +15,7 @@ impl HoldRepository {
     ) -> Result<SeatHold, (StatusCode, String)> {
         // 1. Check if the seat is Available and mark it as Held
         // 1. Check if the seat is Available OR if it's Held but expired. Mark it as Held.
-        let result = sqlx::query!(
+        let result = sqlx::query_scalar::<_, Uuid>(
             r#"
             UPDATE event_seat_inventory esi
             SET status = 'Held'::seat_status
@@ -30,9 +30,9 @@ impl HoldRepository {
               )
             RETURNING esi.id
             "#,
-            event_id,
-            seat_id
         )
+        .bind(event_id)
+        .bind(seat_id)
         .fetch_optional(&mut **tx)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -42,8 +42,7 @@ impl HoldRepository {
         }
 
         // 2. Insert or Update the hold
-        let hold = sqlx::query_as!(
-            SeatHold,
+        let hold = sqlx::query_as::<_, SeatHold>(
             r#"
             INSERT INTO seat_holds (event_id, seat_id, user_id, expires_at)
             VALUES ($1, $2, $3, $4)
@@ -51,11 +50,11 @@ impl HoldRepository {
             DO UPDATE SET user_id = EXCLUDED.user_id, expires_at = EXCLUDED.expires_at, created_at = NOW()
             RETURNING id, event_id, seat_id, user_id, created_at, expires_at
             "#,
-            event_id,
-            seat_id,
-            user_id,
-            expires_at
         )
+        .bind(event_id)
+        .bind(seat_id)
+        .bind(user_id)
+        .bind(expires_at)
         .fetch_one(&mut **tx)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
