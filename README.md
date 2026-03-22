@@ -295,6 +295,29 @@ This means the frontend code can use relative API paths like:
 
 and still work locally.
 
+### Frontend API base URL behavior
+
+The frontend uses Angular environment files to decide where API requests go.
+
+- local development uses [frontend/src/environments/environment.ts](/Users/Atharva/Desktop/GrabAPass/frontend/src/environments/environment.ts)
+- in local development, `apiBaseUrl` is empty, so requests stay relative and keep using [frontend/proxy.conf.json](/Users/Atharva/Desktop/GrabAPass/frontend/proxy.conf.json)
+- production builds use [frontend/src/environments/environment.prod.ts](/Users/Atharva/Desktop/GrabAPass/frontend/src/environments/environment.prod.ts)
+
+Current production API base:
+
+```text
+https://grabapass.onrender.com
+```
+
+That means the deployed frontend calls endpoints like:
+
+```text
+https://grabapass.onrender.com/api/events
+https://grabapass.onrender.com/api/auth/login
+```
+
+If the backend URL changes later, update [frontend/src/environments/environment.prod.ts](/Users/Atharva/Desktop/GrabAPass/frontend/src/environments/environment.prod.ts).
+
 ## Running the project with Docker
 
 Docker runs the full stack together:
@@ -429,6 +452,45 @@ FRONTEND_URL=http://localhost:4200
 ```
 
 In Docker, the browser usually talks to the frontend container at `http://localhost:4200`, and Nginx forwards API traffic internally, so this setup remains compatible.
+
+## Deploying Backend To Render
+
+Deploy the Rust API as a Render web service directly from the [backend](/Users/Atharva/Desktop/GrabAPass/backend) directory.
+
+### Render service settings
+
+- Root Directory: `backend`
+- Environment: `Rust`
+- Build Command: `cargo build --release --locked`
+- Start Command: `./target/release/backend`
+
+### Render backend environment variables
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `FRONTEND_URL`
+- `RAZORPAY_KEY_ID` if payments are enabled
+- `RAZORPAY_KEY_SECRET` if payments are enabled
+- `RAZORPAY_WEBHOOK_SECRET` if webhook verification is enabled
+- `RAZORPAY_CHECKOUT_NAME` optional, defaults to `GrabAPass`
+
+Render injects `PORT` automatically. Locally, the backend falls back to `3000`.
+
+### Frontend and backend pairing
+
+Your current deployed backend base URL is:
+
+```text
+https://grabapass.onrender.com
+```
+
+Set backend `FRONTEND_URL` to the frontend site origin, not to the backend URL.
+
+Example:
+
+```env
+FRONTEND_URL=https://your-frontend-site.com
+```
 
 ## Common commands
 

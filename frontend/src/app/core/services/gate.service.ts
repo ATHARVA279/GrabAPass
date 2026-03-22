@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TicketDetail } from './ticket.service';
 import { Event } from '../../shared/models/event';
+import { apiUrl } from '../api/api-url';
 
 export interface ScanResultResponse {
   success: boolean;
@@ -23,7 +24,7 @@ export interface ScanLog {
 @Injectable({ providedIn: 'root' })
 export class GateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/gate';
+  private readonly apiUrl = apiUrl('/api/gate');
 
   validateTicket(qrPayload: string, eventId: string): Observable<ScanResultResponse> {
     return this.http.post<ScanResultResponse>(`${this.apiUrl}/validate`, {

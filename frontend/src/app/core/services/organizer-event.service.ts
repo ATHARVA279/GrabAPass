@@ -8,13 +8,14 @@ import {
   GateStaffSummary,
   OrganizerDashboardSummaryResponse,
 } from '../../shared/models/event';
+import { apiUrl } from '../api/api-url';
 
 @Injectable({
   providedIn: 'root'
 })
 export class OrganizerEventService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/organizer/events';
+  private readonly apiUrl = apiUrl('/api/organizer/events');
 
   getOrganizerEvents(): Observable<Event[]> {
     return this.http.get<Event[]>(this.apiUrl);

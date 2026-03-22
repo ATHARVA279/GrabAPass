@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 
 export interface Order {
   id: string;
@@ -26,7 +27,7 @@ export interface Order {
 })
 export class OrderService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/orders';
+  private readonly apiUrl = apiUrl('/api/orders');
 
   getUserOrders(): Observable<Order[]> {
     return this.http.get<Order[]>(this.apiUrl);

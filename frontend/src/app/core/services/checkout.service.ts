@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Order } from './order.service';
+import { apiUrl } from '../api/api-url';
 
 export interface CheckoutInitialization {
   order: Order;
@@ -36,7 +37,7 @@ export interface CheckoutFailurePayload {
 })
 export class CheckoutService {
   private readonly http = inject(HttpClient);
-  private readonly publicApiUrl = '/api/events';
+  private readonly publicApiUrl = apiUrl('/api/events');
 
   holdSeats(eventId: string, seatIds: string[]): Observable<any[]> {
     return this.http.post<any[]>(`${this.publicApiUrl}/${eventId}/holds`, { seat_ids: seatIds });
