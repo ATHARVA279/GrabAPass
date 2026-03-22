@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 
 export interface TicketDetail {
   id: string;
@@ -22,7 +23,7 @@ export interface TicketDetail {
 })
 export class TicketService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/tickets';
+  private readonly apiUrl = apiUrl('/api/tickets');
 
   getUserTickets(): Observable<TicketDetail[]> {
     return this.http.get<TicketDetail[]>(this.apiUrl);

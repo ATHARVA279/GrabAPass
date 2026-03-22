@@ -3,13 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Event } from '../../shared/models/event';
+import { apiUrl } from '../api/api-url';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PublicEventService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/events';
+  private readonly apiUrl = apiUrl('/api/events');
 
   getPublishedEvents(category?: string, search?: string): Observable<Event[]> {
     let params = new HttpParams();

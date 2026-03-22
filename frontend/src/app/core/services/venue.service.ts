@@ -8,13 +8,14 @@ import {
   SeatLayoutResponse,
   VenueTemplate,
 } from '../../shared/models/venue';
+import { apiUrl } from '../api/api-url';
 
 @Injectable({ providedIn: 'root' })
 export class VenueService {
   private readonly http = inject(HttpClient);
-  private readonly venueApiUrl    = '/api/organizer/venues';
-  private readonly eventApiUrl    = '/api/events';
-  private readonly orgEventApiUrl = '/api/organizer/events';
+  private readonly venueApiUrl = apiUrl('/api/organizer/venues');
+  private readonly eventApiUrl = apiUrl('/api/events');
+  private readonly orgEventApiUrl = apiUrl('/api/organizer/events');
 
   // ── Venue templates ────────────────────────────────────────────────────────
 
