@@ -21,7 +21,7 @@
         <div class="camera-wrapper">
           <ngx-scanner-qrcode 
             #action="scanner"
-            [config]="{ isBeep: true }"
+            [config]="scannerConfig"
             (event)="onScan($event)"
           ></ngx-scanner-qrcode>
 

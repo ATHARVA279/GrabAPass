@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NgxScannerQrcodeComponent } from 'ngx-scanner-qrcode';
+import { NgxScannerQrcodeComponent, ScannerQRCodeConfig } from 'ngx-scanner-qrcode';
 import { ToastrService } from 'ngx-toastr';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +30,18 @@ import { Event } from '../../../shared/models/event';
 })
 export class GateScan implements OnInit {
   @ViewChild('action') scanner!: NgxScannerQrcodeComponent;
+
+  readonly scannerConfig: ScannerQRCodeConfig = {
+    isBeep: true,
+    constraints: {
+      audio: false,
+      video: {
+        facingMode: {
+          ideal: 'environment',
+        },
+      },
+    },
+  };
 
   events: Event[] = [];
   selectedEventId: string | null = null;
