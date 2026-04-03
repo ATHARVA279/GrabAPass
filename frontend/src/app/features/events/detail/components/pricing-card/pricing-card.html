@@ -1,0 +1,67 @@
+<section class="pricing-card">
+  <div class="pricing-head">
+    <div>
+      <span class="label">Price</span>
+      <div class="amount-row">
+        <strong *ngIf="pricing.min_price != null">₹{{ pricing.min_price | number: '1.0-0' }}</strong>
+        <span *ngIf="pricing.min_price !== pricing.max_price && pricing.max_price != null">
+          to ₹{{ pricing.max_price | number: '1.0-0' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="availability-pill" [class.warn]="availability.status !== 'Available'">
+      {{ availability.status }}
+    </div>
+  </div>
+
+  <div class="availability-copy">
+    <span>{{ availability.available }} available</span>
+    <span *ngIf="availability.total > 0">{{ availability.total }} total capacity</span>
+  </div>
+
+  <button
+    *ngIf="pricing.has_reserved_seating"
+    mat-flat-button
+    color="primary"
+    type="button"
+    class="cta-btn"
+    (click)="selectSeats.emit()"
+  >
+    <mat-icon>chair</mat-icon>
+    {{ isLoggedIn ? 'Select Seats' : 'Login to Select Seats' }}
+  </button>
+
+  <div class="ga-block" *ngIf="hasTierSelection">
+    <div class="ga-header">
+      <div>
+        <span class="label">General Admission</span>
+        <h4>Choose ticket quantities</h4>
+      </div>
+      <span>{{ pricing.tiers.length }} tier{{ pricing.tiers.length === 1 ? '' : 's' }}</span>
+    </div>
+
+    <app-ticket-quantity-selector
+      [tiers]="pricing.tiers"
+      [disabled]="isHoldingTiers"
+      (selectionChange)="selectionChanged.emit($event)"
+    />
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      class="cta-btn"
+      [disabled]="gaSelectionCount === 0 || isHoldingTiers"
+      (click)="holdTickets.emit()"
+    >
+      <mat-icon>confirmation_number</mat-icon>
+      {{ isHoldingTiers ? 'Holding Tickets...' : (isLoggedIn ? 'Hold GA Tickets' : 'Login to Hold GA Tickets') }}
+    </button>
+  </div>
+
+  <p class="hold-note">
+    <mat-icon>schedule</mat-icon>
+    Tickets held for 10 mins
+  </p>
+</section>

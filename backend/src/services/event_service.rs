@@ -6,10 +6,12 @@ use uuid::Uuid;
 use crate::{
     AppState,
     db::models::{
-        AssignGateStaffRequest, CreateEventRequest, Event, EventStatus, EventTicketTier,
-        EventVenueInput, GateStaffSummary, OrganizerDashboardSummaryResponse, PublicEvent,
+        AssignGateStaffRequest, CreateEventRequest, Event, EventAvailabilityResponse,
+        EventDetailsResponse, EventImagesResponse, EventPricingResponse, EventStatus,
+        EventTicketTier, EventVenueInput, GateStaffSummary, OrganizerDashboardSummaryResponse,
+        PublicEvent,
     },
-    repositories::{auth_repository, event_repository},
+    repositories::{auth_repository, event_repository, event_venue_repository},
     services::event_venue_service,
     services::suspicious_activity_service::SuspiciousActivityService,
     services::venue_service,
@@ -36,6 +38,58 @@ pub async fn get_event(state: &AppState, id: Uuid) -> Result<Event, (StatusCode,
     }
 
     Ok(event)
+}
+
+pub async fn get_event_details(
+    state: &AppState,
+    id: Uuid,
+) -> Result<EventDetailsResponse, (StatusCode, String)> {
+    let event = get_event(state, id).await?;
+    let venue = match event.venue_id {
+        Some(venue_id) => event_venue_repository::find_event_venue_by_id(&state.pool, venue_id)
+            .await
+            .map_err(internal_error)?,
+        None => None,
+    };
+    let tiers = event_repository::list_event_ticket_tiers(&state.pool, id)
+        .await
+        .map_err(internal_error)?;
+    let pricing = event_repository::get_event_price_summary(&state.pool, id)
+        .await
+        .map_err(internal_error)?;
+    let availability = event_repository::get_event_availability_summary(&state.pool, id)
+        .await
+        .map_err(internal_error)?;
+    let all_images = event.image_gallery.0.clone();
+    let hero = all_images.first().cloned().or_else(|| event.image_url.clone());
+    let gallery = if all_images.len() > 1 {
+        all_images[1..].to_vec()
+    } else {
+        Vec::new()
+    };
+
+    let has_reserved_seating = event.venue_template_id.is_some();
+
+    Ok(EventDetailsResponse {
+        event,
+        venue,
+        images: EventImagesResponse { hero, gallery },
+        pricing: EventPricingResponse {
+            min_price: pricing.min_price,
+            max_price: pricing.max_price,
+            currency: "INR".to_string(),
+            tiers,
+            has_reserved_seating,
+        },
+        availability: EventAvailabilityResponse {
+            total: availability.total,
+            sold: availability.sold,
+            held: availability.held,
+            available: availability.available,
+            sold_percentage: availability.sold_percentage,
+            status: availability.status,
+        },
+    })
 }
 
 pub async fn get_organizer_event(

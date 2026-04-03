@@ -7,6 +7,22 @@ use crate::db::models::{
     OrganizerDashboardSummaryResponse, OrganizerEventDashboardSummary, PublicEvent, SeatingMode,
 };
 
+#[derive(Debug)]
+pub struct EventPriceSummary {
+    pub min_price: Option<f64>,
+    pub max_price: Option<f64>,
+}
+
+#[derive(Debug)]
+pub struct EventAvailabilitySummary {
+    pub total: i64,
+    pub sold: i64,
+    pub held: i64,
+    pub available: i64,
+    pub sold_percentage: f64,
+    pub status: String,
+}
+
 pub async fn list_published_events(
     pool: &PgPool,
     category: Option<&str>,
@@ -89,8 +105,38 @@ pub async fn list_event_ticket_tiers(
         "#,
     )
     .bind(event_id)
-    .fetch_all(pool)
-    .await
+        .fetch_all(pool)
+        .await
+}
+
+pub async fn get_event_price_summary(
+    pool: &PgPool,
+    event_id: Uuid,
+) -> Result<EventPriceSummary, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            MIN(price)::float8 AS min_price,
+            MAX(price)::float8 AS max_price
+        FROM (
+            SELECT esc.price
+            FROM event_seat_categories esc
+            WHERE esc.event_id = $1
+            UNION ALL
+            SELECT ett.price
+            FROM event_ticket_tiers ett
+            WHERE ett.event_id = $1
+        ) event_prices
+        "#,
+    )
+    .bind(event_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(EventPriceSummary {
+        min_price: row.try_get("min_price")?,
+        max_price: row.try_get("max_price")?,
+    })
 }
 
 pub async fn replace_event_ticket_tiers(
@@ -846,6 +892,47 @@ pub async fn get_event_pulse(
     pool: &PgPool,
     event_id: Uuid,
 ) -> Result<crate::db::models::EventPulseResponse, sqlx::Error> {
+    let availability = get_event_availability_summary(pool, event_id).await?;
+
+    let recently_sold = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM tickets
+        WHERE event_id = $1 AND created_at > NOW() - INTERVAL '1 day'
+        "#,
+    )
+    .bind(event_id)
+    .fetch_one(pool)
+    .await?;
+
+    // Calculate viewers based on real activity (holds + recent sales)
+    let real_activity = availability.held + recently_sold;
+
+    // We know at least 1 person is viewing because this endpoint was just called!
+    let active_viewers = std::cmp::max(1, real_activity);
+
+    // Simplified section pulse for MVP: just general status
+    let mut sections = Vec::new();
+    if availability.total > 0 {
+        sections.push(crate::db::models::SectionPulse {
+            section_name: "General".to_string(),
+            status: availability.status.clone(),
+        });
+    }
+
+    Ok(crate::db::models::EventPulseResponse {
+        active_viewers,
+        recently_sold,
+        total_capacity: availability.total,
+        sold_percentage: availability.sold_percentage,
+        sections,
+    })
+}
+
+pub async fn get_event_availability_summary(
+    pool: &PgPool,
+    event_id: Uuid,
+) -> Result<EventAvailabilitySummary, sqlx::Error> {
     let inventory_stats = sqlx::query(
         r#"
         WITH reserved AS (
@@ -886,17 +973,6 @@ pub async fn get_event_pulse(
     .fetch_one(pool)
     .await?;
 
-    let recently_sold = sqlx::query_scalar::<_, i64>(
-        r#"
-        SELECT COUNT(*)
-        FROM tickets
-        WHERE event_id = $1 AND created_at > NOW() - INTERVAL '1 day'
-        "#,
-    )
-    .bind(event_id)
-    .fetch_one(pool)
-    .await?;
-
     let total = inventory_stats
         .try_get::<Option<i64>, _>("total_count")?
         .unwrap_or(0);
@@ -912,34 +988,20 @@ pub async fn get_event_pulse(
     } else {
         0.0
     };
+    let status = if total == 0 || total <= sold {
+        "Sold Out"
+    } else if sold_percentage > 80.0 {
+        "Fast Filling"
+    } else {
+        "Available"
+    };
 
-    // Calculate viewers based on real activity (holds + recent sales)
-    let real_activity = held + recently_sold;
-
-    // We know at least 1 person is viewing because this endpoint was just called!
-    let active_viewers = std::cmp::max(1, real_activity);
-
-    // Simplified section pulse for MVP: just general status
-    let mut sections = Vec::new();
-    if total > 0 {
-        let status = if sold_percentage > 95.0 {
-            "Sold Out"
-        } else if sold_percentage > 80.0 {
-            "Fast Filling"
-        } else {
-            "Available"
-        };
-        sections.push(crate::db::models::SectionPulse {
-            section_name: "General".to_string(),
-            status: status.to_string(),
-        });
-    }
-
-    Ok(crate::db::models::EventPulseResponse {
-        active_viewers,
-        recently_sold,
-        total_capacity: total,
+    Ok(EventAvailabilitySummary {
+        total,
+        sold,
+        held,
+        available: (total - sold - held).max(0),
         sold_percentage,
-        sections,
+        status: status.to_string(),
     })
 }

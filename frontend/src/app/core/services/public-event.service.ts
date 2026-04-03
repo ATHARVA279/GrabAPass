@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { Event, EventTicketTier } from '../../shared/models/event';
+import { Event, EventDetailsResponse, EventTicketTier } from '../../shared/models/event';
 import { apiUrl } from '../api/api-url';
 
 @Injectable({
@@ -28,6 +28,10 @@ export class PublicEventService {
 
   getEventById(id: string): Observable<Event> {
     return this.http.get<Event>(`${this.apiUrl}/${id}`);
+  }
+
+  getEventDetails(id: string): Observable<EventDetailsResponse> {
+    return this.http.get<EventDetailsResponse>(`${this.apiUrl}/${id}/details`);
   }
 
   getEventPulse(id: string): Observable<import('../../shared/models/event').EventPulseResponse> {

@@ -1,0 +1,41 @@
+<section class="location-card">
+  <div class="location-copy">
+    <span class="eyebrow">Location</span>
+    <h3>{{ venue?.name || venueName }}</h3>
+    <p>{{ venue?.address || address }}</p>
+
+    <div class="meta" *ngIf="venue">
+      <span *ngIf="venue.locality">{{ venue.locality }}</span>
+      <span *ngIf="venue.city">{{ venue.city }}</span>
+      <span *ngIf="venue.landmark">{{ venue.landmark }}</span>
+    </div>
+
+    <a
+      *ngIf="mapsUrl"
+      mat-stroked-button
+      class="maps-link"
+      [href]="mapsUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <mat-icon>map</mat-icon>
+      View on Maps
+    </a>
+  </div>
+
+  <div class="location-map" *ngIf="mapPreviewUrl; else mapFallback">
+    <iframe
+      [src]="mapPreviewUrl"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Venue map"
+    ></iframe>
+  </div>
+
+  <ng-template #mapFallback>
+    <div class="location-map fallback">
+      <mat-icon>place</mat-icon>
+      <span>Map preview will appear when coordinates are available.</span>
+    </div>
+  </ng-template>
+</section>

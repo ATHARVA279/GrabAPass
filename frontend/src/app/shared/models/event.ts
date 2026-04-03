@@ -132,3 +132,33 @@ export interface EventPulseResponse {
   sold_percentage: number;
   sections: SectionPulse[];
 }
+
+export interface EventDetailsResponse {
+  event: Event;
+  venue: EventVenue | null;
+  images: EventImages;
+  pricing: EventPricing;
+  availability: EventAvailability;
+}
+
+export interface EventImages {
+  hero: string | null;
+  gallery: string[];
+}
+
+export interface EventPricing {
+  min_price: number | null;
+  max_price: number | null;
+  currency: string;
+  tiers: EventTicketTier[];
+  has_reserved_seating: boolean;
+}
+
+export interface EventAvailability {
+  total: number;
+  sold: number;
+  held: number;
+  available: number;
+  sold_percentage: number;
+  status: string;
+}

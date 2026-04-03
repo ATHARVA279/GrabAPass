@@ -50,6 +50,14 @@ pub async fn get_event(
     Ok(Json(event))
 }
 
+pub async fn get_event_details(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::db::models::EventDetailsResponse>, (StatusCode, String)> {
+    let details = event_service::get_event_details(&state, id).await?;
+    Ok(Json(details))
+}
+
 pub async fn create_event(
     State(state): State<AppState>,
     RequireOrganizer(claims): RequireOrganizer,

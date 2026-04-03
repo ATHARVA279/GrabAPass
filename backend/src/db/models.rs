@@ -208,6 +208,40 @@ pub struct SectionPulse {
     pub status: String,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct EventDetailsResponse {
+    pub event: Event,
+    pub venue: Option<EventVenue>,
+    pub images: EventImagesResponse,
+    pub pricing: EventPricingResponse,
+    pub availability: EventAvailabilityResponse,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EventImagesResponse {
+    pub hero: Option<String>,
+    pub gallery: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EventPricingResponse {
+    pub min_price: Option<f64>,
+    pub max_price: Option<f64>,
+    pub currency: String,
+    pub tiers: Vec<EventTicketTier>,
+    pub has_reserved_seating: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EventAvailabilityResponse {
+    pub total: i64,
+    pub sold: i64,
+    pub held: i64,
+    pub available: i64,
+    pub sold_percentage: f64,
+    pub status: String,
+}
+
 // ─── Event request DTOs ──────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
