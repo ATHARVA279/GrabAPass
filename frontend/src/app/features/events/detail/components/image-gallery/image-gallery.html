@@ -1,0 +1,11 @@
+<section class="image-gallery" *ngIf="images.length > 1">
+  <button
+    type="button"
+    class="thumb"
+    *ngFor="let image of images; trackBy: trackImage"
+    (click)="imageExpanded.emit(image)"
+  >
+    <img [src]="image" [alt]="title" loading="lazy" decoding="async" />
+    <span class="expand-hint">View</span>
+  </button>
+</section>

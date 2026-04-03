@@ -1,187 +1,78 @@
-<div class="detail-container">
-
-  <button mat-button class="back-btn" (click)="goBack()">
+<div class="event-detail-page">
+  <button mat-button class="back-btn" type="button" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
     Back to Events
   </button>
 
-  <div *ngIf="loading" class="loading-state">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Loading event details...</p>
-  </div>
+  <ng-container *ngIf="loading; else detailContent">
+    <section class="skeleton-shell">
+      <div class="skeleton hero-skeleton"></div>
 
-  <div *ngIf="event" class="event-content">
-    
-    <!-- Hero -->
-    <div class="event-hero">
-      <img *ngIf="heroImage" [src]="heroImage" alt="{{ event.title }}" class="hero-image">
-      <div class="hero-overlay"></div>
-      
-      <button mat-icon-button class="share-btn-overlay" (click)="shareEvent()" title="Share Event">
-        <mat-icon>share</mat-icon>
-      </button>
-      <div class="hero-content">
-        <mat-chip-listbox>
-          <mat-chip>{{ event.category }}</mat-chip>
-          <mat-chip *ngIf="event.status !== 'Published'" color="warn" [highlighted]="true">{{ event.status }} Event</mat-chip>
-          <mat-chip *ngIf="event.seating_mode" class="seating-chip">{{ event.seating_mode }}</mat-chip>
-        </mat-chip-listbox>
-        <h1>{{ event.title }}</h1>
-      </div>
-    </div>
+      <div class="detail-grid">
+        <div class="main-column">
+          <div class="skeleton card-skeleton tall"></div>
+          <div class="skeleton card-skeleton"></div>
+          <div class="skeleton card-skeleton"></div>
+        </div>
 
-    <div class="gallery-strip" *ngIf="eventGallery.length > 1">
-      <button
-        type="button"
-        class="gallery-thumb"
-        *ngFor="let image of eventGallery"
-        [class.active]="image === heroImage"
-        (click)="selectGalleryImage(image)">
-        <img [src]="image" [alt]="event.title + ' gallery image'">
-      </button>
-    </div>
-
-    <div class="event-grid">
-      <div class="main-column">
-        <mat-card class="description-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>info</mat-icon>
-            <mat-card-title>About this event</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <p class="description">{{ event.description || 'No description provided by the organizer.' }}</p>
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Highlights -->
-        <div class="highlights-grid">
-          <div class="highlight-item">
-            <mat-icon>verified</mat-icon>
-            <div>
-              <strong>Verified Event</strong>
-              <span>Organized by a verified host</span>
-            </div>
-          </div>
-          <div class="highlight-item">
-            <mat-icon>flash_on</mat-icon>
-            <div>
-              <strong>Instant Confirmation</strong>
-              <span>Get your tickets immediately</span>
-            </div>
-          </div>
-          <div class="highlight-item">
-            <mat-icon>security</mat-icon>
-            <div>
-              <strong>Secure Booking</strong>
-              <span>Safe and encrypted checkout</span>
-            </div>
-          </div>
+        <div class="sidebar-column">
+          <div class="skeleton card-skeleton"></div>
+          <div class="skeleton card-skeleton"></div>
+          <div class="skeleton card-skeleton tall"></div>
         </div>
       </div>
+    </section>
+  </ng-container>
 
-      <div class="sidebar">
-        
-        <mat-card class="pulse-card" *ngIf="pulseData">
-          <mat-card-header>
-            <mat-icon mat-card-avatar color="accent">whatshot</mat-icon>
-            <mat-card-title>Crowd Pulse</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="pulse-stats">
-              <div class="stat-box">
-                <span class="stat-val">{{ pulseData.active_viewers }}</span>
-                <span class="stat-lbl">Viewing right now</span>
-              </div>
-              <div class="stat-box" *ngIf="pulseData.recently_sold > 0">
-                <span class="stat-val">{{ pulseData.recently_sold }}</span>
-                <span class="stat-lbl">Tickets booked recently</span>
-              </div>
-            </div>
-            <div class="pulse-tags" *ngIf="pulseData.sections.length > 0">
-              <mat-chip-listbox>
-                <mat-chip *ngFor="let s of pulseData.sections"
-                          [ngClass]="s.status.toLowerCase().replace(' ', '-')">
-                  <span class="pulse-dot"></span>
-                  {{ s.status }}
-                </mat-chip>
-              </mat-chip-listbox>
-            </div>
-          </mat-card-content>
-        </mat-card>
+  <ng-template #detailContent>
+    <div class="detail-content" *ngIf="event && pricing && availability">
+      <app-event-hero
+        [event]="event"
+        [imageUrl]="heroImage"
+        (share)="shareEvent()"
+        (expandImage)="openImageViewer(heroImage)"
+      />
 
-        <mat-card class="info-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar color="primary">event</mat-icon>
-            <mat-card-title>Date & Time</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <p><strong>{{ event.start_time | date:'fullDate' }}</strong></p>
-            <p>{{ event.start_time | date:'shortTime' }}</p>
-          </mat-card-content>
-        </mat-card>
+      <div class="detail-grid">
+        <div class="main-column">
+          <app-event-info-section
+            [description]="event.description"
+            [gallery]="galleryImages"
+            (imageExpanded)="openImageViewer($event)"
+          />
+        </div>
 
-        <mat-card class="info-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar color="primary">place</mat-icon>
-            <mat-card-title>Location</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            <p><strong>{{ event.venue_name }}</strong></p>
-            <p>{{ event.venue_address }}</p>
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Booking CTA Card -->
-        <mat-card class="booking-card">
-          <mat-card-content>
-            <div *ngIf="priceRange" class="price-display">
-              <span class="price-label">Starting from</span>
-              <span class="price-value">₹{{ priceRange.min | number:'1.0-0' }}</span>
-              <span *ngIf="priceRange.min !== priceRange.max" class="price-range">
-                — ₹{{ priceRange.max | number:'1.0-0' }}
-              </span>
-            </div>
-            <button mat-flat-button color="primary" class="buy-btn"
-                    *ngIf="event.venue_template_id"
-                    (click)="goToSelectSeats()">
-              <mat-icon>chair</mat-icon>
-              {{ isLoggedIn ? 'Select Seats' : 'Login to Select Seats' }}
-            </button>
-
-            <div class="ga-selector-block" *ngIf="ticketTiers.length > 0">
-              <div class="ga-header">
-                <h4>General Admission</h4>
-                <span>{{ ticketTiers.length }} tier{{ ticketTiers.length === 1 ? '' : 's' }}</span>
-              </div>
-
-              <app-ticket-quantity-selector
-                [tiers]="ticketTiers"
-                [disabled]="isHoldingTiers"
-                (selectionChange)="onTierSelectionChanged($event)">
-              </app-ticket-quantity-selector>
-
-              <button mat-flat-button color="primary" class="buy-btn ga-buy-btn"
-                      [disabled]="gaSelectionCount === 0 || isHoldingTiers"
-                      (click)="holdGeneralAdmissionTickets()">
-                <mat-icon>confirmation_number</mat-icon>
-                {{ isHoldingTiers ? 'Holding Tickets...' : (isLoggedIn ? 'Hold GA Tickets' : 'Login to Hold GA Tickets') }}
-              </button>
-            </div>
-
-            <button mat-flat-button color="primary" class="buy-btn"
-                    *ngIf="!event.venue_template_id && ticketTiers.length === 0 && !tierLoading"
-                    disabled>
-              Tickets Coming Soon
-            </button>
-            <p class="cta-note">
-              <mat-icon>info</mat-icon>
-              Tickets are held for 10 minutes during checkout
-            </p>
-          </mat-card-content>
-        </mat-card>
-
+        <div class="sidebar-column">
+          <app-event-sidebar
+            [event]="event"
+            [venue]="venue"
+            [pricing]="pricing"
+            [availability]="availability"
+            [selectedTiers]="selectedTiers"
+            [isHoldingTiers]="isHoldingTiers"
+            [isLoggedIn]="isLoggedIn"
+            [pulseData]="pulseData"
+            (selectSeats)="goToSelectSeats()"
+            (holdTickets)="holdGeneralAdmissionTickets()"
+            (selectionChanged)="onTierSelectionChanged($event)"
+          />
+        </div>
       </div>
     </div>
+  </ng-template>
 
+  <div
+    class="image-viewer"
+    *ngIf="lightboxImage"
+    (click)="closeImageViewer()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Expanded event image"
+  >
+    <button mat-icon-button class="close-viewer" type="button" (click)="closeImageViewer(); $event.stopPropagation()">
+      <mat-icon>close</mat-icon>
+    </button>
+
+    <img [src]="lightboxImage" alt="Expanded event image" (click)="$event.stopPropagation()" />
   </div>
 </div>

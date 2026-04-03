@@ -12,6 +12,7 @@ pub fn public_router() -> Router<AppState> {
     Router::new()
         .route("/", get(event::list_published_events))
         .route("/{id}", get(event::get_event))
+        .route("/{id}/details", get(event::get_event_details))
         // GET /api/events/:id/seat-layout — public, used by booking page
         .route("/{id}/seat-layout", get(venue::get_seat_layout))
         .route("/{id}/tiers", get(event::get_event_tiers))

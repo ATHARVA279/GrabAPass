@@ -1,0 +1,30 @@
+<section class="event-hero">
+  <img
+    class="hero-image"
+    [src]="imageUrl"
+    [alt]="event.title"
+    loading="eager"
+    decoding="async"
+  />
+  <div class="hero-overlay"></div>
+
+  <button mat-icon-button class="share-btn" type="button" (click)="share.emit()" aria-label="Share event">
+    <mat-icon>share</mat-icon>
+  </button>
+
+  <div class="hero-copy">
+    <mat-chip-set class="hero-tags">
+      <mat-chip>{{ event.category }}</mat-chip>
+      <mat-chip *ngIf="event.seating_mode">{{ event.seating_mode }}</mat-chip>
+      <mat-chip *ngIf="event.status !== 'Published'">{{ event.status }}</mat-chip>
+    </mat-chip-set>
+
+    <h1>{{ event.title }}</h1>
+
+    <p class="hero-subtitle">
+      {{ event.start_time | date: 'EEE, d MMM y' }} at {{ event.start_time | date: 'shortTime' }}
+      <span class="dot">•</span>
+      {{ event.venue_name }}
+    </p>
+  </div>
+</section>

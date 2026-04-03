@@ -1,0 +1,48 @@
+<section class="info-section">
+  <article class="content-block">
+    <div class="section-heading">
+      <span>About Event</span>
+      <h2>What to expect</h2>
+    </div>
+
+    <p class="description">
+      {{ description || 'The organizer has not added a detailed description yet.' }}
+    </p>
+  </article>
+
+  <article class="content-block media-block" *ngIf="gallery.length > 0">
+    <div class="section-heading">
+      <span>Gallery</span>
+      <h2>More event visuals</h2>
+    </div>
+
+    <div class="media-grid">
+      <button
+        type="button"
+        class="media-item"
+        *ngFor="let image of gallery"
+        (click)="imageExpanded.emit(image)"
+      >
+        <img [src]="image" alt="Event gallery image" loading="lazy" decoding="async" />
+        <span class="media-view">View</span>
+      </button>
+    </div>
+  </article>
+
+  <article class="content-block">
+    <div class="section-heading">
+      <span>Highlights</span>
+      <h2>Booking confidence built in</h2>
+    </div>
+
+    <div class="highlights">
+      <div class="highlight-card" *ngFor="let item of highlights">
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.body }}</p>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>

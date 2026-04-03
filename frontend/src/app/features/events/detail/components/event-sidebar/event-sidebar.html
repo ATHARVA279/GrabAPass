@@ -1,0 +1,42 @@
+<aside class="event-sidebar">
+  <section class="meta-card">
+    <span class="eyebrow">Date & Time</span>
+    <h3>{{ event.start_time | date: 'EEEE, d MMMM y' }}</h3>
+    <p>{{ event.start_time | date: 'shortTime' }}</p>
+  </section>
+
+  <section class="meta-card" *ngIf="pulseData">
+    <span class="eyebrow">Crowd Pulse</span>
+    <div class="pulse-row">
+      <div>
+        <strong>{{ pulseData.active_viewers }}</strong>
+        <span>viewing now</span>
+      </div>
+      <div>
+        <strong>{{ pulseData.recently_sold }}</strong>
+        <span>sold recently</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="meta-card">
+    <app-location-map
+      [venue]="venue"
+      [venueName]="event.venue_name"
+      [address]="event.venue_address"
+      [latitude]="event.venue_latitude"
+      [longitude]="event.venue_longitude"
+    />
+  </section>
+
+  <app-pricing-card
+    [pricing]="pricing"
+    [availability]="availability"
+    [isLoggedIn]="isLoggedIn"
+    [isHoldingTiers]="isHoldingTiers"
+    [selectedTiers]="selectedTiers"
+    (selectSeats)="selectSeats.emit()"
+    (holdTickets)="holdTickets.emit()"
+    (selectionChanged)="selectionChanged.emit($event)"
+  />
+</aside>
