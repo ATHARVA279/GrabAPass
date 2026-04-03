@@ -1,16 +1,16 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    Json,
 };
 use uuid::Uuid;
 
 use crate::{
+    AppState,
     db::models::{ScanLog, ScanResultResponse, ValidateTicketRequest},
     middleware::auth::RequireGateStaff,
     services::gate_service::GateService,
     services::rate_limit_service::RateLimitService,
-    AppState,
 };
 
 pub async fn validate_ticket(
@@ -19,7 +19,11 @@ pub async fn validate_ticket(
     RequireGateStaff(claims): RequireGateStaff,
     Json(req): Json<ValidateTicketRequest>,
 ) -> Result<Json<ScanResultResponse>, (StatusCode, String)> {
-    let actor = format!("{}:{}", claims.sub, RateLimitService::actor_from_headers(&headers));
+    let actor = format!(
+        "{}:{}",
+        claims.sub,
+        RateLimitService::actor_from_headers(&headers)
+    );
     RateLimitService::check_limit(
         &state.rate_limiter,
         "gate_validate",

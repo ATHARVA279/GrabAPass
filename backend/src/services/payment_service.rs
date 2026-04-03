@@ -50,7 +50,12 @@ impl PaymentService {
             .json(&payload)
             .send()
             .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to reach Razorpay: {e}")))?;
+            .map_err(|e| {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!("Failed to reach Razorpay: {e}"),
+                )
+            })?;
 
         Self::parse_json_response(response).await
     }
@@ -65,7 +70,12 @@ impl PaymentService {
             .basic_auth(&config.key_id, Some(&config.key_secret))
             .send()
             .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to fetch payment from Razorpay: {e}")))?;
+            .map_err(|e| {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!("Failed to fetch payment from Razorpay: {e}"),
+                )
+            })?;
 
         Self::parse_json_response(response).await
     }
@@ -86,7 +96,12 @@ impl PaymentService {
             }))
             .send()
             .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Failed to capture Razorpay payment: {e}")))?;
+            .map_err(|e| {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!("Failed to capture Razorpay payment: {e}"),
+                )
+            })?;
 
         Self::parse_json_response(response).await
     }
@@ -97,15 +112,22 @@ impl PaymentService {
         payment_id: &str,
         signature: &str,
     ) -> Result<(), (StatusCode, String)> {
-        let mut mac = HmacSha256::new_from_slice(key_secret.as_bytes())
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Unable to initialize HMAC: {e}")))?;
+        let mut mac = HmacSha256::new_from_slice(key_secret.as_bytes()).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Unable to initialize HMAC: {e}"),
+            )
+        })?;
         mac.update(format!("{order_id}|{payment_id}").as_bytes());
         let expected = hex::encode(mac.finalize().into_bytes());
 
         if expected == signature {
             Ok(())
         } else {
-            Err((StatusCode::UNAUTHORIZED, "Payment signature verification failed.".to_string()))
+            Err((
+                StatusCode::UNAUTHORIZED,
+                "Payment signature verification failed.".to_string(),
+            ))
         }
     }
 
@@ -114,15 +136,58 @@ impl PaymentService {
         body: &[u8],
         signature: &str,
     ) -> Result<(), (StatusCode, String)> {
-        let mut mac = HmacSha256::new_from_slice(webhook_secret.as_bytes())
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Unable to initialize HMAC: {e}")))?;
+        let mut mac = HmacSha256::new_from_slice(webhook_secret.as_bytes()).map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Unable to initialize HMAC: {e}"),
+            )
+        })?;
         mac.update(body);
         let expected = hex::encode(mac.finalize().into_bytes());
 
         if expected == signature {
             Ok(())
         } else {
-            Err((StatusCode::UNAUTHORIZED, "Webhook signature verification failed.".to_string()))
+            Err((
+                StatusCode::UNAUTHORIZED,
+                "Webhook signature verification failed.".to_string(),
+            ))
+        }
+    }
+
+    pub async fn refund_payment(
+        config: &RazorpayConfig,
+        payment_id: &str,
+        amount_paise: i64,
+    ) -> Result<(), (StatusCode, String)> {
+        let response = config
+            .client
+            .post(format!("{RAZORPAY_BASE_URL}/payments/{payment_id}/refund"))
+            .basic_auth(&config.key_id, Some(&config.key_secret))
+            .json(&serde_json::json!({
+                "amount": amount_paise,
+                "notes": {},
+            }))
+            .send()
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!("Failed to reach Razorpay for refund: {e}"),
+                )
+            })?;
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            let error_body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown gateway error".to_string());
+            Err((
+                StatusCode::BAD_GATEWAY,
+                format!("Razorpay refund error: {error_body}"),
+            ))
         }
     }
 
@@ -131,7 +196,10 @@ impl PaymentService {
     ) -> Result<T, (StatusCode, String)> {
         let status = response.status();
         if !status.is_success() {
-            let error_body = response.text().await.unwrap_or_else(|_| "Unknown gateway error".to_string());
+            let error_body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown gateway error".to_string());
             let mapped_status = if status == ReqwestStatusCode::BAD_REQUEST {
                 StatusCode::BAD_REQUEST
             } else {
@@ -140,9 +208,11 @@ impl PaymentService {
             return Err((mapped_status, format!("Razorpay error: {error_body}")));
         }
 
-        response
-            .json::<T>()
-            .await
-            .map_err(|e| (StatusCode::BAD_GATEWAY, format!("Invalid Razorpay response: {e}")))
+        response.json::<T>().await.map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("Invalid Razorpay response: {e}"),
+            )
+        })
     }
 }

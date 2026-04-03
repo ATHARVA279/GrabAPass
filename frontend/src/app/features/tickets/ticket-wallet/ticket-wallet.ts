@@ -44,4 +44,9 @@ export class TicketWallet implements OnInit {
   getStatusClass(status: string): string {
     return getTicketStatusClass(status);
   }
+
+  getTicketCount(ticket: TicketDetail): number {
+    const tierCount = ticket.tiers.reduce((sum, tier) => sum + tier.quantity, 0);
+    return ticket.seats.length + tierCount;
+  }
 }

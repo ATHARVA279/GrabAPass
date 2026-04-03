@@ -1,14 +1,21 @@
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{
+        Path, Query, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
     http::StatusCode,
+    response::IntoResponse,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
     AppState,
-    db::models::{AssignGateStaffRequest, CreateEventRequest, Event, GateStaffSummary, OrganizerDashboardSummaryResponse},
+    db::models::{
+        AssignGateStaffRequest, CreateEventRequest, Event, EventTicketTier, GateStaffSummary,
+        OrganizerDashboardSummaryResponse, PublicEvent,
+    },
     middleware::auth::RequireOrganizer,
     services::event_service,
 };
@@ -22,7 +29,7 @@ pub struct EventFilterParams {
 pub async fn list_published_events(
     State(state): State<AppState>,
     Query(params): Query<EventFilterParams>,
-) -> Result<Json<Vec<Event>>, (StatusCode, String)> {
+) -> Result<Json<Vec<PublicEvent>>, (StatusCode, String)> {
     tracing::debug!(category = ?params.category, search = ?params.search, "Listing published events");
     let events = event_service::list_published_events(
         &state,
@@ -133,4 +140,57 @@ pub async fn assign_gate_staff(
 ) -> Result<StatusCode, (StatusCode, String)> {
     event_service::assign_gate_staff(&state, claims.sub, id, payload).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn get_event_pulse(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<crate::db::models::EventPulseResponse>, (StatusCode, String)> {
+    let pulse = event_service::get_event_pulse(&state, id).await?;
+    Ok(Json(pulse))
+}
+
+pub async fn get_event_tiers(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<EventTicketTier>>, (StatusCode, String)> {
+    let tiers = event_service::get_event_ticket_tiers(&state, id).await?;
+    Ok(Json(tiers))
+}
+
+pub async fn event_ws_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_event_socket(socket, state, id))
+}
+
+async fn handle_event_socket(mut socket: WebSocket, state: AppState, event_id: Uuid) {
+    let mut rx = crate::services::ws_service::WsService::get_or_create_channel(&state, event_id)
+        .await
+        .subscribe();
+
+    loop {
+        tokio::select! {
+            msg = rx.recv() => {
+                match msg {
+                    Ok(msg) => {
+                        if socket.send(Message::Text(msg.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+            res = socket.recv() => {
+                match res {
+                    Some(Ok(_)) => {
+                        // Keep alive: process or ignore incoming messages / ping / pong
+                    }
+                    _ => break, // Socket disconnected
+                }
+            }
+        }
+    }
 }

@@ -57,6 +57,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/events/checkout/checkout').then(m => m.Checkout)
   },
   {
+    path: 'events/:id/booking-success',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/events/booking-success/booking-success').then(m => m.BookingSuccess)
+  },
+  {
     path: 'tickets',
     canActivate: [authGuard],
     data: { role: 'Customer' },
@@ -78,10 +84,15 @@ export const routes: Routes = [
     redirectTo: '/tickets',
     pathMatch: 'full'
   },
-  { 
-    path: '', 
-    redirectTo: '/events',
-    pathMatch: 'full' 
+  {
+    path: 'split-dashboard/:id',
+    canActivate: [authGuard],
+    data: { role: 'Customer' },
+    loadComponent: () => import('./features/split-dashboard/split-dashboard').then(m => m.SplitDashboardComponent)
+  },
+  {
+    path: 'split/:token',
+    loadComponent: () => import('./features/split-checkout/split-checkout').then(m => m.SplitCheckoutComponent)
   },
   {
     path: '**',

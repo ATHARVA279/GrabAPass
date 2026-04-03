@@ -1,0 +1,1 @@
+ALTER TABLE split_shares ADD COLUMN IF NOT EXISTS pending_manual_refund BOOLEAN NOT NULL DEFAULT FALSE;

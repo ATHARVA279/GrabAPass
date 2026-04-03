@@ -1,10 +1,10 @@
-use sqlx::PgPool;
 use axum::http::StatusCode;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::db::models::{ScanLog, TicketDetail};
-use crate::repositories::gate_repository::GateRepository;
 use crate::repositories::event_repository;
+use crate::repositories::gate_repository::GateRepository;
 
 pub struct GateService;
 
@@ -17,7 +17,10 @@ impl GateService {
         jwt_secret: &str,
     ) -> Result<(bool, String, Option<TicketDetail>), (StatusCode, String)> {
         if !GateRepository::is_staff_assigned_to_event(pool, event_id, staff_id).await? {
-            return Err((StatusCode::FORBIDDEN, "You are not assigned to this event.".to_string()));
+            return Err((
+                StatusCode::FORBIDDEN,
+                "You are not assigned to this event.".to_string(),
+            ));
         }
         GateRepository::validate_and_admit(pool, qr_payload, event_id, staff_id, jwt_secret).await
     }
@@ -28,7 +31,10 @@ impl GateService {
         staff_id: Uuid,
     ) -> Result<Vec<ScanLog>, (StatusCode, String)> {
         if !GateRepository::is_staff_assigned_to_event(pool, event_id, staff_id).await? {
-            return Err((StatusCode::FORBIDDEN, "You are not assigned to this event.".to_string()));
+            return Err((
+                StatusCode::FORBIDDEN,
+                "You are not assigned to this event.".to_string(),
+            ));
         }
         GateRepository::list_scan_logs(pool, event_id).await
     }

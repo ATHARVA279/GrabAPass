@@ -268,3 +268,23 @@
         color: #fff;
     }
 }
+
+@media (max-width: 768px) {
+    .seat-map-wrap {
+        padding: 1.25rem;
+        align-items: center;
+    }
+
+    .sections-list,
+    .section-block,
+    .rows-wrap {
+        align-items: center;
+        width: max-content;
+        margin-inline: auto;
+    }
+
+    .seats-line {
+        flex-wrap: nowrap;
+        justify-content: center;
+    }
+}

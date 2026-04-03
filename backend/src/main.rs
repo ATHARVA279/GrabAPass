@@ -1,5 +1,5 @@
-pub mod db;
 pub mod constants;
+pub mod db;
 pub mod handlers;
 pub mod middleware;
 pub mod repositories;
@@ -15,8 +15,9 @@ use std::env;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, broadcast};
 use tower_http::cors::CorsLayer;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -24,6 +25,7 @@ pub struct AppState {
     pub jwt_secret: String,
     pub razorpay: Option<RazorpayConfig>,
     pub rate_limiter: SharedRateLimiter,
+    pub event_channels: Arc<Mutex<HashMap<Uuid, broadcast::Sender<String>>>>,
 }
 
 #[derive(Clone)]
@@ -62,7 +64,9 @@ async fn main() {
             client: reqwest::Client::new(),
         }),
         _ => {
-            tracing::warn!("Razorpay is not configured. Payment initialization endpoints will be unavailable.");
+            tracing::warn!(
+                "Razorpay is not configured. Payment initialization endpoints will be unavailable."
+            );
             None
         }
     };
@@ -89,6 +93,7 @@ async fn main() {
         jwt_secret,
         razorpay,
         rate_limiter: Arc::new(Mutex::new(HashMap::new())),
+        event_channels: Arc::new(Mutex::new(HashMap::new())),
     };
 
     // Spawn background task to clean up expired holds every 10 seconds
@@ -97,8 +102,36 @@ async fn main() {
         let mut interval = tokio::time::interval(Duration::from_secs(10));
         loop {
             interval.tick().await;
-            if let Err(e) = crate::services::hold_service::HoldService::release_expired_holds(&bg_pool).await {
-                tracing::error!("Failed to release expired holds in background task: {:?}", e);
+            if let Err(e) =
+                crate::services::hold_service::HoldService::release_expired_holds(&bg_pool).await
+            {
+                tracing::error!(
+                    "Failed to release expired holds in background task: {:?}",
+                    e
+                );
+            }
+        }
+    });
+
+    // Spawn background task to expire split sessions every 10 seconds
+    let bg_pool = state.pool.clone();
+    let bg_razorpay = state.razorpay.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10));
+        loop {
+            interval.tick().await;
+            if let Some(ref razorpay_config) = bg_razorpay {
+                if let Err(e) = crate::services::split_service::SplitService::expire_split_sessions(
+                    &bg_pool,
+                    razorpay_config,
+                )
+                .await
+                {
+                    tracing::error!(
+                        "Failed to expire split sessions in background task: {:?}",
+                        e
+                    );
+                }
             }
         }
     });
@@ -113,7 +146,13 @@ async fn main() {
                 .parse::<HeaderValue>()
                 .expect("Invalid FRONTEND_URL"),
         )
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
     let app = Router::new()
@@ -125,7 +164,11 @@ async fn main() {
         .nest("/api/tickets", routes::ticket::router())
         .nest("/api/gate", routes::gate::router())
         .nest("/api/organizer/events", routes::event::organizer_router())
-        .nest("/api/organizer/venues", routes::venue::organizer_venue_router())
+        .nest(
+            "/api/organizer/venues",
+            routes::venue::organizer_venue_router(),
+        )
+        .merge(routes::split::split_routes())
         .layer(cors)
         .with_state(state);
 

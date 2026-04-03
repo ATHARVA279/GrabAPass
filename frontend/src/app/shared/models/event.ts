@@ -15,6 +15,9 @@ export interface Event {
   created_at: string;
   venue_template_id?: string | null;
   seating_mode?: SeatingMode | null;
+  min_price?: number | null;
+  max_price?: number | null;
+  image_url?: string | null;
 }
 
 export interface CreateEventRequest {
@@ -26,6 +29,25 @@ export interface CreateEventRequest {
   start_time: string;
   venue_template_id?: string;
   seating_mode?: SeatingMode;
+  image_url?: string | null;
+  ticket_tiers?: CreateEventTicketTierRequest[];
+}
+
+export interface EventTicketTier {
+  id: string;
+  event_id: string;
+  name: string;
+  price: number;
+  capacity: number;
+  color_hex: string;
+  created_at: string;
+}
+
+export interface CreateEventTicketTierRequest {
+  name: string;
+  price: number;
+  capacity: number;
+  color_hex?: string | null;
 }
 
 export interface OrganizerEventDashboardSummary {
@@ -77,4 +99,17 @@ export interface SuspiciousActivityEvent {
   message: string;
   metadata: unknown;
   created_at: string;
+}
+
+export interface SectionPulse {
+  section_name: string;
+  status: string;
+}
+
+export interface EventPulseResponse {
+  active_viewers: number;
+  recently_sold: number;
+  total_capacity: number;
+  sold_percentage: number;
+  sections: SectionPulse[];
 }

@@ -14,7 +14,12 @@
     
     <!-- Hero -->
     <div class="event-hero">
+      <img *ngIf="event.image_url" [src]="event.image_url" alt="{{ event.title }}" class="hero-image">
       <div class="hero-overlay"></div>
+      
+      <button mat-icon-button class="share-btn-overlay" (click)="shareEvent()" title="Share Event">
+        <mat-icon>share</mat-icon>
+      </button>
       <div class="hero-content">
         <mat-chip-listbox>
           <mat-chip>{{ event.category }}</mat-chip>
@@ -65,6 +70,34 @@
 
       <div class="sidebar">
         
+        <mat-card class="pulse-card" *ngIf="pulseData">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="accent">whatshot</mat-icon>
+            <mat-card-title>Crowd Pulse</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="pulse-stats">
+              <div class="stat-box">
+                <span class="stat-val">{{ pulseData.active_viewers }}</span>
+                <span class="stat-lbl">Viewing right now</span>
+              </div>
+              <div class="stat-box" *ngIf="pulseData.recently_sold > 0">
+                <span class="stat-val">{{ pulseData.recently_sold }}</span>
+                <span class="stat-lbl">Tickets booked recently</span>
+              </div>
+            </div>
+            <div class="pulse-tags" *ngIf="pulseData.sections.length > 0">
+              <mat-chip-listbox>
+                <mat-chip *ngFor="let s of pulseData.sections"
+                          [ngClass]="s.status.toLowerCase().replace(' ', '-')">
+                  <span class="pulse-dot"></span>
+                  {{ s.status }}
+                </mat-chip>
+              </mat-chip-listbox>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
         <mat-card class="info-card">
           <mat-card-header>
             <mat-icon mat-card-avatar color="primary">event</mat-icon>
@@ -103,14 +136,35 @@
               <mat-icon>chair</mat-icon>
               {{ isLoggedIn ? 'Select Seats' : 'Login to Select Seats' }}
             </button>
+
+            <div class="ga-selector-block" *ngIf="ticketTiers.length > 0">
+              <div class="ga-header">
+                <h4>General Admission</h4>
+                <span>{{ ticketTiers.length }} tier{{ ticketTiers.length === 1 ? '' : 's' }}</span>
+              </div>
+
+              <app-ticket-quantity-selector
+                [tiers]="ticketTiers"
+                [disabled]="isHoldingTiers"
+                (selectionChange)="onTierSelectionChanged($event)">
+              </app-ticket-quantity-selector>
+
+              <button mat-flat-button color="primary" class="buy-btn ga-buy-btn"
+                      [disabled]="gaSelectionCount === 0 || isHoldingTiers"
+                      (click)="holdGeneralAdmissionTickets()">
+                <mat-icon>confirmation_number</mat-icon>
+                {{ isHoldingTiers ? 'Holding Tickets...' : (isLoggedIn ? 'Hold GA Tickets' : 'Login to Hold GA Tickets') }}
+              </button>
+            </div>
+
             <button mat-flat-button color="primary" class="buy-btn"
-                    *ngIf="!event.venue_template_id"
+                    *ngIf="!event.venue_template_id && ticketTiers.length === 0 && !tierLoading"
                     disabled>
               Tickets Coming Soon
             </button>
             <p class="cta-note">
               <mat-icon>info</mat-icon>
-              Seats are held for 5 minutes during checkout
+              Tickets are held for 10 minutes during checkout
             </p>
           </mat-card-content>
         </mat-card>

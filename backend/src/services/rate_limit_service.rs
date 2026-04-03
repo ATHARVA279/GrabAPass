@@ -42,7 +42,11 @@ impl RateLimitService {
             .get("x-forwarded-for")
             .and_then(|value| value.to_str().ok())
             .and_then(|value| value.split(',').next())
-            .or_else(|| headers.get("x-real-ip").and_then(|value| value.to_str().ok()))
+            .or_else(|| {
+                headers
+                    .get("x-real-ip")
+                    .and_then(|value| value.to_str().ok())
+            })
             .unwrap_or("local")
             .trim()
             .to_string()

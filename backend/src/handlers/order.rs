@@ -1,7 +1,7 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    Json,
 };
 use uuid::Uuid;
 
@@ -22,7 +22,11 @@ pub async fn initialize_checkout(
     Path(event_id): Path<Uuid>,
     Json(payload): Json<InitializeCheckoutRequest>,
 ) -> Result<(StatusCode, Json<InitializeCheckoutResponse>), (StatusCode, String)> {
-    let actor = format!("{}:{}", claims.sub, RateLimitService::actor_from_headers(&headers));
+    let actor = format!(
+        "{}:{}",
+        claims.sub,
+        RateLimitService::actor_from_headers(&headers)
+    );
     RateLimitService::check_limit(
         &state.rate_limiter,
         "checkout_initialize",
@@ -43,7 +47,11 @@ pub async fn verify_checkout(
     Path(event_id): Path<Uuid>,
     Json(payload): Json<VerifyCheckoutRequest>,
 ) -> Result<(StatusCode, Json<Order>), (StatusCode, String)> {
-    let actor = format!("{}:{}", claims.sub, RateLimitService::actor_from_headers(&headers));
+    let actor = format!(
+        "{}:{}",
+        claims.sub,
+        RateLimitService::actor_from_headers(&headers)
+    );
     RateLimitService::check_limit(
         &state.rate_limiter,
         "checkout_verify",
@@ -72,6 +80,6 @@ pub async fn list_orders(
     RequireCustomer(claims): RequireCustomer,
 ) -> Result<(StatusCode, Json<Vec<Order>>), (StatusCode, String)> {
     let orders = OrderService::get_user_orders(&state, claims.sub).await?;
-    
+
     Ok((StatusCode::OK, Json(orders)))
 }

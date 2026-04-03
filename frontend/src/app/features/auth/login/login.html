@@ -1,36 +1,91 @@
-<div class="auth-page">
-  <mat-card class="auth-card">
-    <mat-card-header>
-      <div mat-card-avatar class="auth-avatar">
-        <mat-icon>login</mat-icon>
+<div class="split-auth-layout">
+  <!-- Left Side: Branding & Illustration -->
+  <div class="auth-brand-pane">
+    <div class="brand-particles" aria-hidden="true">
+      <div class="b-particle p1"></div>
+      <div class="b-particle p2"></div>
+      <div class="b-particle p3"></div>
+    </div>
+    
+    <div class="brand-content">
+      <a routerLink="/" class="home-link">
+        <mat-icon>arrow_back</mat-icon> Back to Home
+      </a>
+      
+      <h2><span class="gradient-text">GrabAPass</span></h2>
+      <p class="brand-subtitle">The smartest way to experience live events. Fast, secure, and unforgettable.</p>
+      
+      <div class="illustration-container">
+        <!-- Abstract Ticket Illustration -->
+        <div class="ticket-illustration">
+          <div class="t-top"></div>
+          <div class="t-body">
+            <mat-icon class="t-icon">confirmation_number</mat-icon>
+            <div class="t-line"></div>
+            <div class="t-line short"></div>
+          </div>
+          <div class="t-bottom"></div>
+        </div>
       </div>
-      <mat-card-title>Welcome Back</mat-card-title>
-      <mat-card-subtitle>Login to your GrabAPass account</mat-card-subtitle>
-    </mat-card-header>
+    </div>
+  </div>
 
-    <mat-card-content>
-      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
-        
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email</mat-label>
-          <input matInput type="email" id="email" [(ngModel)]="email" name="email" required />
-          <mat-icon matPrefix>email</mat-icon>
-        </mat-form-field>
+  <!-- Right Side: Form -->
+  <div class="auth-form-pane">
+    <mat-card class="auth-card">
+      <mat-card-header>
+        <mat-card-title>Welcome Back</mat-card-title>
+        <mat-card-subtitle>Login to your account</mat-card-subtitle>
+      </mat-card-header>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" id="password" [(ngModel)]="password" name="password" required />
-          <mat-icon matPrefix>lock</mat-icon>
-        </mat-form-field>
+      <mat-card-content>
+        <!-- Return URL Banner -->
+        <div *ngIf="returnUrlMessage" class="info-banner">
+          <mat-icon>info</mat-icon>
+          <span>{{ returnUrlMessage }}</span>
+        </div>
 
-        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!loginForm.form.valid">
-          Login
-        </button>
-      </form>
-    </mat-card-content>
+        <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" id="email" [(ngModel)]="email" name="email" required />
+            <mat-icon matPrefix>email</mat-icon>
+          </mat-form-field>
 
-    <mat-card-actions class="auth-footer">
-      <p>Don't have an account? <a routerLink="/register">Register here</a></p>
-    </mat-card-actions>
-  </mat-card>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" id="password" [(ngModel)]="password" name="password" required />
+            <mat-icon matPrefix>lock</mat-icon>
+          </mat-form-field>
+
+          <div class="forgot-password">
+            <a href="#">Forgot Password?</a>
+          </div>
+
+          <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!loginForm.form.valid">
+            Login
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>OR</span>
+        </div>
+
+        <div class="social-login">
+          <button mat-stroked-button class="social-btn">
+            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" class="social-icon">
+            Continue with Google
+          </button>
+          <button mat-stroked-button class="social-btn">
+            <mat-icon class="apple-icon">apple</mat-icon>
+            Continue with Apple
+          </button>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="auth-footer">
+        <p>Don't have an account? <a routerLink="/register">Register here</a></p>
+      </mat-card-actions>
+    </mat-card>
+  </div>
 </div>

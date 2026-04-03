@@ -1,13 +1,13 @@
 use axum::http::StatusCode;
+use sqlx::{Postgres, Transaction};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use sqlx::{Postgres, Transaction};
 
 use crate::{
     AppState,
     db::models::{
         AssignSeatCategoryRequest, CategoryInfo, CreateVenueRequest, EventStatus, RowLayout,
-        SeatingMode, SeatLayout, SeatLayoutResponse, SeatStatus, SectionLayout, StageOrientation,
+        SeatLayout, SeatLayoutResponse, SeatStatus, SeatingMode, SectionLayout, StageOrientation,
         VenueTemplate,
     },
     repositories::venue_repository,
@@ -36,11 +36,17 @@ pub async fn create_venue_template(
         return Err((StatusCode::BAD_REQUEST, "Venue name is required".into()));
     }
     if req.sections.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "At least one section is required".into()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "At least one section is required".into(),
+        ));
     }
     for (si, section) in req.sections.iter().enumerate() {
         if section.name.trim().is_empty() {
-            return Err((StatusCode::BAD_REQUEST, format!("Section {} name is required", si + 1)));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("Section {} name is required", si + 1),
+            ));
         }
         if section.rows.is_empty() {
             return Err((
@@ -76,10 +82,7 @@ pub async fn create_venue_template(
 
     // Create sections → rows → seats
     for (si, section_req) in req.sections.into_iter().enumerate() {
-        let color = section_req
-            .color_hex
-            .as_deref()
-            .unwrap_or("#4A90D9");
+        let color = section_req.color_hex.as_deref().unwrap_or("#4A90D9");
 
         let section = venue_repository::create_section_tx(
             &mut tx,
@@ -193,21 +196,31 @@ pub async fn assign_seat_categories(
     let sections = venue_repository::list_sections_for_template(pool, template_id)
         .await
         .map_err(db_err)?;
-    let allowed_section_ids: HashSet<Uuid> = sections.into_iter().map(|section| section.id).collect();
+    let allowed_section_ids: HashSet<Uuid> =
+        sections.into_iter().map(|section| section.id).collect();
 
     for cat in categories {
         if cat.name.trim().is_empty() {
-            return Err((StatusCode::BAD_REQUEST, "Seat category name is required".into()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Seat category name is required".into(),
+            ));
         }
 
         if cat.price < 0.0 {
-            return Err((StatusCode::BAD_REQUEST, "Seat category price cannot be negative".into()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Seat category price cannot be negative".into(),
+            ));
         }
 
         if !allowed_section_ids.contains(&cat.section_id) {
             return Err((
                 StatusCode::BAD_REQUEST,
-                format!("Section {} does not belong to this event's venue template", cat.section_id),
+                format!(
+                    "Section {} does not belong to this event's venue template",
+                    cat.section_id
+                ),
             ));
         }
 
@@ -308,9 +321,12 @@ pub async fn get_seat_layout(
         return Err(not_found("Event not found"));
     }
 
-    let template_id = event
-        .venue_template_id
-        .ok_or_else(|| (StatusCode::NOT_FOUND, "This event has no seating layout".into()))?;
+    let template_id = event.venue_template_id.ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            "This event has no seating layout".into(),
+        )
+    })?;
 
     let template = venue_repository::find_venue_template(pool, template_id)
         .await

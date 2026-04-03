@@ -10,7 +10,7 @@
   <div class="top-bar">
     <button class="back-link" (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>
-      <span>Back to Seats</span>
+      <span>{{ (state?.selectedSeats?.length ?? 0) > 0 ? 'Back to Seats' : 'Back to Event' }}</span>
     </button>
     <div class="step-indicator">
       <span class="step done">✓</span>
@@ -45,7 +45,7 @@
       <div class="section-card tickets-card">
         <div class="card-header">
           <mat-icon>confirmation_number</mat-icon>
-          <h3>Your Tickets ({{ state.selectedSeats.length }})</h3>
+          <h3>Your Tickets ({{ totalTicketCount }})</h3>
         </div>
         <div class="ticket-list">
           <div *ngFor="let seat of state.selectedSeats" class="ticket-row">
@@ -55,6 +55,198 @@
               <span class="ticket-cat">{{ seat.categoryName }}</span>
             </div>
             <span class="ticket-price">₹{{ seat.price | number:'1.0-0' }}</span>
+          </div>
+          <div *ngFor="let tier of state.selectedTiers" class="ticket-row">
+            <div class="ticket-dot" [style.background]="tier.colorHex"></div>
+            <div class="ticket-info">
+              <span class="ticket-seat">{{ tier.name }} x {{ tier.quantity }}</span>
+              <span class="ticket-cat">General admission</span>
+            </div>
+            <span class="ticket-price">₹{{ (tier.unitPrice * tier.quantity) | number:'1.0-0' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card split-planner-card" *ngIf="totalTicketCount > 1">
+        <div class="card-header">
+          <mat-icon>call_split</mat-icon>
+          <h3>Split Planner</h3>
+        </div>
+
+        <div class="split-payment-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" [checked]="isSplitEnabled" (change)="toggleSplit($event)">
+            <span class="toggle-text">Split this booking with friends</span>
+            <div class="split-badge">New</div>
+          </label>
+          <p>Choose exactly which seats and ticket quantities belong to each person before payment links are created.</p>
+        </div>
+
+        <div class="split-controls" *ngIf="isSplitEnabled && !splitSession">
+          <div class="split-setup-bar">
+            <div>
+              <span class="split-step">Step 1</span>
+              <h4>{{ splitShares }} share{{ splitShares === 1 ? '' : 's' }}</h4>
+              <p>Pick how many people are paying, then assign tickets share by share.</p>
+            </div>
+
+            <div class="share-counter">
+              <button class="counter-btn" type="button" (click)="decrementShares()" [disabled]="splitShares <= 2">
+                <mat-icon>remove</mat-icon>
+              </button>
+              <span class="share-number">{{ splitShares }}</span>
+              <button class="counter-btn" type="button" (click)="incrementShares()" [disabled]="splitShares >= totalTicketCount">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="split-toolbar">
+            <button type="button" class="secondary-action" (click)="autoDistributeAssignments()">Auto-distribute</button>
+            <button type="button" class="secondary-action" (click)="resetAssignmentsToHost()">Reset to host</button>
+          </div>
+
+          <div class="assignment-health" [class.ready]="getSplitReadyToSubmit()">
+            <mat-icon>{{ getSplitReadyToSubmit() ? 'task_alt' : 'info' }}</mat-icon>
+            <span>{{ getSplitAssignmentStatusMessage() }}</span>
+          </div>
+
+          <div class="share-card-grid">
+            <div
+              class="share-card"
+              *ngFor="let shareIndex of shareIndices"
+              [class.active]="activeShareIndex === shareIndex"
+              [style.--share-accent]="getShareAccent(shareIndex)"
+              (click)="setActiveShare(shareIndex)">
+              <div class="share-card-top">
+                <div>
+                  <span class="share-eyebrow">{{ shareIndex === 0 ? 'Host' : 'Guest' }}</span>
+                  <h4>{{ shareDrafts[shareIndex].label }}</h4>
+                </div>
+                <span class="share-ticket-count">
+                  {{ getShareTicketCount(shareIndex) }} ticket{{ getShareTicketCount(shareIndex) === 1 ? '' : 's' }}
+                </span>
+              </div>
+
+              <p class="share-helper">{{ getShareDescription(shareIndex) }}</p>
+
+              <div class="guest-fields" *ngIf="shareIndex > 0">
+                <input
+                  type="text"
+                  [(ngModel)]="shareDrafts[shareIndex].guest_name"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Guest name (optional)">
+                <input
+                  type="email"
+                  [(ngModel)]="shareDrafts[shareIndex].guest_email"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Guest email (required)">
+              </div>
+
+              <div class="share-stats">
+                <div>
+                  <span>Seats</span>
+                  <strong>{{ getShareSeatCount(shareIndex) }}</strong>
+                </div>
+                <div>
+                  <span>GA</span>
+                  <strong>{{ getShareTierCount(shareIndex) }}</strong>
+                </div>
+                <div>
+                  <span>Subtotal</span>
+                  <strong>₹{{ getShareTotal(shareIndex) | number:'1.2-2' }}</strong>
+                </div>
+                <div>
+                  <span>Est. total</span>
+                  <strong class="highlight">₹{{ getShareEstimatedTotal(shareIndex) | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="assignment-workspace">
+            <div class="workspace-header">
+              <div>
+                <span class="split-step">Step 2</span>
+                <h4>Assigning tickets to {{ activeShareLabel }}</h4>
+                <p>Tap a reserved seat or rebalance quantities below. Each change updates the share totals instantly.</p>
+              </div>
+              <div class="workspace-badge">
+                {{ getShareTicketCount(activeShareIndex) }} assigned
+              </div>
+            </div>
+
+            <div class="assignment-section" *ngIf="hasReservedSeats">
+              <div class="section-heading">
+                <div>
+                  <h5>Reserved seats</h5>
+                  <p>Each seat keeps its identity, so just tap the share that should own it.</p>
+                </div>
+                <span>{{ state.selectedSeats.length }} total</span>
+              </div>
+
+              <div class="seat-chip-grid">
+                <button
+                  type="button"
+                  class="seat-chip"
+                  *ngFor="let seat of state.selectedSeats"
+                  [class.active]="isSeatAssignedToActiveShare(seat.seatId)"
+                  [class.unassigned]="getSeatShareIndex(seat.seatId) === null"
+                  [style.--share-accent]="getSeatAccent(seat.seatId)"
+                  (click)="assignSeatToActiveShare(seat.seatId)">
+                  <span class="seat-chip-heading">{{ seat.seatLabel }}</span>
+                  <span class="seat-chip-meta">{{ seat.sectionName }} · {{ seat.categoryName }}</span>
+                  <span class="seat-chip-footer">
+                    <strong>₹{{ seat.price | number:'1.0-0' }}</strong>
+                    <span>{{ getSeatAssignmentLabel(seat.seatId) }}</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div class="assignment-section" *ngIf="hasGeneralAdmission">
+              <div class="section-heading">
+                <div>
+                  <h5>General admission quantities</h5>
+                  <p>Adjust quantities per share instead of assigning every GA ticket one by one.</p>
+                </div>
+                <span>{{ state.selectedTiers.length }} tier{{ state.selectedTiers.length === 1 ? '' : 's' }}</span>
+              </div>
+
+              <div class="tier-board" *ngFor="let tier of state.selectedTiers">
+                <div class="tier-board-header">
+                  <div class="tier-summary">
+                    <span class="ticket-dot" [style.background]="tier.colorHex"></span>
+                    <div>
+                      <strong>{{ tier.name }}</strong>
+                      <span>{{ tier.quantity }} ticket{{ tier.quantity === 1 ? '' : 's' }} · ₹{{ tier.unitPrice | number:'1.0-0' }} each</span>
+                    </div>
+                  </div>
+                  <span class="tier-remaining" [class.warning]="getTierRemainingQuantity(tier.ticketTierId, tier.quantity) > 0">
+                    {{ getTierRemainingQuantity(tier.ticketTierId, tier.quantity) === 0 ? 'Fully assigned' : getTierRemainingQuantity(tier.ticketTierId, tier.quantity) + ' left to place' }}
+                  </span>
+                </div>
+
+                <div class="tier-share-grid">
+                  <div
+                    class="tier-share-row"
+                    *ngFor="let shareIndex of shareIndices"
+                    [class.active]="activeShareIndex === shareIndex"
+                    [style.--share-accent]="getShareAccent(shareIndex)">
+                    <div class="tier-share-copy">
+                      <strong>{{ shareDrafts[shareIndex].label }}</strong>
+                      <span>{{ getShareDescription(shareIndex) }}</span>
+                    </div>
+
+                    <div class="tier-stepper">
+                      <button type="button" (click)="decrementTierQuantity(tier.ticketTierId, shareIndex)">−</button>
+                      <strong>{{ getTierQuantity(tier.ticketTierId, shareIndex) }}</strong>
+                      <button type="button" (click)="incrementTierQuantity(tier.ticketTierId, shareIndex, tier.quantity)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -66,7 +258,7 @@
         </div>
         <div class="price-rows">
           <div class="price-row">
-            <span>Subtotal ({{ state.selectedSeats.length }} tickets)</span>
+            <span>Subtotal ({{ totalTicketCount }} tickets)</span>
             <span>₹{{ subtotal | number:'1.2-2' }}</span>
           </div>
           <div class="price-row">
@@ -94,15 +286,26 @@
           <span class="amount-value">₹{{ grandTotal | number:'1.2-2' }}</span>
         </div>
 
-        <div class="payment-info">
+        <div class="split-payment-note" *ngIf="isSplitEnabled && !splitSession">
+          <mat-icon>link</mat-icon>
+          <p>Continue to generate {{ splitShares }} payment link{{ splitShares === 1 ? '' : 's' }}. The host dashboard will open right after this step.</p>
+        </div>
+
+        <div class="payment-info" *ngIf="!isSplitEnabled && !splitSession">
           <mat-icon>info</mat-icon>
           <p>Razorpay Test Mode is enabled. Use sandbox cards or UPI IDs. No real money will be charged.</p>
         </div>
 
-        <button class="pay-btn" [disabled]="isProcessing" (click)="onConfirmPayment()">
-          <span *ngIf="!isProcessing">
+
+
+        <button class="pay-btn" [disabled]="isProcessing || (isSplitEnabled && !getSplitReadyToSubmit())" *ngIf="!splitSession" (click)="onConfirmPayment()">
+          <span *ngIf="!isProcessing && !isSplitEnabled">
             <mat-icon>payment</mat-icon>
             Pay Securely with Razorpay
+          </span>
+          <span *ngIf="!isProcessing && isSplitEnabled">
+            <mat-icon>call_split</mat-icon>
+            Generate Split Links
           </span>
           <mat-spinner *ngIf="isProcessing" diameter="22"></mat-spinner>
         </button>

@@ -1,0 +1,30 @@
+<div class="ticket-tier-list" *ngIf="tiers.length; else noTiers">
+  <div *ngFor="let tier of tiers" class="ticket-tier-row">
+    <div class="tier-meta">
+      <span class="tier-dot" [style.background]="tier.color_hex"></span>
+      <div>
+        <div class="tier-name">{{ tier.name }}</div>
+        <div class="tier-price">₹{{ tier.price | number:'1.0-0' }} each</div>
+      </div>
+    </div>
+
+    <div class="tier-actions">
+      <button mat-icon-button type="button" (click)="decrement(tier)" [disabled]="disabled || getQuantity(tier.id) === 0">
+        <mat-icon>remove</mat-icon>
+      </button>
+      <span class="tier-quantity">{{ getQuantity(tier.id) }}</span>
+      <button mat-icon-button type="button" (click)="increment(tier)" [disabled]="disabled">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="ticket-tier-summary" *ngIf="totalCount > 0">
+    <span>{{ totalCount }} ticket{{ totalCount === 1 ? '' : 's' }} selected</span>
+    <strong>₹{{ subtotal | number:'1.0-0' }}</strong>
+  </div>
+</div>
+
+<ng-template #noTiers>
+  <p class="empty-state">Ticket tiers will appear here once the organizer adds them.</p>
+</ng-template>

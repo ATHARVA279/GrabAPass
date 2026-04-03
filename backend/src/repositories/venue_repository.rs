@@ -2,8 +2,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::db::models::{
-    EventSeatCategory, EventSeatInventory, SeatStatus, StageOrientation, VenueRow,
-    VenueSection, VenueSeat, VenueTemplate,
+    EventSeatCategory, EventSeatInventory, SeatStatus, StageOrientation, VenueRow, VenueSeat,
+    VenueSection, VenueTemplate,
 };
 
 // ─── Venue template ───────────────────────────────────────────────────────────
@@ -306,12 +306,32 @@ pub async fn upsert_seat_category(
     price: f64,
     color_hex: &str,
 ) -> Result<EventSeatCategory, sqlx::Error> {
+    if let Some(existing) = sqlx::query_as::<_, EventSeatCategory>(
+        r#"
+        UPDATE event_seat_categories
+        SET name = $3,
+            price = $4,
+            color_hex = $5
+        WHERE event_id = $1
+          AND section_id = $2
+        RETURNING id, event_id, section_id, name, price::float8, color_hex
+        "#,
+    )
+    .bind(event_id)
+    .bind(section_id)
+    .bind(name)
+    .bind(price)
+    .bind(color_hex)
+    .fetch_optional(pool)
+    .await?
+    {
+        return Ok(existing);
+    }
+
     sqlx::query_as::<_, EventSeatCategory>(
         r#"
         INSERT INTO event_seat_categories (event_id, section_id, name, price, color_hex)
         VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (event_id, section_id)
-        DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, color_hex = EXCLUDED.color_hex
         RETURNING id, event_id, section_id, name, price::float8, color_hex
         "#,
     )
@@ -350,34 +370,35 @@ pub async fn initialise_seat_inventory(
     seat_ids: &[Uuid],
     blocked_defaults: &[bool],
 ) -> Result<u64, sqlx::Error> {
-    // Build a multi-row INSERT using unnest
-    let statuses: Vec<SeatStatus> = blocked_defaults
-        .iter()
-        .map(|&b| {
-            if b {
-                SeatStatus::Blocked
-            } else {
-                SeatStatus::Available
-            }
-        })
-        .collect();
+    let mut inserted = 0;
+    for (&seat_id, &blocked) in seat_ids.iter().zip(blocked_defaults.iter()) {
+        let status = if blocked {
+            SeatStatus::Blocked
+        } else {
+            SeatStatus::Available
+        };
 
-    let event_ids: Vec<Uuid> = std::iter::repeat(event_id).take(seat_ids.len()).collect();
+        let result = sqlx::query(
+            r#"
+            INSERT INTO event_seat_inventory (event_id, seat_id, status)
+            SELECT $1, $2, $3
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM event_seat_inventory
+                WHERE event_id = $1 AND seat_id = $2
+            )
+            "#,
+        )
+        .bind(event_id)
+        .bind(seat_id)
+        .bind(status)
+        .execute(pool)
+        .await?;
 
-    let result = sqlx::query(
-        r#"
-        INSERT INTO event_seat_inventory (event_id, seat_id, status)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[], $3::seat_status[])
-        ON CONFLICT (event_id, seat_id) DO NOTHING
-        "#,
-    )
-    .bind(&event_ids)
-    .bind(seat_ids)
-    .bind(&statuses)
-    .execute(pool)
-    .await?;
+        inserted += result.rows_affected();
+    }
 
-    Ok(result.rows_affected())
+    Ok(inserted)
 }
 
 pub async fn initialise_seat_inventory_tx(
@@ -386,27 +407,35 @@ pub async fn initialise_seat_inventory_tx(
     seat_ids: &[Uuid],
     blocked_defaults: &[bool],
 ) -> Result<u64, sqlx::Error> {
-    let statuses: Vec<SeatStatus> = blocked_defaults
-        .iter()
-        .map(|&b| if b { SeatStatus::Blocked } else { SeatStatus::Available })
-        .collect();
+    let mut inserted = 0;
+    for (&seat_id, &blocked) in seat_ids.iter().zip(blocked_defaults.iter()) {
+        let status = if blocked {
+            SeatStatus::Blocked
+        } else {
+            SeatStatus::Available
+        };
 
-    let event_ids: Vec<Uuid> = std::iter::repeat(event_id).take(seat_ids.len()).collect();
+        let result = sqlx::query(
+            r#"
+            INSERT INTO event_seat_inventory (event_id, seat_id, status)
+            SELECT $1, $2, $3
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM event_seat_inventory
+                WHERE event_id = $1 AND seat_id = $2
+            )
+            "#,
+        )
+        .bind(event_id)
+        .bind(seat_id)
+        .bind(status)
+        .execute(&mut **tx)
+        .await?;
 
-    let result = sqlx::query(
-        r#"
-        INSERT INTO event_seat_inventory (event_id, seat_id, status)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[], $3::seat_status[])
-        ON CONFLICT (event_id, seat_id) DO NOTHING
-        "#,
-    )
-    .bind(&event_ids)
-    .bind(seat_ids)
-    .bind(&statuses)
-    .execute(&mut **tx)
-    .await?;
+        inserted += result.rows_affected();
+    }
 
-    Ok(result.rows_affected())
+    Ok(inserted)
 }
 
 pub async fn list_inventory_for_event(

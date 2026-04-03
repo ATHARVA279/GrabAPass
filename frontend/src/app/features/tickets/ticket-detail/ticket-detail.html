@@ -57,11 +57,31 @@
         <h2 class="event-title">{{ ticket.event_title }}</h2>
 
         <div class="detail-grid">
-          <div class="detail-item" *ngFor="let seat of ticket.seats">
+          <div class="detail-item seat-group">
             <mat-icon>event_seat</mat-icon>
             <div>
-              <span class="label">Seat</span>
-              <span class="value">{{ seat.section_name }} · {{ seat.seat_label }}</span>
+              <span class="label">
+                Tickets
+                <span class="seat-count">({{ totalTicketCount }})</span>
+              </span>
+              <div class="seat-groups">
+                <div *ngFor="let group of getSeatGroups(ticket.seats)" class="seat-group-row">
+                  <span class="seat-section">{{ group.section }}</span>
+                  <div class="seat-chips">
+                    <span *ngFor="let seatLabel of group.labels" class="seat-chip">
+                      {{ seatLabel }}
+                    </span>
+                  </div>
+                </div>
+                <div *ngFor="let tier of ticket.tiers" class="seat-group-row">
+                  <span class="seat-section">{{ tier.name }}</span>
+                  <div class="seat-chips">
+                    <span class="seat-chip">
+                      {{ tier.quantity }} x General Admission
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

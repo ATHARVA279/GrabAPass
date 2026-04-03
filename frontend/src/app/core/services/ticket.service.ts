@@ -11,6 +11,7 @@ export interface TicketDetail {
   event_start_time: string;
   venue_name: string;
   seats: { seat_id: string, seat_label: string, section_name: string }[];
+  tiers: { ticket_tier_id: string, name: string, quantity: number, price: number, color_hex: string }[];
   qr_payload: string;
   status: string;
   can_cancel: boolean;

@@ -1,13 +1,12 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use uuid::Uuid;
 
 use crate::{
-    db::models::TicketDetail,
-    middleware::auth::RequireAuth,
+    db::models::TicketDetail, middleware::auth::RequireAuth,
     services::ticket_service::TicketService,
 };
 

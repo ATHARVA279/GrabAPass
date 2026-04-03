@@ -89,4 +89,31 @@ export class TicketDetailPage implements OnInit {
         }
       });
   }
+
+  getSeatGroups(seats: TicketDetail['seats']): { section: string; labels: string[] }[] {
+    if (!seats || seats.length === 0) {
+      return [];
+    }
+
+    const groups = new Map<string, string[]>();
+    for (const seat of seats) {
+      const list = groups.get(seat.section_name) ?? [];
+      list.push(seat.seat_label);
+      groups.set(seat.section_name, list);
+    }
+
+    return Array.from(groups.entries()).map(([section, labels]) => ({
+      section,
+      labels
+    }));
+  }
+
+  get totalTicketCount(): number {
+    if (!this.ticket) {
+      return 0;
+    }
+
+    const tierCount = this.ticket.tiers.reduce((sum, tier) => sum + tier.quantity, 0);
+    return this.ticket.seats.length + tierCount;
+  }
 }

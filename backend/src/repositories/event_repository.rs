@@ -1,81 +1,118 @@
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
 
-use crate::db::models::{Event, GateStaffSummary, OrganizerEventDashboardSummary, OrganizerDashboardSummaryResponse, SeatingMode};
+use crate::db::models::{
+    CreateEventTicketTierRequest, Event, EventTicketTier, GateStaffSummary,
+    OrganizerDashboardSummaryResponse, OrganizerEventDashboardSummary, PublicEvent, SeatingMode,
+};
 
 pub async fn list_published_events(
     pool: &PgPool,
     category: Option<&str>,
     search: &str,
-) -> Result<Vec<Event>, sqlx::Error> {
-    // Only apply search filter when the caller actually provided a term.
-    let apply_search = !search.is_empty();
+) -> Result<Vec<PublicEvent>, sqlx::Error> {
+    let query = r#"
+        SELECT
+            e.id,
+            e.organizer_id,
+            e.title,
+            e.description,
+            e.category,
+            e.venue_name,
+            e.venue_address,
+            e.start_time,
+            e.status,
+            e.created_at,
+            e.venue_template_id,
+            e.seating_mode,
+            e.image_url,
+            price_stats.min_price,
+            price_stats.max_price
+        FROM events e
+        LEFT JOIN LATERAL (
+            SELECT
+                MIN(price)::float8 AS min_price,
+                MAX(price)::float8 AS max_price
+            FROM (
+                SELECT esc.price
+                FROM event_seat_categories esc
+                WHERE esc.event_id = e.id
+                UNION ALL
+                SELECT ett.price
+                FROM event_ticket_tiers ett
+                WHERE ett.event_id = e.id
+            ) AS event_prices
+        ) price_stats ON TRUE
+        WHERE e.status = 'Published'
+          AND ($1::varchar IS NULL OR e.category = $1)
+          AND (
+              $2::varchar = ''
+              OR e.title ILIKE $3
+              OR COALESCE(e.description, '') ILIKE $3
+          )
+        ORDER BY e.start_time ASC
+    "#;
+
     let search_pattern = format!("%{search}%");
-
-    match (category, apply_search) {
-        (Some(cat), true) => sqlx::query_as::<_, Event>(
-            r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-                   start_time, status, created_at, venue_template_id, seating_mode
-            FROM events
-            WHERE status = 'Published'
-              AND category = $1
-              AND (title ILIKE $2 OR COALESCE(description, '') ILIKE $2)
-            ORDER BY start_time ASC
-            "#,
-        )
-        .bind(cat)
+    sqlx::query_as::<_, PublicEvent>(query)
+        .bind(category)
+        .bind(search)
         .bind(&search_pattern)
         .fetch_all(pool)
-        .await,
+        .await
+}
 
-        (Some(cat), false) => sqlx::query_as::<_, Event>(
+pub async fn list_event_ticket_tiers(
+    pool: &PgPool,
+    event_id: Uuid,
+) -> Result<Vec<EventTicketTier>, sqlx::Error> {
+    sqlx::query_as::<_, EventTicketTier>(
+        r#"
+        SELECT id, event_id, name, price::float8 AS price, capacity, color_hex, created_at
+        FROM event_ticket_tiers
+        WHERE event_id = $1
+        ORDER BY price ASC, created_at ASC
+        "#,
+    )
+    .bind(event_id)
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn replace_event_ticket_tiers(
+    tx: &mut Transaction<'_, Postgres>,
+    event_id: Uuid,
+    tiers: &[CreateEventTicketTierRequest],
+) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM event_ticket_tiers WHERE event_id = $1")
+        .bind(event_id)
+        .execute(&mut **tx)
+        .await?;
+
+    for tier in tiers {
+        sqlx::query(
             r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-                   start_time, status, created_at, venue_template_id, seating_mode
-            FROM events
-            WHERE status = 'Published'
-              AND category = $1
-            ORDER BY start_time ASC
+            INSERT INTO event_ticket_tiers (event_id, name, price, capacity, color_hex)
+            VALUES ($1, $2, $3, $4, $5)
             "#,
         )
-        .bind(cat)
-        .fetch_all(pool)
-        .await,
-
-        (None, true) => sqlx::query_as::<_, Event>(
-            r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-                   start_time, status, created_at, venue_template_id, seating_mode
-            FROM events
-            WHERE status = 'Published'
-              AND (title ILIKE $1 OR COALESCE(description, '') ILIKE $1)
-            ORDER BY start_time ASC
-            "#,
-        )
-        .bind(&search_pattern)
-        .fetch_all(pool)
-        .await,
-
-        (None, false) => sqlx::query_as::<_, Event>(
-            r#"
-            SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-                   start_time, status, created_at, venue_template_id, seating_mode
-            FROM events
-            WHERE status = 'Published'
-            ORDER BY start_time ASC
-            "#,
-        )
-        .fetch_all(pool)
-        .await,
+        .bind(event_id)
+        .bind(tier.name.trim())
+        .bind(tier.price)
+        .bind(tier.capacity)
+        .bind(tier.color_hex.as_deref().unwrap_or("#4A90D9"))
+        .execute(&mut **tx)
+        .await?;
     }
+
+    Ok(())
 }
 
 pub async fn find_event_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
         SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode
+               start_time, status, created_at, venue_template_id, seating_mode, image_url
         FROM events
         WHERE id = $1
         "#,
@@ -96,15 +133,16 @@ pub async fn create_event(
     start_time: chrono::DateTime<chrono::Utc>,
     venue_template_id: Option<Uuid>,
     seating_mode: Option<SeatingMode>,
+    image_url: Option<&str>,
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
         INSERT INTO events
             (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode)
+             start_time, status, venue_template_id, seating_mode, image_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10)
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url
         "#,
     )
     .bind(organizer_id)
@@ -116,6 +154,7 @@ pub async fn create_event(
     .bind(start_time)
     .bind(venue_template_id)
     .bind(seating_mode)
+    .bind(image_url)
     .fetch_one(pool)
     .await
 }
@@ -131,15 +170,16 @@ pub async fn create_event_tx(
     start_time: chrono::DateTime<chrono::Utc>,
     venue_template_id: Option<Uuid>,
     seating_mode: Option<SeatingMode>,
+    image_url: Option<&str>,
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
         INSERT INTO events
             (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode)
+             start_time, status, venue_template_id, seating_mode, image_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10)
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url
         "#,
     )
     .bind(organizer_id)
@@ -151,6 +191,7 @@ pub async fn create_event_tx(
     .bind(start_time)
     .bind(venue_template_id)
     .bind(seating_mode)
+    .bind(image_url)
     .fetch_one(&mut **tx)
     .await
 }
@@ -166,6 +207,7 @@ pub async fn update_event(
     venue_address: &str,
     start_time: chrono::DateTime<chrono::Utc>,
     seating_mode: Option<SeatingMode>,
+    image_url: Option<&str>,
 ) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
@@ -176,10 +218,11 @@ pub async fn update_event(
             venue_name = $6,
             venue_address = $7,
             start_time = $8,
-            seating_mode = $9::text::seating_mode
+            seating_mode = $9::text::seating_mode,
+            image_url = $10
         WHERE id = $1 AND organizer_id = $2
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url
         "#,
     )
     .bind(event_id)
@@ -191,6 +234,7 @@ pub async fn update_event(
     .bind(venue_address)
     .bind(start_time)
     .bind(seating_mode)
+    .bind(image_url)
     .fetch_optional(pool)
     .await
 }
@@ -275,7 +319,7 @@ pub async fn list_organizer_events(
     sqlx::query_as::<_, Event>(
         r#"
         SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode
+               start_time, status, created_at, venue_template_id, seating_mode, image_url
         FROM events
         WHERE organizer_id = $1
         ORDER BY created_at DESC
@@ -355,7 +399,10 @@ pub async fn get_organizer_dashboard_summary(
     .await?;
 
     let total_events = events.len() as i64;
-    let published_events = events.iter().filter(|event| matches!(event.status, crate::db::models::EventStatus::Published)).count() as i64;
+    let published_events = events
+        .iter()
+        .filter(|event| matches!(event.status, crate::db::models::EventStatus::Published))
+        .count() as i64;
     let gross_revenue = events.iter().map(|event| event.gross_revenue).sum();
     let tickets_sold = events.iter().map(|event| event.tickets_sold).sum();
     let tickets_scanned = events.iter().map(|event| event.tickets_scanned).sum();
@@ -458,7 +505,7 @@ pub async fn list_assigned_events_for_gate_staff(
     sqlx::query_as::<_, Event>(
         r#"
         SELECT e.id, e.organizer_id, e.title, e.description, e.category, e.venue_name, e.venue_address,
-               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode
+               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode, e.image_url
         FROM gate_staff_event_assignments gsea
         JOIN events e ON e.id = gsea.event_id
         WHERE gsea.gate_staff_id = $1
@@ -483,7 +530,7 @@ pub async fn cancel_event_transaction(
           AND organizer_id = $2
           AND status <> 'Cancelled'
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url
         "#,
     )
     .bind(event_id)
@@ -548,4 +595,106 @@ pub async fn cancel_event_transaction(
     .await?;
 
     Ok(event)
+}
+
+pub async fn get_event_pulse(
+    pool: &PgPool,
+    event_id: Uuid,
+) -> Result<crate::db::models::EventPulseResponse, sqlx::Error> {
+    let inventory_stats = sqlx::query(
+        r#"
+        WITH reserved AS (
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'Sold')::bigint AS sold_count,
+                COUNT(*) FILTER (WHERE status = 'Held')::bigint AS held_count,
+                COUNT(*)::bigint AS total_count
+            FROM event_seat_inventory
+            WHERE event_id = $1
+        ),
+        ga_capacity AS (
+            SELECT COALESCE(SUM(capacity), 0)::bigint AS total_count
+            FROM event_ticket_tiers
+            WHERE event_id = $1
+        ),
+        ga_held AS (
+            SELECT COUNT(*)::bigint AS held_count
+            FROM seat_holds
+            WHERE event_id = $1
+              AND ticket_tier_id IS NOT NULL
+              AND expires_at > NOW()
+        ),
+        ga_sold AS (
+            SELECT COALESCE(SUM(tt.quantity), 0)::bigint AS sold_count
+            FROM ticket_tiers tt
+            JOIN tickets t ON t.id = tt.ticket_id
+            WHERE t.event_id = $1
+              AND t.status <> 'Cancelled'
+        )
+        SELECT
+            (reserved.sold_count + ga_sold.sold_count) AS sold_count,
+            (reserved.held_count + ga_held.held_count) AS held_count,
+            (reserved.total_count + ga_capacity.total_count) AS total_count
+        FROM reserved, ga_capacity, ga_held, ga_sold
+        "#,
+    )
+    .bind(event_id)
+    .fetch_one(pool)
+    .await?;
+
+    let recently_sold = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM tickets
+        WHERE event_id = $1 AND created_at > NOW() - INTERVAL '1 day'
+        "#,
+    )
+    .bind(event_id)
+    .fetch_one(pool)
+    .await?;
+
+    let total = inventory_stats
+        .try_get::<Option<i64>, _>("total_count")?
+        .unwrap_or(0);
+    let sold = inventory_stats
+        .try_get::<Option<i64>, _>("sold_count")?
+        .unwrap_or(0);
+    let held = inventory_stats
+        .try_get::<Option<i64>, _>("held_count")?
+        .unwrap_or(0);
+
+    let sold_percentage = if total > 0 {
+        (sold as f64 / total as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    // Calculate viewers based on real activity (holds + recent sales)
+    let real_activity = held + recently_sold;
+
+    // We know at least 1 person is viewing because this endpoint was just called!
+    let active_viewers = std::cmp::max(1, real_activity);
+
+    // Simplified section pulse for MVP: just general status
+    let mut sections = Vec::new();
+    if total > 0 {
+        let status = if sold_percentage > 95.0 {
+            "Sold Out"
+        } else if sold_percentage > 80.0 {
+            "Fast Filling"
+        } else {
+            "Available"
+        };
+        sections.push(crate::db::models::SectionPulse {
+            section_name: "General".to_string(),
+            status: status.to_string(),
+        });
+    }
+
+    Ok(crate::db::models::EventPulseResponse {
+        active_viewers,
+        recently_sold,
+        total_capacity: total,
+        sold_percentage,
+        sections,
+    })
 }
