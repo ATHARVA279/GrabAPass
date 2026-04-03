@@ -36,6 +36,13 @@ pub struct RazorpayPaymentResponse {
     pub status: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RazorpayRefundResponse {
+    pub id: String,
+    pub status: String,
+    pub amount: i64,
+}
+
 pub struct PaymentService;
 
 impl PaymentService {
@@ -159,7 +166,7 @@ impl PaymentService {
         config: &RazorpayConfig,
         payment_id: &str,
         amount_paise: i64,
-    ) -> Result<(), (StatusCode, String)> {
+    ) -> Result<RazorpayRefundResponse, (StatusCode, String)> {
         let response = config
             .client
             .post(format!("{RAZORPAY_BASE_URL}/payments/{payment_id}/refund"))
@@ -177,18 +184,7 @@ impl PaymentService {
                 )
             })?;
 
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            let error_body = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown gateway error".to_string());
-            Err((
-                StatusCode::BAD_GATEWAY,
-                format!("Razorpay refund error: {error_body}"),
-            ))
-        }
+        Self::parse_json_response(response).await
     }
 
     async fn parse_json_response<T: for<'de> Deserialize<'de>>(

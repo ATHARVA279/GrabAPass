@@ -117,6 +117,19 @@
           · Purchased {{ ticket.created_at | date:'shortDate' }}
         </div>
 
+        <div class="ticket-actions refund-status" *ngIf="refundStatusLabel">
+          <p class="action-note">{{ refundStatusLabel }}</p>
+          <p class="action-note" *ngIf="ticket.refund_status === 'Processed' && ticket.refund_amount">
+            Amount: ₹{{ ticket.refund_amount | number:'1.2-2' }}
+          </p>
+          <p class="action-note" *ngIf="ticket.refund_status === 'Failed' && ticket.refund_amount && ticket.refund_amount > 0">
+            We could not complete the Razorpay refund automatically.
+          </p>
+          <p class="action-note" *ngIf="ticket.refund_status === 'Failed' && ticket.refund_reason">
+            {{ ticket.refund_reason }}
+          </p>
+        </div>
+
         <div class="ticket-actions" *ngIf="ticket.can_cancel">
           <button
             mat-stroked-button
@@ -128,7 +141,7 @@
             <mat-icon>cancel</mat-icon>
             {{ cancelling ? 'Cancelling...' : 'Cancel Ticket' }}
           </button>
-          <p class="action-note">Cancelling refunds the order status and invalidates this QR code.</p>
+          <p class="action-note">Full refund applies only if cancelled more than 24 hours before the event.</p>
         </div>
       </div>
     </div>

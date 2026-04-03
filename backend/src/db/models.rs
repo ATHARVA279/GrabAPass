@@ -722,13 +722,28 @@ pub struct TicketDetail {
     pub event_title: String,
     pub event_start_time: DateTime<Utc>,
     pub venue_name: String,
+    pub venue_address: String,
     pub seats: sqlx::types::Json<Vec<SeatInfo>>,
     pub tiers: sqlx::types::Json<Vec<TicketTierInfo>>,
     pub qr_payload: String,
     pub status: String,
     pub can_cancel: bool,
+    pub refund_amount: Option<f64>,
+    pub refund_status: Option<String>,
+    pub refund_reason: Option<String>,
     pub created_at: DateTime<Utc>,
     pub used_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct RefundRecord {
+    pub id: Uuid,
+    pub booking_id: Uuid,
+    pub payment_id: Option<String>,
+    pub amount: f64,
+    pub refund_status: String,
+    pub refund_reason: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 // ─── Gate Validation DTOs ────────────────────────────────────────────────────
 

@@ -15,6 +15,9 @@ export interface TicketDetail {
   qr_payload: string;
   status: string;
   can_cancel: boolean;
+  refund_amount?: number | null;
+  refund_status?: 'Pending' | 'Processed' | 'Failed' | null;
+  refund_reason?: string | null;
   created_at: string;
   used_at: string | null;
 }

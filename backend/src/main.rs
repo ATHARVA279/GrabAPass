@@ -24,6 +24,7 @@ pub struct AppState {
     pub pool: sqlx::PgPool,
     pub jwt_secret: String,
     pub razorpay: Option<RazorpayConfig>,
+    pub email: Option<EmailConfig>,
     pub rate_limiter: SharedRateLimiter,
     pub event_channels: Arc<Mutex<HashMap<Uuid, broadcast::Sender<String>>>>,
 }
@@ -35,6 +36,15 @@ pub struct RazorpayConfig {
     pub webhook_secret: Option<String>,
     pub checkout_name: String,
     pub client: reqwest::Client,
+}
+
+#[derive(Clone)]
+pub struct EmailConfig {
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub smtp_username: String,
+    pub smtp_password: String,
+    pub from_email: String,
 }
 
 pub type SharedRateLimiter = Arc<Mutex<HashMap<String, VecDeque<std::time::Instant>>>>;
@@ -71,6 +81,45 @@ async fn main() {
         }
     };
 
+    let email = match (
+        env::var("SMTP_HOST").ok(),
+        env::var("SMTP_PORT").ok(),
+        env::var("SMTP_USERNAME").ok(),
+        env::var("SMTP_PASSWORD").ok(),
+        env::var("EMAIL_FROM").ok(),
+    ) {
+        (
+            Some(smtp_host),
+            Some(smtp_port),
+            Some(smtp_username),
+            Some(smtp_password),
+            Some(from_email),
+        ) => {
+            let smtp_port = smtp_port.parse::<u16>().unwrap_or(587);
+
+            tracing::info!(
+                host = %smtp_host,
+                port = smtp_port,
+                from = %from_email,
+                "SMTP email notifications are configured."
+            );
+
+            Some(EmailConfig {
+                smtp_host,
+                smtp_port,
+                smtp_username,
+                smtp_password,
+                from_email,
+            })
+        }
+        _ => {
+            tracing::warn!(
+                "SMTP email notifications are not configured. Booking and refund emails will be skipped."
+            );
+            None
+        }
+    };
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .min_connections(1)
@@ -94,6 +143,7 @@ async fn main() {
         pool,
         jwt_secret,
         razorpay,
+        email,
         rate_limiter: Arc::new(Mutex::new(HashMap::new())),
         event_channels: Arc::new(Mutex::new(HashMap::new())),
     };
@@ -160,6 +210,7 @@ async fn main() {
     let app = Router::new()
         .merge(routes::health::router())
         .nest("/api/auth", routes::auth::router())
+        .nest("/api/bookings", routes::booking::router())
         .nest("/api/events", routes::event::public_router())
         .nest("/api/orders", routes::order::router())
         .nest("/api/payments", routes::payment::router())

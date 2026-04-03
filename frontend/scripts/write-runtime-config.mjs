@@ -40,10 +40,12 @@ const runtimeConfig = {
   GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY ?? '',
 };
 
+fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+
 fs.writeFileSync(
   outputFile,
   `window.__runtimeConfig = ${JSON.stringify(runtimeConfig, null, 2)};\n`,
-  'utf8'
+  'utf8',
 );
 
 console.log(`Wrote runtime config to ${path.relative(projectRoot, outputFile)}`);

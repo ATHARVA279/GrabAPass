@@ -1,4 +1,5 @@
 pub mod auth_service;
+pub mod email_service;
 pub mod event_service;
 pub mod event_venue_service;
 pub mod gate_service;
