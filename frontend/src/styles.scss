@@ -318,6 +318,7 @@ mat-card,
 .mat-mdc-select-value { color: var(--text-primary) !important; font-family: var(--font); }
 .mat-mdc-select-arrow { color: var(--text-secondary) !important; }
 
+// Google Places Autocomplete (global element injected outside Angular component tree)
 // Chips
 mat-chip {
   background: var(--yellow-subtle) !important;

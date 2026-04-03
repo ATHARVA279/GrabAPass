@@ -18,6 +18,10 @@ export interface Event {
   min_price?: number | null;
   max_price?: number | null;
   image_url?: string | null;
+  image_gallery?: string[] | null;
+  venue_place_id?: string | null;
+  venue_latitude?: number | null;
+  venue_longitude?: number | null;
 }
 
 export interface CreateEventRequest {
@@ -30,6 +34,10 @@ export interface CreateEventRequest {
   venue_template_id?: string;
   seating_mode?: SeatingMode;
   image_url?: string | null;
+  image_gallery?: string[] | null;
+  venue_place_id?: string | null;
+  venue_latitude?: number | null;
+  venue_longitude?: number | null;
   ticket_tiers?: CreateEventTicketTierRequest[];
 }
 

@@ -14,7 +14,7 @@
     
     <!-- Hero -->
     <div class="event-hero">
-      <img *ngIf="event.image_url" [src]="event.image_url" alt="{{ event.title }}" class="hero-image">
+      <img *ngIf="heroImage" [src]="heroImage" alt="{{ event.title }}" class="hero-image">
       <div class="hero-overlay"></div>
       
       <button mat-icon-button class="share-btn-overlay" (click)="shareEvent()" title="Share Event">
@@ -28,6 +28,17 @@
         </mat-chip-listbox>
         <h1>{{ event.title }}</h1>
       </div>
+    </div>
+
+    <div class="gallery-strip" *ngIf="eventGallery.length > 1">
+      <button
+        type="button"
+        class="gallery-thumb"
+        *ngFor="let image of eventGallery"
+        [class.active]="image === heroImage"
+        (click)="selectGalleryImage(image)">
+        <img [src]="image" [alt]="event.title + ' gallery image'">
+      </button>
     </div>
 
     <div class="event-grid">

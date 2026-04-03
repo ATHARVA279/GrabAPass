@@ -1,5 +1,6 @@
 use axum::http::StatusCode;
 use chrono::Utc;
+use sqlx::types::Json;
 use uuid::Uuid;
 
 use crate::{
@@ -58,6 +59,11 @@ pub async fn create_event(
     organizer_id: Uuid,
     payload: CreateEventRequest,
 ) -> Result<Event, (StatusCode, String)> {
+    let (primary_image_url, image_gallery) =
+        normalize_event_gallery(payload.image_url.clone(), payload.image_gallery.clone())?;
+    let (venue_latitude, venue_longitude) =
+        normalize_coordinates(payload.venue_latitude, payload.venue_longitude)?;
+    let venue_place_id = normalize_optional_text(payload.venue_place_id.as_deref());
     let seating_mode = venue_service::resolve_seating_mode(
         payload.seating_mode,
         payload.venue_template_id.is_some(),
@@ -76,7 +82,11 @@ pub async fn create_event(
         payload.start_time,
         payload.venue_template_id,
         seating_mode,
-        payload.image_url.as_deref(),
+        primary_image_url.as_deref(),
+        &image_gallery,
+        venue_place_id.as_deref(),
+        venue_latitude,
+        venue_longitude,
     )
     .await
     .map_err(internal_error)?;
@@ -103,6 +113,11 @@ pub async fn update_event(
     event_id: Uuid,
     payload: CreateEventRequest,
 ) -> Result<Event, (StatusCode, String)> {
+    let (primary_image_url, image_gallery) =
+        normalize_event_gallery(payload.image_url.clone(), payload.image_gallery.clone())?;
+    let (venue_latitude, venue_longitude) =
+        normalize_coordinates(payload.venue_latitude, payload.venue_longitude)?;
+    let venue_place_id = normalize_optional_text(payload.venue_place_id.as_deref());
     let seating_mode = venue_service::resolve_seating_mode(
         payload.seating_mode,
         payload.venue_template_id.is_some(),
@@ -121,7 +136,11 @@ pub async fn update_event(
         &payload.venue_address,
         payload.start_time,
         seating_mode,
-        payload.image_url.as_deref(),
+        primary_image_url.as_deref(),
+        &image_gallery,
+        venue_place_id.as_deref(),
+        venue_latitude,
+        venue_longitude,
     )
     .await
     .map_err(internal_error)?
@@ -266,6 +285,58 @@ pub async fn assign_gate_staff(
 
 fn internal_error(error: sqlx::Error) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+}
+
+fn normalize_event_gallery(
+    image_url: Option<String>,
+    image_gallery: Option<Vec<String>>,
+) -> Result<(Option<String>, Json<Vec<String>>), (StatusCode, String)> {
+    let mut gallery = Vec::new();
+
+    if let Some(primary) = normalize_optional_text(image_url.as_deref()) {
+        gallery.push(primary);
+    }
+
+    if let Some(images) = image_gallery {
+        for image in images {
+            if let Some(normalized) = normalize_optional_text(Some(&image)) {
+                if !gallery.iter().any(|existing| existing == &normalized) {
+                    gallery.push(normalized);
+                }
+            }
+        }
+    }
+
+    if gallery.len() > 8 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "You can upload up to 8 event images.".to_string(),
+        ));
+    }
+
+    let primary_image = gallery.first().cloned();
+    Ok((primary_image, Json(gallery)))
+}
+
+fn normalize_coordinates(
+    latitude: Option<f64>,
+    longitude: Option<f64>,
+) -> Result<(Option<f64>, Option<f64>), (StatusCode, String)> {
+    match (latitude, longitude) {
+        (Some(lat), Some(lng)) => Ok((Some(lat), Some(lng))),
+        (None, None) => Ok((None, None)),
+        _ => Err((
+            StatusCode::BAD_REQUEST,
+            "Venue latitude and longitude must both be provided together.".to_string(),
+        )),
+    }
+}
+
+fn normalize_optional_text(value: Option<&str>) -> Option<String> {
+    value
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 pub async fn get_event_pulse(

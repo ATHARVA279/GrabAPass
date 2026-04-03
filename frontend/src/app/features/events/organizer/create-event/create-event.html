@@ -57,20 +57,44 @@
           </mat-form-field>
         </div>
 
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Venue Name</mat-label>
-            <input matInput formControlName="venue_name" placeholder="e.g., Madison Square Garden">
-            <mat-icon matPrefix>stadium</mat-icon>
-            <mat-error *ngIf="eventForm.get('venue_name')?.hasError('required')">Venue name is required.</mat-error>
-          </mat-form-field>
+        <div class="location-section">
+          <div class="location-header">
+            <div class="seating-header compact">
+              <mat-icon>place</mat-icon>
+              <span>Event Location Selection</span>
+            </div>
+            <p>{{ locationConfidenceMessage }}</p>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Venue Name</mat-label>
+              <input matInput formControlName="venue_name" [readonly]="isLocationConfirmed" placeholder="e.g., MIT-ADT Main Campus Auditorium">
+              <mat-icon matPrefix>stadium</mat-icon>
+              <mat-error *ngIf="eventForm.get('venue_name')?.hasError('required')">Venue name is required.</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Venue Address</mat-label>
-            <input matInput formControlName="venue_address" placeholder="e.g., 4 Pennsylvania Plaza, NY">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>City / Area</mat-label>
+              <input matInput formControlName="venue_city_area" [readonly]="isLocationConfirmed" placeholder="e.g., Loni Kalbhor, Pune">
+              <mat-icon matPrefix>location_city</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Full Address</mat-label>
+            <textarea matInput rows="3" formControlName="venue_address" [readonly]="isLocationConfirmed" placeholder="Complete venue address with landmarks"></textarea>
             <mat-icon matPrefix>place</mat-icon>
             <mat-error *ngIf="eventForm.get('venue_address')?.hasError('required')">Address is required.</mat-error>
           </mat-form-field>
+
+          <div class="location-switch-row">
+            <button mat-flat-button color="primary" type="button" (click)="confirmManualLocation()" *ngIf="!isLocationConfirmed">
+              Confirm this location
+            </button>
+            <button mat-stroked-button type="button" (click)="changeLocation(false)" *ngIf="isLocationConfirmed">
+              Change location
+            </button>
+          </div>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -92,30 +116,44 @@
         <div class="image-upload-section">
           <div class="seating-header">
             <mat-icon>image</mat-icon>
-            <span>Event Cover Image</span>
+            <span>Event Image Gallery</span>
           </div>
-          <p class="subtitle">Upload a bold, high-quality image for your event listing.</p>
+          <p class="subtitle">Upload up to 8 images. The first image becomes the cover image used across cards and listings.</p>
 
           <div class="image-upload-card">
-            <div class="image-preview" [class.empty]="!imagePreviewUrl">
-              <img *ngIf="imagePreviewUrl" [src]="imagePreviewUrl" alt="Event cover preview">
-              <div *ngIf="!imagePreviewUrl" class="image-placeholder">
+            <div class="image-preview" [class.empty]="!activeGalleryImage">
+              <img *ngIf="activeGalleryImage" [src]="activeGalleryImage" alt="Event gallery preview">
+              <div *ngIf="!activeGalleryImage" class="image-placeholder">
                 <mat-icon>photo_camera</mat-icon>
-                <span>No image yet</span>
+                <span>No images yet</span>
               </div>
             </div>
 
             <div class="image-actions">
-              <label class="upload-btn" [class.disabled]="isUploadingImage">
-                <input type="file" accept="image/*" (change)="onImageSelected($event)" [disabled]="isUploadingImage">
+              <label class="upload-btn" [class.disabled]="isUploadingImages">
+                <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)" [disabled]="isUploadingImages">
                 <mat-icon>cloud_upload</mat-icon>
-                <span>{{ isUploadingImage ? 'Uploading...' : 'Upload Image' }}</span>
+                <span>{{ isUploadingImages ? 'Uploading...' : 'Upload Images' }}</span>
               </label>
-              <button mat-stroked-button type="button" (click)="removeImage()" [disabled]="!imagePreviewUrl || isUploadingImage">
-                <mat-icon>delete</mat-icon>
-                Remove
+              <span class="upload-hint">PNG or JPG · Max 5MB each · {{ galleryImages.length }}/{{ maxGalleryImages }} uploaded</span>
+            </div>
+          </div>
+
+          <div class="gallery-grid" *ngIf="galleryImages.length > 0">
+            <div class="gallery-tile" *ngFor="let image of galleryImages; let i = index" [class.active]="i === activeGalleryIndex">
+              <button type="button" class="thumbnail-button" (click)="selectGalleryImage(i)">
+                <img [src]="image" [alt]="'Event image ' + (i + 1)">
               </button>
-              <span class="upload-hint">PNG or JPG · Max 5MB</span>
+
+              <div class="gallery-tile-meta">
+                <span class="cover-badge" *ngIf="i === 0">Cover</span>
+                <button mat-stroked-button type="button" *ngIf="i !== 0" (click)="setPrimaryImage(i)">
+                  Make Cover
+                </button>
+                <button mat-icon-button type="button" (click)="removeGalleryImage(i)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
           </div>
         </div>
