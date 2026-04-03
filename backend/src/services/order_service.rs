@@ -290,11 +290,8 @@ impl OrderService {
                 ))?;
 
                 // Try to find a regular order first
-                match OrderRepository::get_order_by_gateway_order_id(
-                    &state.pool,
-                    &gateway_order_id,
-                )
-                .await
+                match OrderRepository::get_order_by_gateway_order_id(&state.pool, &gateway_order_id)
+                    .await
                 {
                     Ok(order) => {
                         // Regular order — reconcile as normal

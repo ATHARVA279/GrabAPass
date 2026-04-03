@@ -1,0 +1,92 @@
+.venue-option-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: rgba(255, 214, 10, 0.28);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+  }
+
+  &.disabled {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+}
+
+.card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+
+  h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+}
+
+.card-meta {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+
+  mat-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    font-size: 0.9rem;
+    color: var(--yellow);
+  }
+}
+
+.location-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+
+  span::after {
+    content: '•';
+    margin-left: 0.45rem;
+  }
+
+  span:last-child::after {
+    content: '';
+    margin: 0;
+  }
+}

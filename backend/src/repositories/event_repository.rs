@@ -1,5 +1,5 @@
-use sqlx::{PgPool, Postgres, Row, Transaction};
 use sqlx::types::Json;
+use sqlx::{PgPool, Postgres, Row, Transaction};
 use uuid::Uuid;
 
 use crate::db::models::{
@@ -24,6 +24,7 @@ pub async fn list_published_events(
             e.start_time,
             e.status,
             e.created_at,
+            e.venue_id,
             e.venue_template_id,
             e.seating_mode,
             e.image_url,
@@ -31,9 +32,17 @@ pub async fn list_published_events(
             e.venue_place_id,
             e.venue_latitude,
             e.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity,
             price_stats.min_price,
             price_stats.max_price
         FROM events e
+        LEFT JOIN event_venues v ON v.id = e.venue_id
         LEFT JOIN LATERAL (
             SELECT
                 MIN(price)::float8 AS min_price,
@@ -116,11 +125,35 @@ pub async fn replace_event_ticket_tiers(
 pub async fn find_event_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode, image_url,
-               image_gallery, venue_place_id, venue_latitude, venue_longitude
-        FROM events
-        WHERE id = $1
+        SELECT
+            e.id,
+            e.organizer_id,
+            e.title,
+            e.description,
+            e.category,
+            e.venue_name,
+            e.venue_address,
+            e.start_time,
+            e.status,
+            e.created_at,
+            e.venue_id,
+            e.venue_template_id,
+            e.seating_mode,
+            e.image_url,
+            e.image_gallery,
+            e.venue_place_id,
+            e.venue_latitude,
+            e.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM events e
+        LEFT JOIN event_venues v ON v.id = e.venue_id
+        WHERE e.id = $1
         "#,
     )
     .bind(id)
@@ -134,6 +167,7 @@ pub async fn create_event(
     title: &str,
     description: Option<&str>,
     category: &str,
+    venue_id: Option<Uuid>,
     venue_name: &str,
     venue_address: &str,
     start_time: chrono::DateTime<chrono::Utc>,
@@ -147,20 +181,49 @@ pub async fn create_event(
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        INSERT INTO events
-            (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
-             venue_place_id, venue_latitude, venue_longitude)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10, $11, $12, $13, $14)
-        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
-                  image_gallery, venue_place_id, venue_latitude, venue_longitude
+        WITH inserted AS (
+            INSERT INTO events
+                (organizer_id, title, description, category, venue_id, venue_name, venue_address,
+                 start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
+                 venue_place_id, venue_latitude, venue_longitude)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Published', $9, $10::text::seating_mode, $11, $12, $13, $14, $15)
+            RETURNING *
+        )
+        SELECT
+            inserted.id,
+            inserted.organizer_id,
+            inserted.title,
+            inserted.description,
+            inserted.category,
+            inserted.venue_name,
+            inserted.venue_address,
+            inserted.start_time,
+            inserted.status,
+            inserted.created_at,
+            inserted.venue_id,
+            inserted.venue_template_id,
+            inserted.seating_mode,
+            inserted.image_url,
+            inserted.image_gallery,
+            inserted.venue_place_id,
+            inserted.venue_latitude,
+            inserted.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM inserted
+        LEFT JOIN event_venues v ON v.id = inserted.venue_id
         "#,
     )
     .bind(organizer_id)
     .bind(title)
     .bind(description)
     .bind(category)
+    .bind(venue_id)
     .bind(venue_name)
     .bind(venue_address)
     .bind(start_time)
@@ -181,6 +244,7 @@ pub async fn create_event_tx(
     title: &str,
     description: Option<&str>,
     category: &str,
+    venue_id: Option<Uuid>,
     venue_name: &str,
     venue_address: &str,
     start_time: chrono::DateTime<chrono::Utc>,
@@ -194,20 +258,49 @@ pub async fn create_event_tx(
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        INSERT INTO events
-            (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
-             venue_place_id, venue_latitude, venue_longitude)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10, $11, $12, $13, $14)
-        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
-                  image_gallery, venue_place_id, venue_latitude, venue_longitude
+        WITH inserted AS (
+            INSERT INTO events
+                (organizer_id, title, description, category, venue_id, venue_name, venue_address,
+                 start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
+                 venue_place_id, venue_latitude, venue_longitude)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Published', $9, $10::text::seating_mode, $11, $12, $13, $14, $15)
+            RETURNING *
+        )
+        SELECT
+            inserted.id,
+            inserted.organizer_id,
+            inserted.title,
+            inserted.description,
+            inserted.category,
+            inserted.venue_name,
+            inserted.venue_address,
+            inserted.start_time,
+            inserted.status,
+            inserted.created_at,
+            inserted.venue_id,
+            inserted.venue_template_id,
+            inserted.seating_mode,
+            inserted.image_url,
+            inserted.image_gallery,
+            inserted.venue_place_id,
+            inserted.venue_latitude,
+            inserted.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM inserted
+        LEFT JOIN event_venues v ON v.id = inserted.venue_id
         "#,
     )
     .bind(organizer_id)
     .bind(title)
     .bind(description)
     .bind(category)
+    .bind(venue_id)
     .bind(venue_name)
     .bind(venue_address)
     .bind(start_time)
@@ -229,9 +322,11 @@ pub async fn update_event(
     title: &str,
     description: Option<&str>,
     category: &str,
+    venue_id: Option<Uuid>,
     venue_name: &str,
     venue_address: &str,
     start_time: chrono::DateTime<chrono::Utc>,
+    venue_template_id: Option<Uuid>,
     seating_mode: Option<SeatingMode>,
     image_url: Option<&str>,
     image_gallery: &Json<Vec<String>>,
@@ -241,23 +336,53 @@ pub async fn update_event(
 ) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        UPDATE events
-        SET title = $3,
-            description = $4,
-            category = $5,
-            venue_name = $6,
-            venue_address = $7,
-            start_time = $8,
-            seating_mode = $9::text::seating_mode,
-            image_url = $10,
-            image_gallery = $11,
-            venue_place_id = $12,
-            venue_latitude = $13,
-            venue_longitude = $14
-        WHERE id = $1 AND organizer_id = $2
-        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
-                  image_gallery, venue_place_id, venue_latitude, venue_longitude
+        WITH updated AS (
+            UPDATE events
+            SET title = $3,
+                description = $4,
+                category = $5,
+                venue_id = $6,
+                venue_name = $7,
+                venue_address = $8,
+                start_time = $9,
+                venue_template_id = $10,
+                seating_mode = $11::text::seating_mode,
+                image_url = $12,
+                image_gallery = $13,
+                venue_place_id = $14,
+                venue_latitude = $15,
+                venue_longitude = $16
+            WHERE id = $1 AND organizer_id = $2
+            RETURNING *
+        )
+        SELECT
+            updated.id,
+            updated.organizer_id,
+            updated.title,
+            updated.description,
+            updated.category,
+            updated.venue_name,
+            updated.venue_address,
+            updated.start_time,
+            updated.status,
+            updated.created_at,
+            updated.venue_id,
+            updated.venue_template_id,
+            updated.seating_mode,
+            updated.image_url,
+            updated.image_gallery,
+            updated.venue_place_id,
+            updated.venue_latitude,
+            updated.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM updated
+        LEFT JOIN event_venues v ON v.id = updated.venue_id
         "#,
     )
     .bind(event_id)
@@ -265,9 +390,11 @@ pub async fn update_event(
     .bind(title)
     .bind(description)
     .bind(category)
+    .bind(venue_id)
     .bind(venue_name)
     .bind(venue_address)
     .bind(start_time)
+    .bind(venue_template_id)
     .bind(seating_mode)
     .bind(image_url)
     .bind(image_gallery)
@@ -357,12 +484,36 @@ pub async fn list_organizer_events(
 ) -> Result<Vec<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode, image_url,
-               image_gallery, venue_place_id, venue_latitude, venue_longitude
-        FROM events
-        WHERE organizer_id = $1
-        ORDER BY created_at DESC
+        SELECT
+            e.id,
+            e.organizer_id,
+            e.title,
+            e.description,
+            e.category,
+            e.venue_name,
+            e.venue_address,
+            e.start_time,
+            e.status,
+            e.created_at,
+            e.venue_id,
+            e.venue_template_id,
+            e.seating_mode,
+            e.image_url,
+            e.image_gallery,
+            e.venue_place_id,
+            e.venue_latitude,
+            e.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM events e
+        LEFT JOIN event_venues v ON v.id = e.venue_id
+        WHERE e.organizer_id = $1
+        ORDER BY e.created_at DESC
         "#,
     )
     .bind(organizer_id)
@@ -544,11 +695,35 @@ pub async fn list_assigned_events_for_gate_staff(
 ) -> Result<Vec<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
-        SELECT e.id, e.organizer_id, e.title, e.description, e.category, e.venue_name, e.venue_address,
-               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode, e.image_url,
-               e.image_gallery, e.venue_place_id, e.venue_latitude, e.venue_longitude
+        SELECT
+               e.id,
+               e.organizer_id,
+               e.title,
+               e.description,
+               e.category,
+               e.venue_name,
+               e.venue_address,
+               e.start_time,
+               e.status,
+               e.created_at,
+               e.venue_id,
+               e.venue_template_id,
+               e.seating_mode,
+               e.image_url,
+               e.image_gallery,
+               e.venue_place_id,
+               e.venue_latitude,
+               e.venue_longitude,
+               v.locality AS venue_locality,
+               v.city AS venue_city,
+               v.state AS venue_state,
+               v.pincode AS venue_pincode,
+               v.country AS venue_country,
+               v.landmark AS venue_landmark,
+               v.capacity AS venue_capacity
         FROM gate_staff_event_assignments gsea
         JOIN events e ON e.id = gsea.event_id
+        LEFT JOIN event_venues v ON v.id = e.venue_id
         WHERE gsea.gate_staff_id = $1
         ORDER BY e.start_time ASC
         "#,
@@ -565,14 +740,42 @@ pub async fn cancel_event_transaction(
 ) -> Result<Option<Event>, sqlx::Error> {
     let event = sqlx::query_as::<_, Event>(
         r#"
-        UPDATE events
-        SET status = 'Cancelled'
-        WHERE id = $1
-          AND organizer_id = $2
-          AND status <> 'Cancelled'
-        RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
-                  image_gallery, venue_place_id, venue_latitude, venue_longitude
+        WITH updated AS (
+            UPDATE events
+            SET status = 'Cancelled'
+            WHERE id = $1
+              AND organizer_id = $2
+              AND status <> 'Cancelled'
+            RETURNING *
+        )
+        SELECT
+            updated.id,
+            updated.organizer_id,
+            updated.title,
+            updated.description,
+            updated.category,
+            updated.venue_name,
+            updated.venue_address,
+            updated.start_time,
+            updated.status,
+            updated.created_at,
+            updated.venue_id,
+            updated.venue_template_id,
+            updated.seating_mode,
+            updated.image_url,
+            updated.image_gallery,
+            updated.venue_place_id,
+            updated.venue_latitude,
+            updated.venue_longitude,
+            v.locality AS venue_locality,
+            v.city AS venue_city,
+            v.state AS venue_state,
+            v.pincode AS venue_pincode,
+            v.country AS venue_country,
+            v.landmark AS venue_landmark,
+            v.capacity AS venue_capacity
+        FROM updated
+        LEFT JOIN event_venues v ON v.id = updated.venue_id
         "#,
     )
     .bind(event_id)

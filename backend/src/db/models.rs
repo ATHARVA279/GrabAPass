@@ -81,6 +81,7 @@ pub struct Event {
     pub start_time: DateTime<Utc>,
     pub status: EventStatus,
     pub created_at: DateTime<Utc>,
+    pub venue_id: Option<Uuid>,
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
     pub image_url: Option<String>,
@@ -88,6 +89,13 @@ pub struct Event {
     pub venue_place_id: Option<String>,
     pub venue_latitude: Option<f64>,
     pub venue_longitude: Option<f64>,
+    pub venue_locality: Option<String>,
+    pub venue_city: Option<String>,
+    pub venue_state: Option<String>,
+    pub venue_pincode: Option<String>,
+    pub venue_country: Option<String>,
+    pub venue_landmark: Option<String>,
+    pub venue_capacity: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
@@ -102,6 +110,7 @@ pub struct PublicEvent {
     pub start_time: DateTime<Utc>,
     pub status: EventStatus,
     pub created_at: DateTime<Utc>,
+    pub venue_id: Option<Uuid>,
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
     pub min_price: Option<f64>,
@@ -111,6 +120,13 @@ pub struct PublicEvent {
     pub venue_place_id: Option<String>,
     pub venue_latitude: Option<f64>,
     pub venue_longitude: Option<f64>,
+    pub venue_locality: Option<String>,
+    pub venue_city: Option<String>,
+    pub venue_state: Option<String>,
+    pub venue_pincode: Option<String>,
+    pub venue_country: Option<String>,
+    pub venue_landmark: Option<String>,
+    pub venue_capacity: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Clone, FromRow)]
@@ -199,6 +215,7 @@ pub struct CreateEventRequest {
     pub title: String,
     pub description: Option<String>,
     pub category: String,
+    pub venue: Option<EventVenueInput>,
     pub venue_name: String,
     pub venue_address: String,
     pub start_time: DateTime<Utc>,
@@ -211,6 +228,52 @@ pub struct CreateEventRequest {
     pub venue_latitude: Option<f64>,
     pub venue_longitude: Option<f64>,
     pub ticket_tiers: Option<Vec<CreateEventTicketTierRequest>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct EventVenue {
+    pub id: Uuid,
+    pub created_by: Uuid,
+    pub name: String,
+    pub place_id: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub address: String,
+    pub locality: String,
+    pub city: String,
+    pub state: String,
+    pub pincode: String,
+    pub country: String,
+    pub landmark: Option<String>,
+    pub capacity: Option<i32>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EventVenueInput {
+    pub id: Option<Uuid>,
+    pub name: String,
+    pub place_id: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub address: String,
+    pub locality: String,
+    pub city: String,
+    pub state: String,
+    pub pincode: String,
+    pub country: String,
+    pub landmark: Option<String>,
+    pub capacity: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EventVenueMatchResponse {
+    pub exact_match: Option<EventVenue>,
+    pub similar_venues: Vec<EventVenue>,
 }
 
 // ─── Venue template raw DB rows ───────────────────────────────────────────────

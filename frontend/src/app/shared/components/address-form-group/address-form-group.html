@@ -1,0 +1,37 @@
+<div class="address-grid" *ngIf="venue; else emptyState">
+  <div class="address-block address-block--wide">
+    <span class="label">Full Address</span>
+    <strong>{{ venue.address || 'Waiting for Google Maps address…' }}</strong>
+  </div>
+
+  <div class="address-block">
+    <span class="label">Locality / Area</span>
+    <strong>{{ venue.locality || 'Not detected' }}</strong>
+  </div>
+
+  <div class="address-block">
+    <span class="label">City</span>
+    <strong>{{ venue.city || 'Not detected' }}</strong>
+  </div>
+
+  <div class="address-block">
+    <span class="label">State</span>
+    <strong>{{ venue.state || 'Not detected' }}</strong>
+  </div>
+
+  <div class="address-block">
+    <span class="label">Pincode</span>
+    <strong>{{ venue.pincode || 'Not detected' }}</strong>
+  </div>
+
+  <div class="address-block">
+    <span class="label">Coordinates</span>
+    <strong>{{ venue.latitude | number: '1.4-4' }}, {{ venue.longitude | number: '1.4-4' }}</strong>
+  </div>
+</div>
+
+<ng-template #emptyState>
+  <div class="address-empty">
+    Select a Google Maps result or place a pin to auto-fill the address.
+  </div>
+</ng-template>

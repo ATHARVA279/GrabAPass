@@ -1,0 +1,55 @@
+<section class="venue-search-select">
+  <mat-form-field appearance="outline" class="full-width search-field">
+    <mat-label>Search Venue</mat-label>
+    <input
+      matInput
+      [formControl]="searchControl"
+      [placeholder]="placeholder"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <mat-icon matPrefix>travel_explore</mat-icon>
+    <mat-spinner matSuffix diameter="18" *ngIf="isLoading"></mat-spinner>
+    <button
+      mat-icon-button
+      matSuffix
+      type="button"
+      *ngIf="normalizedQuery && !isLoading"
+      (click)="clearSearch()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    <mat-hint
+      >Google Maps suggestions only. We’ll match the place using Place ID, not just the
+      name.</mat-hint
+    >
+  </mat-form-field>
+
+  <div class="feedback" *ngIf="errorMessage">
+    <mat-icon>error</mat-icon>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <div class="search-results" *ngIf="searchResults.length">
+    <app-venue-option-card
+      *ngFor="let result of searchResults"
+      [venue]="result"
+      actionLabel="Review on map"
+      emphasisLabel="Google Maps"
+      (selected)="emitSelectedVenue(result)"
+    >
+    </app-venue-option-card>
+  </div>
+
+  <div
+    class="empty-state"
+    *ngIf="hasSearched && !isLoading && !searchResults.length && !errorMessage"
+  >
+    <mat-icon>location_off</mat-icon>
+    <strong>No venue found</strong>
+    <p>Try searching by area or city, or add the venue manually with Google Maps and a pin.</p>
+    <button mat-flat-button color="primary" type="button" (click)="openAddVenue()">
+      Add New Venue
+    </button>
+  </div>
+</section>

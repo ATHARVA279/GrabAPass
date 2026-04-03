@@ -1,9 +1,10 @@
 pub mod auth;
 pub mod event;
+pub mod event_venue;
 pub mod gate;
 pub mod health;
 pub mod order;
 pub mod payment;
+pub mod split;
 pub mod ticket;
 pub mod venue;
-pub mod split;

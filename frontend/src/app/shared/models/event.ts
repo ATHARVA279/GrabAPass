@@ -1,4 +1,5 @@
 import { SeatingMode } from './venue';
+import { EventVenue, EventVenueInput } from './event-venue';
 
 export type EventStatus = 'Draft' | 'Published' | 'Cancelled';
 
@@ -13,6 +14,7 @@ export interface Event {
   start_time: string;
   status: EventStatus;
   created_at: string;
+  venue_id?: string | null;
   venue_template_id?: string | null;
   seating_mode?: SeatingMode | null;
   min_price?: number | null;
@@ -22,12 +24,21 @@ export interface Event {
   venue_place_id?: string | null;
   venue_latitude?: number | null;
   venue_longitude?: number | null;
+  venue_locality?: string | null;
+  venue_city?: string | null;
+  venue_state?: string | null;
+  venue_pincode?: string | null;
+  venue_country?: string | null;
+  venue_landmark?: string | null;
+  venue_capacity?: number | null;
+  venue?: EventVenue | null;
 }
 
 export interface CreateEventRequest {
   title: string;
   description?: string;
   category: string;
+  venue?: EventVenueInput | null;
   venue_name: string;
   venue_address: string;
   start_time: string;

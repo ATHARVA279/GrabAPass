@@ -1,7 +1,7 @@
-use sqlx::{Postgres, Transaction};
-use uuid::Uuid;
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
+use sqlx::{Postgres, Transaction};
+use uuid::Uuid;
 
 use crate::db::models::{SplitSession, SplitShare, SplitType};
 
@@ -28,7 +28,12 @@ impl SplitRepository {
         .bind(expires_at)
         .fetch_one(&mut **tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to create split session: {}", e)))
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create split session: {}", e),
+            )
+        })
     }
 
     pub async fn create_split_share_tx(
@@ -89,13 +94,21 @@ impl SplitRepository {
             JOIN events e ON e.id = o.event_id
             JOIN users u ON u.id = o.user_id
             WHERE s.payment_token = $1
-            "#
+            "#,
         )
         .bind(token)
         .fetch_optional(pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "Token invalid or expired.".to_string()))
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB Error: {}", e),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            "Token invalid or expired.".to_string(),
+        ))
     }
 
     pub async fn get_share_by_payment_token(
@@ -150,13 +163,21 @@ impl SplitRepository {
             SELECT id, order_id, total_amount::float8, split_type, status, expires_at, created_at
             FROM split_sessions
             WHERE order_id = $1
-            "#
+            "#,
         )
         .bind(order_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?
-        .ok_or((StatusCode::NOT_FOUND, "No split session found for this order.".to_string()))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("DB Error: {}", e),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            "No split session found for this order.".to_string(),
+        ))?;
 
         let shares = sqlx::query_as::<_, crate::db::models::SplitShare>(
             r#"
@@ -189,7 +210,12 @@ impl SplitRepository {
         )
         .fetch_all(&mut **tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to find expired pending sessions: {}", e)))
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to find expired pending sessions: {}", e),
+            )
+        })
     }
 
     pub async fn get_shares_for_session(
@@ -226,7 +252,12 @@ impl SplitRepository {
         .bind(order_item_id)
         .execute(&mut **tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to allocate split share item: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to allocate split share item: {}", e),
+            )
+        })?;
 
         Ok(())
     }

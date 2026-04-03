@@ -1,16 +1,19 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 use uuid::Uuid;
 
 use crate::{
-    db::models::{InitializeSplitRequest, SplitSession, SplitSharePublicDetail, SplitCheckoutInitialization, VerifySplitShareRequest},
+    AppState,
+    db::models::{
+        InitializeSplitRequest, SplitCheckoutInitialization, SplitSession, SplitSharePublicDetail,
+        VerifySplitShareRequest,
+    },
     middleware::auth::RequireCustomer,
     repositories::{order_repository::OrderRepository, split_repository::SplitRepository},
     services::split_service::SplitService,
-    AppState,
 };
 
 pub async fn initialize_split(
@@ -19,7 +22,8 @@ pub async fn initialize_split(
     Path(order_id): Path<Uuid>,
     Json(payload): Json<InitializeSplitRequest>,
 ) -> Result<(StatusCode, Json<SplitSession>), (StatusCode, String)> {
-    let session = SplitService::initialize_split(&state.pool, order_id, claims.sub, payload).await?;
+    let session =
+        SplitService::initialize_split(&state.pool, order_id, claims.sub, payload).await?;
     Ok((StatusCode::CREATED, Json(session)))
 }
 
@@ -28,8 +32,10 @@ pub async fn get_split_session_for_order(
     RequireCustomer(claims): RequireCustomer,
     Path(order_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<SplitSession>), (StatusCode, String)> {
-    let _order = OrderRepository::get_order_by_id_for_user(&state.pool, order_id, claims.sub).await?;
-    let session = SplitRepository::get_split_session_for_order_with_shares(&state.pool, order_id).await?;
+    let _order =
+        OrderRepository::get_order_by_id_for_user(&state.pool, order_id, claims.sub).await?;
+    let session =
+        SplitRepository::get_split_session_for_order_with_shares(&state.pool, order_id).await?;
     Ok((StatusCode::OK, Json(session)))
 }
 
@@ -82,10 +88,13 @@ pub async fn verify_share_payment(
 
     let updated = SplitRepository::get_split_share_public_details(&state.pool, token).await?;
 
-    Ok((StatusCode::OK, Json(serde_json::json!({
-        "session_status": updated.session_status,
-        "order_id": updated.order_id,
-    }))))
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "session_status": updated.session_status,
+            "order_id": updated.order_id,
+        })),
+    ))
 }
 
 pub async fn claim_share_ticket(

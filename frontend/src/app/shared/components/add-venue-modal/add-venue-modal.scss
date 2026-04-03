@@ -1,0 +1,138 @@
+.add-venue-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(88vh, 940px);
+  padding: 1.2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0.3rem 0 0.35rem;
+    font-size: 1.6rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  button {
+    flex-shrink: 0;
+  }
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 214, 10, 0.14);
+  color: var(--yellow);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.step-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+
+  span {
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+}
+
+.duplicate-banner,
+.error-copy {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 18px;
+}
+
+.duplicate-banner {
+  background: rgba(255, 214, 10, 0.08);
+  border: 1px solid rgba(255, 214, 10, 0.18);
+
+  mat-icon {
+    color: var(--yellow);
+  }
+
+  p {
+    margin: 0.3rem 0 0;
+    color: var(--text-secondary);
+  }
+}
+
+.duplicate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.details-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+
+  .half-width {
+    flex: 1;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+}
+
+.error-copy {
+  background: rgba(255, 77, 120, 0.08);
+  border: 1px solid rgba(255, 77, 120, 0.16);
+  color: #ff8ab8;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  button[mat-flat-button] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+}

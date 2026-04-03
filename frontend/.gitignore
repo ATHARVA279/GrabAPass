@@ -44,3 +44,5 @@ __screenshots__/
 Thumbs.db
 
 .env
+.env.local
+public/runtime-config.js
