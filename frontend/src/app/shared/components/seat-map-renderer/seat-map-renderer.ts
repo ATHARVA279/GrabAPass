@@ -31,8 +31,25 @@ export class SeatMapRenderer implements OnChanges {
   selectedSeats: SelectedSeat[] = [];
 
   ngOnChanges(): void {
-    this.selectedSeatIds.clear();
-    this.selectedSeats = [];
+    if (!this.layout) return;
+
+    const availableNow = new Set<string>();
+
+    for (const section of this.layout.sections) {
+      for (const row of section.rows) {
+        for (const seat of row.seats) {
+          if (this.selectedSeatIds.has(seat.id) && seat.status === 'Available') {
+            availableNow.add(seat.id);
+          }
+        }
+      }
+    }
+
+    if (availableNow.size !== this.selectedSeatIds.size) {
+      this.selectedSeatIds = availableNow;
+      this.selectedSeats = this.selectedSeats.filter(s => availableNow.has(s.seatId));
+      this.selectedSeatsChanged.emit([...this.selectedSeats]);
+    }
   }
 
   // ── Legend data ────────────────────────────────────────────────────────────

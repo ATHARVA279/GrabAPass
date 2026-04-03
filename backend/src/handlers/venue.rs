@@ -52,9 +52,10 @@ pub async fn list_venue_sections(
 ) -> Result<Json<Vec<crate::db::models::VenueSection>>, (StatusCode, String)> {
     // Check permission
     let _ = venue_service::get_venue_template(&state, id, claims.sub).await?;
-    let sections = crate::repositories::venue_repository::list_sections_for_template(&state.pool, id)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let sections =
+        crate::repositories::venue_repository::list_sections_for_template(&state.pool, id)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     Ok(Json(sections))
 }
 

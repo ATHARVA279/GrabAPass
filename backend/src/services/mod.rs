@@ -8,3 +8,5 @@ pub mod rate_limit_service;
 pub mod suspicious_activity_service;
 pub mod ticket_service;
 pub mod venue_service;
+pub mod ws_service;
+pub mod split_service;

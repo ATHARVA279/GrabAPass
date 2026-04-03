@@ -16,8 +16,10 @@ impl SuspiciousActivityService {
         order_id: Uuid,
         reason: Option<&str>,
     ) -> Result<(), (StatusCode, String)> {
-        let failures =
-            SuspiciousActivityRepository::count_recent_payment_failures(pool, event_id, user_id, 15).await?;
+        let failures = SuspiciousActivityRepository::count_recent_payment_failures(
+            pool, event_id, user_id, 15,
+        )
+        .await?;
 
         if failures < 3 {
             return Ok(());
@@ -60,8 +62,10 @@ impl SuspiciousActivityService {
         ticket_id: Option<Uuid>,
         reason: &str,
     ) -> Result<(), (StatusCode, String)> {
-        let rejected =
-            SuspiciousActivityRepository::count_recent_rejected_scans(pool, event_id, ticket_id, 10).await?;
+        let rejected = SuspiciousActivityRepository::count_recent_rejected_scans(
+            pool, event_id, ticket_id, 10,
+        )
+        .await?;
 
         if rejected < 3 {
             return Ok(());

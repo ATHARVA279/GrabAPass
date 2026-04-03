@@ -4,6 +4,10 @@
     <span>GrabAPass</span>
   </a>
 
+  <button mat-icon-button class="menu-toggle" [matMenuTriggerFor]="mainMenu" aria-label="Open menu">
+    <mat-icon>menu</mat-icon>
+  </button>
+
   <div class="nav-links">
     <a mat-button routerLink="/events" routerLinkActive="nav-active" class="nav-link">
       <mat-icon>explore</mat-icon>
@@ -13,12 +17,12 @@
 
   <span class="spacer"></span>
 
-  <ng-container *ngIf="!user">
+  <div class="auth-actions" *ngIf="!user">
     <button mat-button routerLink="/login" class="auth-btn">Login</button>
     <button mat-flat-button color="primary" routerLink="/register" class="register-btn">Sign Up</button>
-  </ng-container>
+  </div>
 
-  <ng-container *ngIf="user">
+  <div class="user-actions" *ngIf="user">
     <span class="user-greeting">Hi, {{ user.name }}</span>
     <button mat-button *ngIf="user.role === 'Organizer'" routerLink="/organizer"
             routerLinkActive="nav-active" class="nav-link">
@@ -38,8 +42,49 @@
     <button mat-icon-button (click)="logout()" title="Logout" class="logout-btn">
       <mat-icon>logout</mat-icon>
     </button>
-  </ng-container>
+  </div>
 </mat-toolbar>
+
+<mat-menu #mainMenu="matMenu" class="mobile-menu">
+  <button mat-menu-item routerLink="/events">
+    <mat-icon>explore</mat-icon>
+    <span>Events</span>
+  </button>
+
+  <ng-container *ngIf="!user">
+    <button mat-menu-item routerLink="/login">
+      <mat-icon>login</mat-icon>
+      <span>Login</span>
+    </button>
+    <button mat-menu-item routerLink="/register">
+      <mat-icon>person_add</mat-icon>
+      <span>Sign Up</span>
+    </button>
+  </ng-container>
+
+  <ng-container *ngIf="user">
+    <button mat-menu-item disabled class="menu-greeting">
+      <mat-icon>person</mat-icon>
+      <span>Hi, {{ user.name }}</span>
+    </button>
+    <button mat-menu-item *ngIf="user.role === 'Organizer'" routerLink="/organizer">
+      <mat-icon>dashboard</mat-icon>
+      <span>Dashboard</span>
+    </button>
+    <button mat-menu-item *ngIf="user.role === 'Customer'" routerLink="/tickets">
+      <mat-icon>confirmation_number</mat-icon>
+      <span>My Tickets</span>
+    </button>
+    <button mat-menu-item *ngIf="user.role === 'GateStaff'" routerLink="/gate">
+      <mat-icon>qr_code_scanner</mat-icon>
+      <span>Gate Scanner</span>
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </ng-container>
+</mat-menu>
 
 <main class="content-container">
   <router-outlet></router-outlet>

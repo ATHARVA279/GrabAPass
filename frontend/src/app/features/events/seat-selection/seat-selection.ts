@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -12,6 +12,7 @@ import { PublicEventService } from '../../../core/services/public-event.service'
 import { CheckoutService } from '../../../core/services/checkout.service';
 import { VenueService } from '../../../core/services/venue.service';
 import { BookingService } from '../../../core/services/booking.service';
+import { WsService } from '../../../core/services/ws.service';
 import { AuthService } from '../../../core/auth/auth';
 import { Event } from '../../../shared/models/event';
 import { SeatLayoutResponse } from '../../../shared/models/venue';
@@ -31,7 +32,7 @@ import { SeatMapRenderer, SelectedSeat } from '../../../shared/components/seat-m
   templateUrl: './seat-selection.html',
   styleUrls: ['./seat-selection.scss'],
 })
-export class SeatSelection implements OnInit {
+export class SeatSelection implements OnInit, OnDestroy {
   event: Event | null = null;
   seatLayout: SeatLayoutResponse | null = null;
   loading = true;
@@ -40,6 +41,7 @@ export class SeatSelection implements OnInit {
   hasActiveHold = false;
 
   selectedSeats: SelectedSeat[] = [];
+  private wsSubscription: any;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -47,8 +49,10 @@ export class SeatSelection implements OnInit {
   private readonly checkoutService = inject(CheckoutService);
   private readonly venueService = inject(VenueService);
   private readonly bookingService = inject(BookingService);
+  private readonly wsService = inject(WsService);
   private readonly authService = inject(AuthService);
   private readonly toastr = inject(ToastrService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   get isLoggedIn(): boolean {
     return !!this.authService.currentUserValue;
@@ -74,14 +78,36 @@ export class SeatSelection implements OnInit {
       },
       error: () => this.toastr.error('Event not found.', 'Error'),
     });
+
+    this.wsSubscription = this.wsService.connectToEvent(eventId).subscribe(msg => {
+      if (msg && msg.type === 'SEATS_UPDATED') {
+        // Only refresh layout if there's no active local hold (we don't want to wipe the user's unsaved picks)
+        // Wait, seat selected state is kept in `selectedSeats`, which is mapped to the layout
+        this.loadSeatLayout(eventId, true);
+      }
+    });
   }
 
-  private loadSeatLayout(eventId: string): void {
-    this.layoutLoading = true;
+  ngOnDestroy(): void {
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
+    }
+  }
+
+  private loadSeatLayout(eventId: string, isSilentRefresh: boolean = false): void {
+    if (!isSilentRefresh) {
+      this.layoutLoading = true;
+    }
     this.venueService.getSeatLayout(eventId).pipe(
-      finalize(() => (this.layoutLoading = false))
+      finalize(() => {
+        this.layoutLoading = false;
+        this.cdr.markForCheck();
+      })
     ).subscribe({
-      next: (layout) => (this.seatLayout = layout),
+      next: (layout) => {
+        this.seatLayout = layout;
+        this.cdr.markForCheck();
+      },
       error: () => this.toastr.error('Could not load seat layout.', 'Error'),
     });
   }
@@ -120,13 +146,13 @@ export class SeatSelection implements OnInit {
     this.isHolding = true;
     const seatIds = this.selectedSeats.map(s => s.seatId);
 
-    this.checkoutService.holdSeats(this.event.id, seatIds).pipe(
+    this.checkoutService.holdSeats(this.event.id, { seat_ids: seatIds }).pipe(
       finalize(() => (this.isHolding = false))
     ).subscribe({
       next: (holds) => {
         this.toastr.success(`Held ${holds.length} seats!`, 'Seats Held');
-        this.bookingService.setSelectedSeats(this.event!, this.selectedSeats);
-        this.bookingService.setHoldData(seatIds, new Date(holds[0].expires_at));
+        this.bookingService.setSelection(this.event!, this.selectedSeats, []);
+        this.bookingService.setHoldData(holds.map((hold) => hold.id), new Date(holds[0].expires_at));
         this.router.navigate(['/events', this.event!.id, 'checkout']);
       },
       error: (err) => {
@@ -156,7 +182,7 @@ export class SeatSelection implements OnInit {
     const holdStillActive = !!holdExpiresAt && holdExpiresAt.getTime() > Date.now();
 
     this.selectedSeats = [...bookingState.selectedSeats];
-    this.hasActiveHold = holdStillActive && bookingState.heldSeatIds.length > 0;
+    this.hasActiveHold = holdStillActive && bookingState.holdIds.length > 0;
 
     if (!holdStillActive) {
       this.hasActiveHold = false;

@@ -82,6 +82,26 @@ pub struct Event {
     pub created_at: DateTime<Utc>,
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
+    pub image_url: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct PublicEvent {
+    pub id: Uuid,
+    pub organizer_id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub category: String,
+    pub venue_name: String,
+    pub venue_address: String,
+    pub start_time: DateTime<Utc>,
+    pub status: EventStatus,
+    pub created_at: DateTime<Utc>,
+    pub venue_template_id: Option<Uuid>,
+    pub seating_mode: Option<SeatingMode>,
+    pub min_price: Option<f64>,
+    pub max_price: Option<f64>,
+    pub image_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone, FromRow)]
@@ -146,6 +166,23 @@ pub struct Claims {
     pub exp: usize,
 }
 
+// ─── Crowd Pulse DTOs ────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EventPulseResponse {
+    pub active_viewers: i64,
+    pub recently_sold: i64,
+    pub total_capacity: i64,
+    pub sold_percentage: f64,
+    pub sections: Vec<SectionPulse>,
+}
+
+#[derive(Debug, Serialize, Clone, FromRow)]
+pub struct SectionPulse {
+    pub section_name: String,
+    pub status: String,
+}
+
 // ─── Event request DTOs ──────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -159,6 +196,8 @@ pub struct CreateEventRequest {
     /// Optional: attach a venue template to enable reserved seating
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
+    pub image_url: Option<String>,
+    pub ticket_tiers: Option<Vec<CreateEventTicketTierRequest>>,
 }
 
 // ─── Venue template raw DB rows ───────────────────────────────────────────────
@@ -224,10 +263,22 @@ pub struct EventSeatInventory {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct EventTicketTier {
+    pub id: Uuid,
+    pub event_id: Uuid,
+    pub name: String,
+    pub price: f64,
+    pub capacity: i32,
+    pub color_hex: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct SeatHold {
     pub id: Uuid,
     pub event_id: Uuid,
-    pub seat_id: Uuid,
+    pub seat_id: Option<Uuid>,
+    pub ticket_tier_id: Option<Uuid>,
     pub user_id: Uuid,
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
@@ -279,11 +330,28 @@ pub struct AssignSeatCategoryRequest {
     pub color_hex: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreateEventTicketTierRequest {
+    pub name: String,
+    pub price: f64,
+    pub capacity: i32,
+    pub color_hex: Option<String>,
+}
+
 // ─── Seat Hold DTOs ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TicketTierSelection {
+    pub ticket_tier_id: Uuid,
+    pub quantity: i32,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct HoldSeatsRequest {
+    #[serde(default)]
     pub seat_ids: Vec<Uuid>,
+    #[serde(default)]
+    pub ticket_tiers: Vec<TicketTierSelection>,
 }
 
 // ─── Frontend-ready seat layout response ─────────────────────────────────────
@@ -361,13 +429,14 @@ pub struct Order {
 pub struct OrderItem {
     pub id: Uuid,
     pub order_id: Uuid,
-    pub seat_id: Uuid,
+    pub seat_id: Option<Uuid>,
+    pub ticket_tier_id: Option<Uuid>,
     pub price: f64,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct InitializeCheckoutRequest {
-    pub seat_ids: Vec<Uuid>,
+    pub hold_ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Serialize)]
@@ -411,6 +480,119 @@ pub struct RazorpayWebhookData {
     pub payment: Option<RazorpayWebhookPaymentContainer>,
 }
 
+// ─── Split Checkout DTOs ─────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type, Clone, PartialEq)]
+#[sqlx(type_name = "split_status", rename_all = "PascalCase")]
+pub enum SplitStatus {
+    Pending,
+    Completed,
+    Expired,
+    Refunded,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type, Clone, PartialEq)]
+#[sqlx(type_name = "split_type", rename_all = "PascalCase")]
+pub enum SplitType {
+    Even,
+    Custom,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct SplitSession {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub total_amount: f64,
+    pub split_type: SplitType,
+    pub status: SplitStatus,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    #[sqlx(skip)]
+    pub shares: Option<Vec<SplitShare>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct SplitShare {
+    pub id: Uuid,
+    pub split_session_id: Uuid,
+    pub amount_due: f64,
+    pub status: SplitStatus,
+    pub is_host_share: bool,
+    pub guest_name: Option<String>,
+    pub guest_email: Option<String>,
+    pub payment_token: Uuid,
+    pub gateway_order_id: Option<String>,
+    pub gateway_payment_id: Option<String>,
+    pub paid_at: Option<DateTime<Utc>>,
+    pub claimed_by_user_id: Option<Uuid>,
+    pub claimed_ticket_id: Option<Uuid>,
+    pub claimed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub pending_manual_refund: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
+pub struct SplitSharePublicDetail {
+    pub id: Uuid,
+    pub order_id: Uuid,
+    pub amount_due: f64,
+    pub status: SplitStatus,
+    pub host_user_id: Uuid,
+    pub is_host_share: bool,
+    pub guest_name: Option<String>,
+    pub guest_email: Option<String>,
+    pub payment_token: Uuid,
+    pub gateway_order_id: Option<String>,
+    pub event_title: String,
+    pub event_start_time: DateTime<Utc>,
+    pub venue_name: String,
+    pub host_name: String,
+    pub claimed_ticket_id: Option<Uuid>,
+    pub claimed_at: Option<DateTime<Utc>>,
+    pub session_expires_at: DateTime<Utc>,
+    pub session_status: SplitStatus,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct VerifySplitShareRequest {
+    pub razorpay_payment_id: String,
+    pub razorpay_order_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SplitCheckoutInitialization {
+    pub share_id: Uuid,
+    pub split_session_id: Uuid,
+    pub gateway: String,
+    pub gateway_key_id: String,
+    pub gateway_order_id: String,
+    pub amount: i64,
+    pub currency: String,
+    pub customer_name: String,
+    pub customer_email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CustomShareTicketTierRequest {
+    pub ticket_tier_id: Uuid,
+    pub quantity: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CustomShareRequest {
+    pub guest_name: Option<String>,
+    pub guest_email: Option<String>,
+    pub seat_ids: Vec<Uuid>,
+    pub ticket_tiers: Option<Vec<CustomShareTicketTierRequest>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InitializeSplitRequest {
+    pub split_type: SplitType,
+    pub num_shares: Option<i32>, // used for Even splits
+    pub custom_shares: Option<Vec<CustomShareRequest>>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct RazorpayWebhookPaymentContainer {
     pub entity: RazorpayWebhookPaymentEntity,
@@ -446,6 +628,15 @@ pub struct SeatInfo {
     pub section_name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TicketTierInfo {
+    pub ticket_tier_id: Uuid,
+    pub name: String,
+    pub quantity: i32,
+    pub price: f64,
+    pub color_hex: String,
+}
+
 /// Rich ticket detail joining ticket + event + seat info for the frontend.
 #[derive(Debug, Serialize, Clone, FromRow)]
 pub struct TicketDetail {
@@ -456,6 +647,7 @@ pub struct TicketDetail {
     pub event_start_time: DateTime<Utc>,
     pub venue_name: String,
     pub seats: sqlx::types::Json<Vec<SeatInfo>>,
+    pub tiers: sqlx::types::Json<Vec<TicketTierInfo>>,
     pub qr_payload: String,
     pub status: String,
     pub can_cancel: bool,

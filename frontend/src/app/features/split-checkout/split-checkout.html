@@ -1,0 +1,120 @@
+<div class="split-page">
+  <div class="split-card" *ngIf="!isLoading && !errorMsg && shareDetail">
+    
+    <div class="brand">
+      <mat-icon>local_activity</mat-icon>
+      <h2>GrabAPass</h2>
+    </div>
+
+    <div class="status-badge" [class.paid]="shareDetail.status === 'Completed'" [class.pending]="shareDetail.status === 'Pending'">
+      {{ shareDetail.status }}
+    </div>
+
+    <div *ngIf="shareDetail.status === 'Completed'" class="success-message">
+      <mat-icon class="success-icon">check_circle</mat-icon>
+      <h3>Payment Received!</h3>
+      <p>Your share has been successfully paid.</p>
+      <p class="subtitle" *ngIf="shareDetail.session_status !== 'Completed'">
+        Tickets will be issued once all participants have paid.
+      </p>
+      <p class="subtitle" *ngIf="shareDetail.session_status === 'Completed'">
+        The full split is complete and the host order is now being finalized.
+      </p>
+
+      <div class="claim-panel" *ngIf="shouldShowClaimPanel">
+        <p class="subtitle" *ngIf="canShowClaimButton">
+          Claim your allocated ticket into your own account using this private split link.
+        </p>
+        <p class="subtitle" *ngIf="isBookingOwnerViewing && !isAlreadyClaimed">
+          This is a guest claim link. Send it to the invited guest so they can claim the ticket in their own account.
+        </p>
+        <p class="subtitle" *ngIf="isAlreadyClaimed">
+          This split allocation has already been claimed.
+        </p>
+
+        <div class="claim-actions" *ngIf="canShowClaimButton">
+          <button class="pay-btn" *ngIf="currentUser" [disabled]="isProcessing" (click)="claimTickets()">
+            <span *ngIf="!isProcessing"><mat-icon>confirmation_number</mat-icon> Claim My Ticket</span>
+            <mat-spinner *ngIf="isProcessing" diameter="22"></mat-spinner>
+          </button>
+
+          <div class="auth-actions" *ngIf="!currentUser">
+            <a class="pay-btn" [routerLink]="['/login']" [queryParams]="{ returnUrl: claimReturnUrl }">
+              <mat-icon>login</mat-icon>
+              Log In To Claim
+            </a>
+            <a class="pay-btn secondary" [routerLink]="['/register']" [queryParams]="{ returnUrl: claimReturnUrl }">
+              <mat-icon>person_add</mat-icon>
+              Create Account To Claim
+            </a>
+          </div>
+        </div>
+
+        <div class="claim-actions" *ngIf="isBookingOwnerViewing && !isAlreadyClaimed">
+          <a class="pay-btn secondary" [routerLink]="['/split-dashboard', shareDetail.order_id]">
+            <mat-icon>call_split</mat-icon>
+            Open Split Dashboard
+          </a>
+        </div>
+
+        <div class="claim-actions" *ngIf="isAlreadyClaimed && shareDetail.claimed_ticket_id">
+          <a class="pay-btn" [routerLink]="['/tickets', shareDetail.claimed_ticket_id]">
+            <mat-icon>confirmation_number</mat-icon>
+            Open Claimed Ticket
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="shareDetail.status === 'Pending'">
+      <div class="header">
+        <h3>{{ shareDetail.host_name }} requested a split payment</h3>
+        <p class="subtitle">for {{ shareDetail.event_title }}</p>
+      </div>
+
+      <div class="amount-box">
+        <span class="label">Your Share to Pay</span>
+        <span class="value">₹{{ shareDetail.amount_due | number:'1.2-2' }}</span>
+      </div>
+
+      <div class="event-details">
+        <div class="detail-row">
+          <mat-icon>event</mat-icon>
+          <span>{{ shareDetail.event_start_time | date:'fullDate' }} at {{ shareDetail.event_start_time | date:'shortTime' }}</span>
+        </div>
+        <div class="detail-row">
+          <mat-icon>place</mat-icon>
+          <span>{{ shareDetail.venue_name }}</span>
+        </div>
+      </div>
+
+      <div class="timer-warning" *ngIf="!isExpired">
+        <mat-icon>schedule</mat-icon>
+        <span>This session expires on {{ shareDetail.session_expires_at | date:'medium' }}</span>
+      </div>
+
+      <div class="timer-error" *ngIf="isExpired">
+        <mat-icon>error</mat-icon>
+        <span>This split session has expired. Tickets are no longer held.</span>
+      </div>
+
+      <button class="pay-btn" [disabled]="isProcessing || isExpired" (click)="onPay()">
+        <span *ngIf="!isProcessing && !isExpired"><mat-icon>payment</mat-icon> Pay Securely</span>
+        <span *ngIf="isExpired">Expired</span>
+        <mat-spinner *ngIf="isProcessing" diameter="22"></mat-spinner>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="error-state" *ngIf="!isLoading && errorMsg">
+    <mat-icon>sentiment_very_dissatisfied</mat-icon>
+    <h3>Oops!</h3>
+    <p>{{ errorMsg }}</p>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading split details...</p>
+  </div>
+</div>

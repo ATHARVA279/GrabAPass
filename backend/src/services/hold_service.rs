@@ -1,9 +1,9 @@
+use crate::db::models::{HoldSeatsRequest, SeatHold};
+use crate::repositories::hold_repository::HoldRepository;
+use axum::http::StatusCode;
+use chrono::{Duration, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
-use chrono::{Duration, Utc};
-use axum::http::StatusCode;
-use crate::db::models::{SeatHold, HoldSeatsRequest};
-use crate::repositories::hold_repository::HoldRepository;
 
 pub struct HoldService;
 
@@ -16,21 +16,52 @@ impl HoldService {
         user_id: Uuid,
         req: HoldSeatsRequest,
     ) -> Result<Vec<SeatHold>, (StatusCode, String)> {
-        if req.seat_ids.is_empty() {
-            return Err((StatusCode::BAD_REQUEST, "No seats provided for holding.".to_string()));
+        if req.seat_ids.is_empty() && req.ticket_tiers.is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "No seats or ticket tiers provided for holding.".to_string(),
+            ));
         }
 
-        let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         let mut holds = Vec::new();
 
         let expires_at = Utc::now() + Duration::minutes(10);
 
         for seat_id in req.seat_ids {
-            let hold = HoldRepository::create_hold_transaction(&mut tx, event_id, seat_id, user_id, expires_at).await?;
+            let hold = HoldRepository::create_hold_transaction(
+                &mut tx, event_id, seat_id, user_id, expires_at,
+            )
+            .await?;
             holds.push(hold);
         }
 
-        tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        for tier in req.ticket_tiers {
+            if tier.quantity <= 0 {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    "Ticket tier quantity must be at least 1.".to_string(),
+                ));
+            }
+
+            let mut tier_holds = HoldRepository::create_ga_holds_transaction(
+                &mut tx,
+                event_id,
+                tier.ticket_tier_id,
+                user_id,
+                tier.quantity,
+                expires_at,
+            )
+            .await?;
+            holds.append(&mut tier_holds);
+        }
+
+        tx.commit()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         Ok(holds)
     }
 

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -31,11 +31,21 @@ import { AuthService, UserRole } from '../../../core/auth/auth';
 export class Login {
   email = '';
   password = '';
+  returnUrlMessage: string | null = null;
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toastr = inject(ToastrService);
+
+  ngOnInit() {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl && returnUrl.includes('/events/')) {
+      this.returnUrlMessage = 'Log in to continue booking your tickets.';
+    } else if (returnUrl && returnUrl.includes('/split/')) {
+      this.returnUrlMessage = 'Log in to claim your split ticket.';
+    }
+  }
 
   onSubmit() {
     this.authService.login({ email: this.email, password: this.password }).subscribe({

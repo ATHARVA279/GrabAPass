@@ -1,7 +1,7 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    Json,
 };
 use uuid::Uuid;
 
@@ -19,7 +19,11 @@ pub async fn hold_seats(
     Path(event_id): Path<Uuid>,
     Json(payload): Json<HoldSeatsRequest>,
 ) -> Result<(StatusCode, Json<Vec<SeatHold>>), (StatusCode, String)> {
-    let actor = format!("{}:{}", claims.sub, RateLimitService::actor_from_headers(&headers));
+    let actor = format!(
+        "{}:{}",
+        claims.sub,
+        RateLimitService::actor_from_headers(&headers)
+    );
     RateLimitService::check_limit(
         &state.rate_limiter,
         "seat_hold",
@@ -30,6 +34,10 @@ pub async fn hold_seats(
     .await?;
 
     let holds = HoldService::hold_seats(&state.pool, event_id, claims.sub, payload).await?;
-    
+
+    // Broadcast real-time update
+    crate::services::ws_service::WsService::broadcast_pulse(&state, event_id).await;
+    crate::services::ws_service::WsService::broadcast_seats_updated(&state, event_id).await;
+
     Ok((StatusCode::CREATED, Json(holds)))
 }

@@ -181,6 +181,60 @@
             }
           }
         }
+
+        .seat-group {
+          .seat-count {
+            margin-left: 6px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 600;
+          }
+
+          .seat-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding-right: 6px;
+          }
+
+          .seat-group-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+
+          .seat-section {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          .seat-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+
+          .seat-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fff;
+            min-width: 36px;
+          }
+        }
       }
 
       .ticket-id {

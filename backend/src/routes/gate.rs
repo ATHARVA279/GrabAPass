@@ -1,6 +1,9 @@
-use axum::{routing::{get, post}, Router};
-use crate::handlers::gate::{validate_ticket, get_scan_history};
 use crate::AppState;
+use crate::handlers::gate::{get_scan_history, validate_ticket};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()

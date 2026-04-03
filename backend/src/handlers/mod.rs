@@ -7,3 +7,4 @@ pub mod order;
 pub mod payment;
 pub mod ticket;
 pub mod venue;
+pub mod split;

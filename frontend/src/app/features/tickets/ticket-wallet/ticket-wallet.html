@@ -37,7 +37,7 @@
               <div class="ticket-meta">
                 <span class="meta-item" *ngIf="ticket.seats">
                   <mat-icon>group</mat-icon>
-                  {{ ticket.seats.length }} {{ ticket.seats.length === 1 ? 'Seat' : 'Seats' }}
+                  {{ getTicketCount(ticket) }} {{ getTicketCount(ticket) === 1 ? 'Ticket' : 'Tickets' }}
                 </span>
                 <span class="meta-item">
                   <mat-icon>location_on</mat-icon>

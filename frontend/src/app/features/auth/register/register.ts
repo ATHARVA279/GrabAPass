@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 
 import { MatCardModule } from '@angular/material/card';
@@ -30,17 +30,28 @@ import { AuthService, UserRole } from '../../../core/auth/auth';
   templateUrl: './register.html',
   styleUrls: ['./register.scss']
 })
-export class Register {
+export class Register implements OnInit {
   name = '';
   email = '';
   phone_number = '';
   password = '';
   role: UserRole = UserRole.Customer;
   organizer_company = '';
+  returnUrlMessage: string | null = null;
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly toastr = inject(ToastrService);
+
+  ngOnInit() {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl && returnUrl.includes('/events/')) {
+      this.returnUrlMessage = 'Create an account to book your tickets.';
+    } else if (returnUrl && returnUrl.includes('/split/')) {
+      this.returnUrlMessage = 'Create an account to claim your split ticket.';
+    }
+  }
 
   onSubmit() {
     const payload: any = {
@@ -60,7 +71,8 @@ export class Register {
 
     this.authService.register(payload).subscribe({
       next: async (res) => {
-        const targetUrl = this.authService.getDefaultRouteForRole(res.user.role);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const targetUrl = returnUrl || this.authService.getDefaultRouteForRole(res.user.role);
         const navigated = await this.router.navigateByUrl(targetUrl);
 
         if (!navigated) {

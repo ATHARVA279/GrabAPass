@@ -1,8 +1,8 @@
-use sqlx::PgPool;
-use uuid::Uuid;
-use axum::http::StatusCode;
 use crate::db::models::TicketDetail;
 use crate::repositories::ticket_repository::TicketRepository;
+use axum::http::StatusCode;
+use sqlx::PgPool;
+use uuid::Uuid;
 
 pub struct TicketService;
 

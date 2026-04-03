@@ -1,9 +1,9 @@
-use chrono::Utc;
-use sqlx::{PgPool, Postgres, Transaction};
-use uuid::Uuid;
 use axum::http::StatusCode;
+use chrono::Utc;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
+use sqlx::{PgPool, Postgres, Transaction};
+use uuid::Uuid;
 
 use crate::constants::{order_status, ticket_status};
 use crate::db::models::{EventStatus, Ticket, TicketDetail};
@@ -21,7 +21,7 @@ impl TicketRepository {
             e.title          AS event_title,
             e.start_time     AS event_start_time,
             e.venue_name,
-            (
+            COALESCE((
                 SELECT json_agg(json_build_object(
                     'seat_id', vs.id,
                     'seat_label', vs.seat_label,
@@ -32,7 +32,19 @@ impl TicketRepository {
                 JOIN venue_rows vr  ON vr.id = vs.row_id
                 JOIN venue_sections sec ON sec.id = vr.section_id
                 WHERE ts.ticket_id = t.id
-            ) AS seats,
+            ), '[]'::json) AS seats,
+            COALESCE((
+                SELECT json_agg(json_build_object(
+                    'ticket_tier_id', ett.id,
+                    'name', ett.name,
+                    'quantity', tt.quantity,
+                    'price', ett.price,
+                    'color_hex', ett.color_hex
+                ))
+                FROM ticket_tiers tt
+                JOIN event_ticket_tiers ett ON ett.id = tt.ticket_tier_id
+                WHERE tt.ticket_id = t.id
+            ), '[]'::json) AS tiers,
             (t.id::text || ':' || t.qr_secret) AS qr_payload,
             t.status,
             (t.status = 'Valid' AND e.start_time > NOW() AND e.status <> 'Cancelled') AS can_cancel,
@@ -57,6 +69,7 @@ impl TicketRepository {
         order_id: Uuid,
         event_id: Uuid,
         seat_ids: &[Uuid],
+        ticket_tiers: &[(Uuid, i32)],
         user_id: Uuid,
         jwt_secret: &str,
     ) -> Result<Ticket, (StatusCode, String)> {
@@ -76,18 +89,34 @@ impl TicketRepository {
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        // Insert ticket seats
-        sqlx::query(
-            r#"
-            INSERT INTO ticket_seats (ticket_id, seat_id)
-            SELECT $1, seat_id FROM UNNEST($2::uuid[]) as seat_id
-            "#
-        )
-        .bind(ticket.id)
-        .bind(seat_ids)
-        .execute(&mut **tx)
-        .await
-        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        if !seat_ids.is_empty() {
+            sqlx::query(
+                r#"
+                INSERT INTO ticket_seats (ticket_id, seat_id)
+                SELECT $1, seat_id FROM UNNEST($2::uuid[]) as seat_id
+                "#,
+            )
+            .bind(ticket.id)
+            .bind(seat_ids)
+            .execute(&mut **tx)
+            .await
+            .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        }
+
+        for (ticket_tier_id, quantity) in ticket_tiers {
+            sqlx::query(
+                r#"
+                INSERT INTO ticket_tiers (ticket_id, ticket_tier_id, quantity)
+                VALUES ($1, $2, $3)
+                "#,
+            )
+            .bind(ticket.id)
+            .bind(ticket_tier_id)
+            .bind(quantity)
+            .execute(&mut **tx)
+            .await
+            .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        }
 
         // Now compute the real HMAC-based qr_secret using the generated ticket ID
         let qr_secret = Self::generate_qr_secret(&ticket.id, jwt_secret);
@@ -119,10 +148,10 @@ impl TicketRepository {
         );
 
         sqlx::query_as::<_, TicketDetail>(&query)
-        .bind(user_id)
-        .fetch_all(pool)
-        .await
-        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+            .bind(user_id)
+            .fetch_all(pool)
+            .await
+            .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
     }
 
     /// Get a single ticket by ID, only if owned by the given user.
@@ -137,12 +166,12 @@ impl TicketRepository {
         );
 
         sqlx::query_as::<_, TicketDetail>(&query)
-        .bind(ticket_id)
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((StatusCode::NOT_FOUND, "Ticket not found.".to_string()))
+            .bind(ticket_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+            .ok_or((StatusCode::NOT_FOUND, "Ticket not found.".to_string()))
     }
 
     pub async fn get_ticket_detail_in_tx(
@@ -156,7 +185,10 @@ impl TicketRepository {
             .fetch_optional(&mut **tx)
             .await
             .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-            .ok_or((StatusCode::NOT_FOUND, "Ticket details not found".to_string()))
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                "Ticket details not found".to_string(),
+            ))
     }
 
     pub async fn cancel_ticket(
@@ -203,21 +235,30 @@ impl TicketRepository {
             tx.rollback()
                 .await
                 .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            return Err((StatusCode::CONFLICT, "Only valid tickets can be cancelled.".to_string()));
+            return Err((
+                StatusCode::CONFLICT,
+                "Only valid tickets can be cancelled.".to_string(),
+            ));
         }
 
         if candidate.start_time <= Utc::now() {
             tx.rollback()
                 .await
                 .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            return Err((StatusCode::CONFLICT, "This ticket can no longer be cancelled.".to_string()));
+            return Err((
+                StatusCode::CONFLICT,
+                "This ticket can no longer be cancelled.".to_string(),
+            ));
         }
 
         if candidate.event_status == EventStatus::Cancelled {
             tx.rollback()
                 .await
                 .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            return Err((StatusCode::CONFLICT, "This event has already been cancelled by the organizer.".to_string()));
+            return Err((
+                StatusCode::CONFLICT,
+                "This event has already been cancelled by the organizer.".to_string(),
+            ));
         }
 
         sqlx::query(

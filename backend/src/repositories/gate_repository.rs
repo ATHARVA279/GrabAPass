@@ -43,7 +43,15 @@ impl GateRepository {
         // Parse payload "{ticket_id}:{qr_secret}"
         let parts: Vec<&str> = qr_payload.split(':').collect();
         if parts.len() != 2 {
-            Self::insert_scan_log(pool, None, event_id, staff_id, scan_result::REJECTED, scan_reason::INVALID_QR_FORMAT).await?;
+            Self::insert_scan_log(
+                pool,
+                None,
+                event_id,
+                staff_id,
+                scan_result::REJECTED,
+                scan_reason::INVALID_QR_FORMAT,
+            )
+            .await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
@@ -60,7 +68,15 @@ impl GateRepository {
         let ticket_id = match Uuid::from_str(ticket_id_str) {
             Ok(id) => id,
             Err(_) => {
-                Self::insert_scan_log(pool, None, event_id, staff_id, scan_result::REJECTED, scan_reason::INVALID_TICKET_ID).await?;
+                Self::insert_scan_log(
+                    pool,
+                    None,
+                    event_id,
+                    staff_id,
+                    scan_result::REJECTED,
+                    scan_reason::INVALID_TICKET_ID,
+                )
+                .await?;
                 let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                     pool,
                     event_id,
@@ -75,7 +91,15 @@ impl GateRepository {
         // Recompute the HMAC and compare
         let expected_secret = TicketRepository::generate_qr_secret(&ticket_id, jwt_secret);
         if provided_secret != expected_secret {
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::QR_SECRET_MISMATCH).await?;
+            Self::insert_scan_log(
+                pool,
+                Some(ticket_id),
+                event_id,
+                staff_id,
+                scan_result::REJECTED,
+                scan_reason::QR_SECRET_MISMATCH,
+            )
+            .await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
@@ -100,7 +124,7 @@ impl GateRepository {
             FROM tickets
             WHERE id = $1
             FOR UPDATE
-            "#
+            "#,
         )
         .bind(ticket_id)
         .fetch_optional(&mut *tx)
@@ -111,7 +135,15 @@ impl GateRepository {
             Some(t) => t,
             None => {
                 let _ = tx.rollback().await;
-                Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::TICKET_NOT_FOUND).await?;
+                Self::insert_scan_log(
+                    pool,
+                    Some(ticket_id),
+                    event_id,
+                    staff_id,
+                    scan_result::REJECTED,
+                    scan_reason::TICKET_NOT_FOUND,
+                )
+                .await?;
                 let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                     pool,
                     event_id,
@@ -126,7 +158,15 @@ impl GateRepository {
         // Validate event match
         if ticket.event_id != event_id {
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::WRONG_EVENT).await?;
+            Self::insert_scan_log(
+                pool,
+                Some(ticket_id),
+                event_id,
+                staff_id,
+                scan_result::REJECTED,
+                scan_reason::WRONG_EVENT,
+            )
+            .await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
@@ -139,9 +179,18 @@ impl GateRepository {
 
         // Validate status
         if ticket.status == ticket_status::USED {
-            let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
+            let ticket_detail =
+                TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::ALREADY_USED).await?;
+            Self::insert_scan_log(
+                pool,
+                Some(ticket_id),
+                event_id,
+                staff_id,
+                scan_result::REJECTED,
+                scan_reason::ALREADY_USED,
+            )
+            .await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
@@ -149,12 +198,25 @@ impl GateRepository {
                 scan_reason::ALREADY_USED,
             )
             .await;
-            return Ok((false, "Ticket has already been used".to_string(), Some(ticket_detail)));
+            return Ok((
+                false,
+                "Ticket has already been used".to_string(),
+                Some(ticket_detail),
+            ));
         }
         if ticket.status == ticket_status::CANCELLED {
-            let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
+            let ticket_detail =
+                TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
             let _ = tx.rollback().await;
-            Self::insert_scan_log(pool, Some(ticket_id), event_id, staff_id, scan_result::REJECTED, scan_reason::CANCELLED).await?;
+            Self::insert_scan_log(
+                pool,
+                Some(ticket_id),
+                event_id,
+                staff_id,
+                scan_result::REJECTED,
+                scan_reason::CANCELLED,
+            )
+            .await?;
             let _ = SuspiciousActivityService::record_rejected_scan_if_suspicious(
                 pool,
                 event_id,
@@ -162,24 +224,36 @@ impl GateRepository {
                 scan_reason::CANCELLED,
             )
             .await;
-            return Ok((false, "Ticket is cancelled".to_string(), Some(ticket_detail)));
+            return Ok((
+                false,
+                "Ticket is cancelled".to_string(),
+                Some(ticket_detail),
+            ));
         }
 
         // Admit: Update status and log
-        sqlx::query(
-            "UPDATE tickets SET status = 'Used', used_at = NOW() WHERE id = $1"
-        )
-        .bind(ticket_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        sqlx::query("UPDATE tickets SET status = 'Used', used_at = NOW() WHERE id = $1")
+            .bind(ticket_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        Self::insert_scan_log_tx(&mut tx, Some(ticket_id), event_id, staff_id, scan_result::ADMITTED, scan_reason::VALID_ENTRY).await?;
-        
+        Self::insert_scan_log_tx(
+            &mut tx,
+            Some(ticket_id),
+            event_id,
+            staff_id,
+            scan_result::ADMITTED,
+            scan_reason::VALID_ENTRY,
+        )
+        .await?;
+
         // Fetch detailed ticket info to return
         let ticket_detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
 
-        tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         Ok((true, "Entry Approved".to_string(), Some(ticket_detail)))
     }
@@ -197,7 +271,7 @@ impl GateRepository {
             r#"
             INSERT INTO scan_logs (ticket_id, event_id, scanned_by, result, reason)
             VALUES ($1, $2, $3, $4, $5)
-            "#
+            "#,
         )
         .bind(ticket_id)
         .bind(event_id)
@@ -224,7 +298,7 @@ impl GateRepository {
             r#"
             INSERT INTO scan_logs (ticket_id, event_id, scanned_by, result, reason)
             VALUES ($1, $2, $3, $4, $5)
-            "#
+            "#,
         )
         .bind(ticket_id)
         .bind(event_id)
@@ -250,7 +324,7 @@ impl GateRepository {
             WHERE event_id = $1
             ORDER BY scanned_at DESC
             LIMIT 50
-            "#
+            "#,
         )
         .bind(event_id)
         .fetch_all(pool)

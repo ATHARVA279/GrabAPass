@@ -1,0 +1,81 @@
+<div class="dashboard-page">
+  <div class="dashboard-container" *ngIf="!isLoading && !errorMsg && session">
+    
+    <div class="header">
+      <mat-icon class="brand-icon">call_split</mat-icon>
+      <h2>Split Checkout Status</h2>
+      <p>Share these links with your group so they can pay their portion.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <span class="label">Total Amount</span>
+        <span class="value">₹{{ session.total_amount | number:'1.2-2' }}</span>
+      </div>
+      <div class="stat-box">
+        <span class="label">Shares Paid</span>
+        <span class="value" [class.success]="isFullyPaid">{{ completedShares }} / {{ totalShares }}</span>
+      </div>
+      <div class="stat-box">
+        <span class="label">Time Remaining</span>
+        <span class="value timer" [class.danger]="isExpired && !isFullyPaid">{{ timeRemaining }}</span>
+      </div>
+    </div>
+
+    <div class="alert success" *ngIf="isFullyPaid">
+      <mat-icon>check_circle</mat-icon>
+      <span>All shares have been paid! Your order is complete and tickets are generating.</span>
+    </div>
+
+    <div class="alert danger" *ngIf="isExpired && !isFullyPaid">
+      <mat-icon>error</mat-icon>
+      <span>This split session has expired because not all shares were paid in time.</span>
+    </div>
+
+    <!-- Shares List -->
+    <div class="shares-list">
+      <div class="share-card" *ngFor="let share of session.shares; let i = index" [class.completed]="share.status === 'Completed'" [class.expired]="share.status === 'Expired'">
+        <div class="share-info">
+          <div class="share-title">
+            <span class="share-name">{{ getShareLabel(share, i) }}</span>
+            <span class="badge" [ngClass]="share.status.toLowerCase()">{{ share.status }}</span>
+          </div>
+          <p class="share-meta">Split ID: {{ getShareShortId(share) }}</p>
+          <p class="share-meta" *ngIf="getClaimStatus(share, i) as claimStatus">Claim: {{ claimStatus }}</p>
+          <p class="share-amount">₹{{ share.amount_due | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="share-actions" *ngIf="(isHostShare(share) && share.status === 'Pending' && !isExpired) || canShowGuestLink(share, i)">
+          <button class="pay-btn" *ngIf="isHostShare(share)" (click)="payMyShare(share.payment_token)">
+            Pay My Share
+          </button>
+          
+          <div class="copy-box" *ngIf="canShowGuestLink(share, i)">
+            <span class="copy-label">{{ getGuestLinkLabel() }}</span>
+            <code>{{ getLinkForShare(share.payment_token) }}</code>
+            <button mat-icon-button (click)="copyLink(share.payment_token)" matTooltip="Copy Link">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="share-complete-msg" *ngIf="share.status === 'Completed'">
+          <mat-icon>check_circle</mat-icon> Paid on {{ share.paid_at | date:'shortTime' }}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading Dashboard...</p>
+  </div>
+
+  <div class="error-state" *ngIf="!isLoading && errorMsg">
+    <mat-icon>error_outline</mat-icon>
+    <h3>Oops!</h3>
+    <p>{{ errorMsg }}</p>
+  </div>
+</div>

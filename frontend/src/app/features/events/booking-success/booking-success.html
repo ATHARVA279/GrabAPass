@@ -1,0 +1,39 @@
+<div class="success-container">
+  <!-- CSS Confetti Effect -->
+  <div class="confetti">
+    <div class="confetti-piece" *ngFor="let _ of confettiPieces; let i = index" [ngClass]="'c-' + i"></div>
+  </div>
+
+  <mat-card class="success-card">
+    <div class="animation-wrapper">
+      <div class="circle-success">
+        <mat-icon class="check-icon">check</mat-icon>
+      </div>
+    </div>
+    
+    <h2>Booking Confirmed!</h2>
+    <p class="subtitle">Your tickets have been successfully booked and sent to your email.</p>
+    
+    <div class="order-info" *ngIf="orderId">
+      <div class="info-row">
+        <span>Order ID:</span>
+        <strong>{{ orderId | uppercase }}</strong>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button mat-flat-button color="primary" class="main-action" (click)="viewTickets()">
+        <mat-icon>local_activity</mat-icon> View My Tickets
+      </button>
+      
+      <div class="secondary-actions">
+        <button mat-stroked-button class="sec-action share-btn">
+          <mat-icon>share</mat-icon> Share
+        </button>
+        <button mat-stroked-button class="sec-action cal-btn">
+          <mat-icon>calendar_today</mat-icon> Add to Calendar
+        </button>
+      </div>
+    </div>
+  </mat-card>
+</div>

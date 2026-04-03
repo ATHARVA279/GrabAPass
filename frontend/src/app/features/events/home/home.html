@@ -1,72 +1,181 @@
-<div class="hero-section">
-  <div class="hero-particles">
-    <div class="particle p1"></div>
-    <div class="particle p2"></div>
-    <div class="particle p3"></div>
-  </div>
-  <div class="hero-tag"><mat-icon>bolt</mat-icon> Live Events</div>
-  <h1><span class="gradient-text">GrabAPass</span></h1>
-  <p class="hero-subtitle">Discover and book tickets to amazing events near you.</p>
+<div class="home-container">
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="hero-particles">
+      <div class="particle p1"></div>
+      <div class="particle p2"></div>
+      <div class="particle p3"></div>
+    </div>
+    <div class="hero-tag"><mat-icon>bolt</mat-icon> Live Events</div>
+    <h1><span class="gradient-text">GrabAPass</span></h1>
+    <p class="hero-subtitle">Discover and book tickets to amazing events near you.</p>
 
-  <!-- Search Bar -->
-  <div class="search-bar">
-    <mat-icon>search</mat-icon>
-    <input type="text" placeholder="Search events, artists, venues..." 
-           (input)="onSearch($event)" 
-           [value]="searchQuery" />
-  </div>
-</div>
-
-<div class="events-container">
-  <!-- Status Messages -->
-  <div *ngIf="loading" class="loading-state">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Loading events...</p>
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <mat-icon>search</mat-icon>
+      <input type="text" placeholder="Search events, artists, venues..." 
+             (input)="onSearch($event)" 
+             [value]="searchQuery" />
+    </div>
   </div>
 
-  <div *ngIf="!loading && events.length === 0" class="empty-state">
-    <mat-icon>event_busy</mat-icon>
-    <h3>No Events Available</h3>
-    <p>We couldn't find any active events at the moment. Please check back later.</p>
+  <!-- Quick Categories -->
+  <div class="quick-categories">
+    <mat-chip-listbox>
+      <mat-chip-option *ngFor="let cat of quickCategories" 
+                       (click)="setQuickCategory(cat.name)"
+                       [selected]="selectedCategory === cat.name">
+        <mat-icon class="cat-icon" matChipAvatar>{{ cat.icon }}</mat-icon>
+        {{ cat.name }}
+      </mat-chip-option>
+    </mat-chip-listbox>
   </div>
 
-  <!-- Events Grid -->
-  <div *ngIf="!loading && events.length > 0" class="events-grid">
-    <div *ngFor="let event of events" class="event-card" (click)="goToEvent(event.id)">
+  <!-- Featured Carousel -->
+  <div class="featured-section" *ngIf="!loading && featuredEvents.length > 0 && selectedCategory === 'All' && !searchQuery">
+    <h2 class="section-title">Trending Now</h2>
+    <div class="featured-grid">
+      <div *ngFor="let event of featuredEvents" class="featured-card" (click)="goToEvent(event.id)">
+        <img *ngIf="event.image_url" [src]="event.image_url" alt="{{ event.title }}" class="featured-img">
+        <div class="featured-overlay">
+          <div class="featured-content">
+            <span class="category-tag">{{ event.category }}</span>
+            <h3>{{ event.title }}</h3>
+            <p>{{ event.start_time | date:'MMM d, y' }} at {{ event.venue_name }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Events Section -->
+  <div class="events-section">
+    <div class="section-header">
+      <h2 class="section-title" *ngIf="selectedCategory === 'All'">Explore Events</h2>
+      <h2 class="section-title" *ngIf="selectedCategory !== 'All'">{{ selectedCategory }} Events</h2>
       
-      <!-- Card Image Area -->
-      <div class="card-visual">
-        <div class="card-gradient"></div>
-        <mat-icon class="card-bg-icon">event</mat-icon>
-        <div class="date-badge">
-          <span class="day">{{ event.start_time | date:'dd' }}</span>
-          <span class="month">{{ event.start_time | date:'MMM' }}</span>
+      <!-- Filters -->
+      <div class="filter-row">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Date</mat-label>
+          <mat-select [(value)]="selectedDate" (selectionChange)="onFilterChange()">
+            <mat-option value="Any time">Any time</mat-option>
+            <mat-option value="Today">Today</mat-option>
+            <mat-option value="This Week">This Week</mat-option>
+            <mat-option value="This Month">This Month</mat-option>
+            <mat-option value="Upcoming">Upcoming</mat-option>
+            <mat-option value="Past">Past</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Price</mat-label>
+          <mat-select [(value)]="selectedPrice" (selectionChange)="onFilterChange()">
+            <mat-option value="Any price">Any price</mat-option>
+            <mat-option value="Free">Free</mat-option>
+            <mat-option value="Under ₹500">Under ₹500</mat-option>
+            <mat-option value="₹500 - ₹1000">₹500 - ₹1000</mat-option>
+            <mat-option value="₹1000 - ₹2000">₹1000 - ₹2000</mat-option>
+            <mat-option value="₹2000+">₹2000+</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Status Messages / Skeletons -->
+    <div *ngIf="loading" class="events-grid">
+      <div *ngFor="let _ of skeletonArray" class="event-card skeleton-card">
+        <div class="skeleton-img"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-tag"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-meta"></div>
+          <div class="skeleton-meta"></div>
         </div>
       </div>
+    </div>
 
-      <!-- Card Body -->
-      <div class="card-body">
-        <span class="category-tag">{{ event.category }}</span>
-        <h3 class="event-title">{{ event.title }}</h3>
-        <div class="event-meta">
-          <div class="meta-item">
-            <mat-icon>schedule</mat-icon>
-            <span>{{ event.start_time | date:'EEE, h:mm a' }}</span>
-          </div>
-          <div class="meta-item">
-            <mat-icon>place</mat-icon>
-            <span>{{ event.venue_name }}</span>
+    <div *ngIf="!loading && filteredEvents.length === 0" class="empty-state">
+      <mat-icon>event_busy</mat-icon>
+      <h3>No Events Available</h3>
+      <p>We couldn't find any events matching your filters. Try adjusting them.</p>
+    </div>
+
+    <!-- Events Grid -->
+    <div *ngIf="!loading && filteredEvents.length > 0" class="events-grid">
+      <div *ngFor="let event of filteredEvents" class="event-card" (click)="goToEvent(event.id)">
+        <div class="card-visual">
+          <img *ngIf="event.image_url" [src]="event.image_url" alt="{{ event.title }}" class="card-image">
+          <div class="card-gradient"></div>
+          <mat-icon *ngIf="!event.image_url" class="card-bg-icon">event</mat-icon>
+          <div class="date-badge">
+            <span class="day">{{ event.start_time | date:'dd' }}</span>
+            <span class="month">{{ event.start_time | date:'MMM' }}</span>
           </div>
         </div>
-      </div>
 
-      <!-- Card Footer -->
-      <div class="card-footer">
-        <button class="book-btn">
-          <mat-icon>confirmation_number</mat-icon>
-          Book Now
-        </button>
+        <div class="card-body">
+          <div class="card-body-top">
+            <span class="category-tag">{{ event.category }}</span>
+            <span class="price-tag" *ngIf="event.min_price != null">₹{{ event.min_price }} onwards</span>
+          </div>
+          <h3 class="event-title">{{ event.title }}</h3>
+          <div class="event-meta">
+            <div class="meta-item">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ event.start_time | date:'EEE, h:mm a' }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>place</mat-icon>
+              <span>{{ event.venue_name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button class="book-btn">
+            <mat-icon>confirmation_number</mat-icon>
+            Book Now
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Global Footer -->
+<footer class="global-footer">
+  <div class="footer-content">
+    <div class="footer-brand">
+      <h2><span class="gradient-text">GrabAPass</span></h2>
+      <p>The smartest way to experience live events. Book your tickets seamlessly.</p>
+    </div>
+    <div class="footer-links">
+      <div class="link-group">
+        <h4>Explore</h4>
+        <a href="#">Music Festivals</a>
+        <a href="#">Comedy Shows</a>
+        <a href="#">Sports Matches</a>
+        <a href="#">Tech Conferences</a>
+      </div>
+      <div class="link-group">
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Cancellation Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+      </div>
+      <div class="link-group">
+        <h4>Connect</h4>
+        <div class="social-icons">
+          <mat-icon>facebook</mat-icon>
+          <mat-icon>camera_alt</mat-icon>
+          <mat-icon>code</mat-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 GrabAPass. All rights reserved.</p>
+  </div>
+</footer>

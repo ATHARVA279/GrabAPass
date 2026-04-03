@@ -1,64 +1,115 @@
-<div class="auth-page">
-  <mat-card class="auth-card">
-    <mat-card-header>
-      <div mat-card-avatar class="auth-avatar">
-        <mat-icon>person_add</mat-icon>
+<div class="split-auth-layout">
+  <!-- Left Side: Branding & Illustration -->
+  <div class="auth-brand-pane">
+    <div class="brand-particles" aria-hidden="true">
+      <div class="b-particle p1"></div>
+      <div class="b-particle p2"></div>
+      <div class="b-particle p3"></div>
+    </div>
+    
+    <div class="brand-content">
+      <a routerLink="/" class="home-link">
+        <mat-icon>arrow_back</mat-icon> Back to Home
+      </a>
+      
+      <h2><span class="gradient-text">GrabAPass</span></h2>
+      <p class="brand-subtitle">Join the fastest growing community of event lovers and organizers.</p>
+      
+      <div class="illustration-container">
+        <!-- Abstract Calendar Illustration -->
+        <div class="ticket-illustration" style="transform: rotate(5deg);">
+          <div class="t-top"></div>
+          <div class="t-body">
+            <mat-icon class="t-icon">event_available</mat-icon>
+            <div class="t-line"></div>
+            <div class="t-line short"></div>
+          </div>
+          <div class="t-bottom"></div>
+        </div>
       </div>
-      <mat-card-title>Create an Account</mat-card-title>
-      <mat-card-subtitle>Join GrabAPass today</mat-card-subtitle>
-    </mat-card-header>
+    </div>
+  </div>
 
-    <mat-card-content>
-      <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
-        
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Name</mat-label>
-          <input matInput autoFocus type="text" id="name" [(ngModel)]="name" name="name" required />
-          <mat-icon matPrefix>person</mat-icon>
-        </mat-form-field>
+  <!-- Right Side: Form -->
+  <div class="auth-form-pane">
+    <mat-card class="auth-card">
+      <mat-card-header>
+        <mat-card-title>Create an Account</mat-card-title>
+        <mat-card-subtitle>Join GrabAPass today</mat-card-subtitle>
+      </mat-card-header>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email</mat-label>
-          <input matInput type="email" id="email" [(ngModel)]="email" name="email" required />
-          <mat-icon matPrefix>email</mat-icon>
-        </mat-form-field>
+      <mat-card-content>
+        <!-- Return URL Banner -->
+        <div *ngIf="returnUrlMessage" class="info-banner">
+          <mat-icon>info</mat-icon>
+          <span>{{ returnUrlMessage }}</span>
+        </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Phone Number (Optional)</mat-label>
-          <input matInput type="tel" id="phone_number" [(ngModel)]="phone_number" name="phone_number" />
-          <mat-icon matPrefix>phone</mat-icon>
-        </mat-form-field>
+        <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Name</mat-label>
+            <input matInput autoFocus type="text" id="name" [(ngModel)]="name" name="name" required />
+            <mat-icon matPrefix>person</mat-icon>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Password</mat-label>
-          <input matInput type="password" id="password" [(ngModel)]="password" name="password" required />
-          <mat-icon matPrefix>lock</mat-icon>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" id="email" [(ngModel)]="email" name="email" required />
+            <mat-icon matPrefix>email</mat-icon>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Role</mat-label>
-          <mat-select id="role" [(ngModel)]="role" name="role" required>
-            <mat-option value="Customer">Customer</mat-option>
-            <mat-option value="Organizer">Organizer</mat-option>
-            <mat-option value="GateStaff">Gate Staff</mat-option>
-          </mat-select>
-          <mat-icon matPrefix>badge</mat-icon>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Phone Number (Optional)</mat-label>
+            <input matInput type="tel" id="phone_number" [(ngModel)]="phone_number" name="phone_number" />
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width" *ngIf="role === 'Organizer'">
-          <mat-label>Company Name (Optional)</mat-label>
-          <input matInput type="text" id="organizer_company" [(ngModel)]="organizer_company" name="organizer_company" />
-          <mat-icon matPrefix>apartment</mat-icon>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" id="password" [(ngModel)]="password" name="password" required />
+            <mat-icon matPrefix>lock</mat-icon>
+          </mat-form-field>
 
-        <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!registerForm.form.valid">
-          Register
-        </button>
-      </form>
-    </mat-card-content>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Role</mat-label>
+            <mat-select id="role" [(ngModel)]="role" name="role" required>
+              <mat-option value="Customer">Customer</mat-option>
+              <mat-option value="Organizer">Organizer</mat-option>
+              <mat-option value="GateStaff">Gate Staff</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>badge</mat-icon>
+          </mat-form-field>
 
-    <mat-card-actions class="auth-footer">
-      <p>Already have an account? <a routerLink="/login">Login here</a></p>
-    </mat-card-actions>
-  </mat-card>
+          <mat-form-field appearance="outline" class="full-width" *ngIf="role === 'Organizer'">
+            <mat-label>Company Name (Optional)</mat-label>
+            <input matInput type="text" id="organizer_company" [(ngModel)]="organizer_company" name="organizer_company" />
+            <mat-icon matPrefix>apartment</mat-icon>
+          </mat-form-field>
+
+          <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!registerForm.form.valid">
+            Register
+          </button>
+        </form>
+
+        <div class="divider">
+          <span>OR</span>
+        </div>
+
+        <div class="social-login">
+          <button mat-stroked-button class="social-btn">
+            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" class="social-icon">
+            Sign up with Google
+          </button>
+          <button mat-stroked-button class="social-btn">
+            <mat-icon class="apple-icon">apple</mat-icon>
+            Sign up with Apple
+          </button>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="auth-footer">
+        <p>Already have an account? <a routerLink="/login">Login here</a></p>
+      </mat-card-actions>
+    </mat-card>
+  </div>
 </div>
