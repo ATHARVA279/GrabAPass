@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::db::models::{GateStaffSummary, User, UserRole};
 
@@ -37,6 +38,19 @@ pub async fn find_user_by_email(pool: &PgPool, email: &str) -> Result<Option<Use
         "#,
     )
     .bind(email)
+    .fetch_optional(pool)
+    .await
+}
+
+pub async fn find_user_by_id(pool: &PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error> {
+    sqlx::query_as::<_, User>(
+        r#"
+        SELECT id, email, password_hash, role, name, phone_number, organizer_company, created_at
+        FROM users
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
     .fetch_optional(pool)
     .await
 }

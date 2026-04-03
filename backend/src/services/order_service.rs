@@ -8,7 +8,8 @@ use crate::{
         CheckoutFailureRequest, Claims, InitializeCheckoutRequest, InitializeCheckoutResponse,
         Order, RazorpayWebhookPayload, VerifyCheckoutRequest,
     },
-    repositories::order_repository::OrderRepository,
+    repositories::{auth_repository, order_repository::OrderRepository, ticket_repository::TicketRepository},
+    services::email_service::{BookingEmailData, EmailService},
     services::payment_service::{PaymentService, RazorpayCreateOrderRequest},
     services::split_service::SplitService,
     services::suspicious_activity_service::SuspiciousActivityService,
@@ -428,6 +429,35 @@ impl OrderService {
                 tx.commit()
                     .await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+                if let Ok(user) = auth_repository::find_user_by_id(&state.pool, existing_order.user_id)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+                    .and_then(|user| {
+                        user.ok_or((StatusCode::NOT_FOUND, "User not found.".to_string()))
+                    })
+                {
+                    if let Ok(ticket) = TicketRepository::get_ticket_by_order_id(
+                        &state.pool,
+                        existing_order.id,
+                        existing_order.user_id,
+                    )
+                    .await
+                    {
+                        if let Err((_, error)) = EmailService::send_booking_confirmation(
+                            state.email.as_ref(),
+                            BookingEmailData {
+                                user: &user,
+                                order: &order,
+                                ticket: &ticket,
+                            },
+                        )
+                        .await
+                        {
+                            tracing::warn!("Failed to send booking confirmation email: {error}");
+                        }
+                    }
+                }
                 Ok(order)
             }
             Err((StatusCode::CONFLICT, message)) => {

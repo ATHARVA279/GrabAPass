@@ -116,4 +116,24 @@ export class TicketDetailPage implements OnInit {
     const tierCount = this.ticket.tiers.reduce((sum, tier) => sum + tier.quantity, 0);
     return this.ticket.seats.length + tierCount;
   }
+
+  get refundStatusLabel(): string | null {
+    if (!this.ticket || this.ticket.status.toLowerCase() !== 'cancelled') {
+      return null;
+    }
+
+    if (this.ticket.refund_status === 'Pending') {
+      return 'Refund Initiated';
+    }
+
+    if (this.ticket.refund_status === 'Processed') {
+      return 'Refund Completed';
+    }
+
+    if (this.ticket.refund_status === 'Failed' && (this.ticket.refund_amount ?? 0) > 0) {
+      return 'Refund Failed';
+    }
+
+    return 'No Refund Applicable';
+  }
 }

@@ -689,7 +689,7 @@ impl SplitService {
 
                 match PaymentService::refund_payment(config, gateway_payment_id, amount_paise).await
                 {
-                    Ok(()) => {
+                    Ok(_) => {
                         if let Err(e) = sqlx::query(
                             "UPDATE split_shares SET status = 'Refunded'::split_status WHERE id = $1",
                         )

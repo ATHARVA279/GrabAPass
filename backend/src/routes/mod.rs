@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod booking;
 pub mod event;
 pub mod event_venue;
 pub mod gate;

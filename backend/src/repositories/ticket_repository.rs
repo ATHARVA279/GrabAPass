@@ -6,7 +6,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::constants::{order_status, ticket_status};
-use crate::db::models::{EventStatus, Ticket, TicketDetail};
+use crate::db::models::{EventStatus, RefundRecord, Ticket, TicketDetail};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -21,6 +21,7 @@ impl TicketRepository {
             e.title          AS event_title,
             e.start_time     AS event_start_time,
             e.venue_name,
+            e.venue_address,
             COALESCE((
                 SELECT json_agg(json_build_object(
                     'seat_id', vs.id,
@@ -48,10 +49,20 @@ impl TicketRepository {
             (t.id::text || ':' || t.qr_secret) AS qr_payload,
             t.status,
             (t.status = 'Valid' AND e.start_time > NOW() AND e.status <> 'Cancelled') AS can_cancel,
+            r.amount::float8 AS refund_amount,
+            r.refund_status,
+            r.refund_reason,
             t.created_at,
             t.used_at
         FROM tickets t
         JOIN events e ON e.id = t.event_id
+        LEFT JOIN LATERAL (
+            SELECT amount, refund_status, refund_reason
+            FROM refunds
+            WHERE booking_id = t.order_id
+            ORDER BY created_at DESC
+            LIMIT 1
+        ) r ON TRUE
     "#;
 
     /// Generate HMAC-SHA256 QR secret for a ticket ID.
@@ -174,6 +185,25 @@ impl TicketRepository {
             .ok_or((StatusCode::NOT_FOUND, "Ticket not found.".to_string()))
     }
 
+    pub async fn get_ticket_by_order_id(
+        pool: &PgPool,
+        order_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<TicketDetail, (StatusCode, String)> {
+        let query = format!(
+            "{} WHERE t.order_id = $1 AND t.user_id = $2 ORDER BY t.created_at DESC LIMIT 1",
+            Self::TICKET_DETAIL_SELECT
+        );
+
+        sqlx::query_as::<_, TicketDetail>(&query)
+            .bind(order_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+            .ok_or((StatusCode::NOT_FOUND, "Ticket not found.".to_string()))
+    }
+
     pub async fn get_ticket_detail_in_tx(
         tx: &mut Transaction<'_, Postgres>,
         ticket_id: Uuid,
@@ -195,7 +225,7 @@ impl TicketRepository {
         pool: &PgPool,
         ticket_id: Uuid,
         user_id: Uuid,
-    ) -> Result<TicketDetail, (StatusCode, String)> {
+    ) -> Result<TicketCancellationResult, (StatusCode, String)> {
         #[derive(sqlx::FromRow)]
         struct TicketCancellationCandidate {
             order_id: Uuid,
@@ -203,6 +233,8 @@ impl TicketRepository {
             status: String,
             start_time: chrono::DateTime<chrono::Utc>,
             event_status: EventStatus,
+            gateway_payment_id: Option<String>,
+            total_amount: f64,
         }
 
         let mut tx = pool
@@ -217,9 +249,12 @@ impl TicketRepository {
                 t.event_id,
                 t.status,
                 e.start_time,
-                e.status AS event_status
+                e.status AS event_status,
+                o.gateway_payment_id,
+                o.total_amount::float8 AS total_amount
             FROM tickets t
             JOIN events e ON e.id = t.event_id
+            JOIN orders o ON o.id = t.order_id
             WHERE t.id = $1 AND t.user_id = $2
             FOR UPDATE
             "#,
@@ -322,10 +357,97 @@ impl TicketRepository {
         .await
         .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
+        let refund_window_hours = 24;
+        let time_until_event = candidate.start_time.signed_duration_since(Utc::now());
+        let refund_eligible = time_until_event > chrono::Duration::hours(refund_window_hours);
+        let refund_reason = if refund_eligible {
+            None
+        } else {
+            Some(format!(
+                "No refund applicable because the ticket was cancelled less than {refund_window_hours} hours before the event start time."
+            ))
+        };
+        let refund_amount = if refund_eligible {
+            candidate.total_amount
+        } else {
+            0.0
+        };
+
+        let refund_record = Self::create_refund_record(
+            &mut tx,
+            candidate.order_id,
+            candidate.gateway_payment_id.as_deref(),
+            refund_amount,
+            if refund_eligible { "Pending" } else { "Failed" },
+            refund_reason.as_deref(),
+        )
+        .await?;
+
         tx.commit()
             .await
             .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        Self::get_ticket_by_id(pool, ticket_id, user_id).await
+        Ok(TicketCancellationResult {
+            ticket: Self::get_ticket_by_id(pool, ticket_id, user_id).await?,
+            refund: refund_record,
+            refund_eligible,
+            payment_id: candidate.gateway_payment_id,
+        })
     }
+
+    pub async fn create_refund_record(
+        tx: &mut Transaction<'_, Postgres>,
+        booking_id: Uuid,
+        payment_id: Option<&str>,
+        amount: f64,
+        refund_status: &str,
+        refund_reason: Option<&str>,
+    ) -> Result<RefundRecord, (StatusCode, String)> {
+        sqlx::query_as::<_, RefundRecord>(
+            r#"
+            INSERT INTO refunds (booking_id, payment_id, amount, refund_status, refund_reason)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id, booking_id, payment_id, amount::float8 AS amount, refund_status, refund_reason, created_at
+            "#,
+        )
+        .bind(booking_id)
+        .bind(payment_id)
+        .bind(amount)
+        .bind(refund_status)
+        .bind(refund_reason)
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+    }
+
+    pub async fn update_refund_status(
+        pool: &PgPool,
+        refund_id: Uuid,
+        refund_status: &str,
+        refund_reason: Option<&str>,
+    ) -> Result<(), (StatusCode, String)> {
+        sqlx::query(
+            r#"
+            UPDATE refunds
+            SET refund_status = $2,
+                refund_reason = COALESCE($3, refund_reason)
+            WHERE id = $1
+            "#,
+        )
+        .bind(refund_id)
+        .bind(refund_status)
+        .bind(refund_reason)
+        .execute(pool)
+        .await
+        .map_err(|e: sqlx::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+        Ok(())
+    }
+}
+
+pub struct TicketCancellationResult {
+    pub ticket: TicketDetail,
+    pub refund: RefundRecord,
+    pub refund_eligible: bool,
+    pub payment_id: Option<String>,
 }
