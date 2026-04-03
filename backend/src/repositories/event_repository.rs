@@ -1,4 +1,5 @@
 use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::types::Json;
 use uuid::Uuid;
 
 use crate::db::models::{
@@ -26,6 +27,10 @@ pub async fn list_published_events(
             e.venue_template_id,
             e.seating_mode,
             e.image_url,
+            e.image_gallery,
+            e.venue_place_id,
+            e.venue_latitude,
+            e.venue_longitude,
             price_stats.min_price,
             price_stats.max_price
         FROM events e
@@ -112,7 +117,8 @@ pub async fn find_event_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Event>, 
     sqlx::query_as::<_, Event>(
         r#"
         SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode, image_url
+               start_time, status, created_at, venue_template_id, seating_mode, image_url,
+               image_gallery, venue_place_id, venue_latitude, venue_longitude
         FROM events
         WHERE id = $1
         "#,
@@ -134,15 +140,21 @@ pub async fn create_event(
     venue_template_id: Option<Uuid>,
     seating_mode: Option<SeatingMode>,
     image_url: Option<&str>,
+    image_gallery: &Json<Vec<String>>,
+    venue_place_id: Option<&str>,
+    venue_latitude: Option<f64>,
+    venue_longitude: Option<f64>,
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
         INSERT INTO events
             (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode, image_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10)
+             start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
+             venue_place_id, venue_latitude, venue_longitude)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10, $11, $12, $13, $14)
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
+                  image_gallery, venue_place_id, venue_latitude, venue_longitude
         "#,
     )
     .bind(organizer_id)
@@ -155,6 +167,10 @@ pub async fn create_event(
     .bind(venue_template_id)
     .bind(seating_mode)
     .bind(image_url)
+    .bind(image_gallery)
+    .bind(venue_place_id)
+    .bind(venue_latitude)
+    .bind(venue_longitude)
     .fetch_one(pool)
     .await
 }
@@ -171,15 +187,21 @@ pub async fn create_event_tx(
     venue_template_id: Option<Uuid>,
     seating_mode: Option<SeatingMode>,
     image_url: Option<&str>,
+    image_gallery: &Json<Vec<String>>,
+    venue_place_id: Option<&str>,
+    venue_latitude: Option<f64>,
+    venue_longitude: Option<f64>,
 ) -> Result<Event, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
         INSERT INTO events
             (organizer_id, title, description, category, venue_name, venue_address,
-             start_time, status, venue_template_id, seating_mode, image_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10)
+             start_time, status, venue_template_id, seating_mode, image_url, image_gallery,
+             venue_place_id, venue_latitude, venue_longitude)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'Published', $8, $9::text::seating_mode, $10, $11, $12, $13, $14)
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
+                  image_gallery, venue_place_id, venue_latitude, venue_longitude
         "#,
     )
     .bind(organizer_id)
@@ -192,6 +214,10 @@ pub async fn create_event_tx(
     .bind(venue_template_id)
     .bind(seating_mode)
     .bind(image_url)
+    .bind(image_gallery)
+    .bind(venue_place_id)
+    .bind(venue_latitude)
+    .bind(venue_longitude)
     .fetch_one(&mut **tx)
     .await
 }
@@ -208,6 +234,10 @@ pub async fn update_event(
     start_time: chrono::DateTime<chrono::Utc>,
     seating_mode: Option<SeatingMode>,
     image_url: Option<&str>,
+    image_gallery: &Json<Vec<String>>,
+    venue_place_id: Option<&str>,
+    venue_latitude: Option<f64>,
+    venue_longitude: Option<f64>,
 ) -> Result<Option<Event>, sqlx::Error> {
     sqlx::query_as::<_, Event>(
         r#"
@@ -219,10 +249,15 @@ pub async fn update_event(
             venue_address = $7,
             start_time = $8,
             seating_mode = $9::text::seating_mode,
-            image_url = $10
+            image_url = $10,
+            image_gallery = $11,
+            venue_place_id = $12,
+            venue_latitude = $13,
+            venue_longitude = $14
         WHERE id = $1 AND organizer_id = $2
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
+                  image_gallery, venue_place_id, venue_latitude, venue_longitude
         "#,
     )
     .bind(event_id)
@@ -235,6 +270,10 @@ pub async fn update_event(
     .bind(start_time)
     .bind(seating_mode)
     .bind(image_url)
+    .bind(image_gallery)
+    .bind(venue_place_id)
+    .bind(venue_latitude)
+    .bind(venue_longitude)
     .fetch_optional(pool)
     .await
 }
@@ -319,7 +358,8 @@ pub async fn list_organizer_events(
     sqlx::query_as::<_, Event>(
         r#"
         SELECT id, organizer_id, title, description, category, venue_name, venue_address,
-               start_time, status, created_at, venue_template_id, seating_mode, image_url
+               start_time, status, created_at, venue_template_id, seating_mode, image_url,
+               image_gallery, venue_place_id, venue_latitude, venue_longitude
         FROM events
         WHERE organizer_id = $1
         ORDER BY created_at DESC
@@ -505,7 +545,8 @@ pub async fn list_assigned_events_for_gate_staff(
     sqlx::query_as::<_, Event>(
         r#"
         SELECT e.id, e.organizer_id, e.title, e.description, e.category, e.venue_name, e.venue_address,
-               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode, e.image_url
+               e.start_time, e.status, e.created_at, e.venue_template_id, e.seating_mode, e.image_url,
+               e.image_gallery, e.venue_place_id, e.venue_latitude, e.venue_longitude
         FROM gate_staff_event_assignments gsea
         JOIN events e ON e.id = gsea.event_id
         WHERE gsea.gate_staff_id = $1
@@ -530,7 +571,8 @@ pub async fn cancel_event_transaction(
           AND organizer_id = $2
           AND status <> 'Cancelled'
         RETURNING id, organizer_id, title, description, category, venue_name, venue_address,
-                  start_time, status, created_at, venue_template_id, seating_mode, image_url
+                  start_time, status, created_at, venue_template_id, seating_mode, image_url,
+                  image_gallery, venue_place_id, venue_latitude, venue_longitude
         "#,
     )
     .bind(event_id)

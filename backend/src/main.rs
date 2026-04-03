@@ -83,10 +83,12 @@ async fn main() {
         .await
         .expect("Failed to create Postgres connection pool!");
 
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .expect("Failed to run database migrations");
+    if std::env::var("RUN_MIGRATIONS").ok().as_deref() == Some("true") {
+        sqlx::migrate!()
+            .run(&pool)
+            .await
+            .expect("Failed to run database migrations");
+    }
 
     let state = AppState {
         pool,

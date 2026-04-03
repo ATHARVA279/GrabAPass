@@ -43,6 +43,7 @@ export class EventDetail implements OnInit {
   event: Event | null = null;
   ticketTiers: EventTicketTier[] = [];
   selectedTiers: SelectedTicketTier[] = [];
+  selectedGalleryImage: string | null = null;
   loading = true;
   tierLoading = false;
   isHoldingTiers = false;
@@ -78,6 +79,7 @@ export class EventDetail implements OnInit {
     ).subscribe({
       next: (event) => {
         this.event = event;
+        this.selectedGalleryImage = this.eventGallery[0] ?? event.image_url ?? null;
         if (event.venue_template_id) {
           this.loadPriceRange(eventId);
         }
@@ -185,6 +187,26 @@ export class EventDetail implements OnInit {
     this.router.navigate(['/events']);
   }
 
+  get eventGallery(): string[] {
+    if (!this.event) {
+      return [];
+    }
+
+    const gallery = [this.event.image_url ?? '', ...(this.event.image_gallery ?? [])]
+      .map((image) => image.trim())
+      .filter((image) => !!image);
+
+    return gallery.filter((image, index) => gallery.indexOf(image) === index);
+  }
+
+  get heroImage(): string | null {
+    return this.selectedGalleryImage ?? this.eventGallery[0] ?? null;
+  }
+
+  selectGalleryImage(image: string): void {
+    this.selectedGalleryImage = image;
+  }
+
   shareEvent(): void {
     if (navigator.share) {
       navigator.share({
@@ -219,4 +241,5 @@ export class EventDetail implements OnInit {
       },
     });
   }
+
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -53,16 +53,19 @@ const CLOUDINARY_FOLDER = 'graba-pass/events';
   styleUrls: ['./create-event.scss']
 })
 export class CreateEvent implements OnInit {
+  readonly maxGalleryImages = 8;
   readonly eventForm: FormGroup;
   isSubmitting = false;
-  isUploadingImage = false;
+  isUploadingImages = false;
   isEditMode = false;
   editingEventId: string | null = null;
   loadingEvent = false;
   displayTime = '';
   venueTemplates: VenueTemplate[] = [];
   gateStaffUsers: GateStaffSummary[] = [];
-  imagePreviewUrl: string | null = null;
+  galleryImages: string[] = [];
+  activeGalleryIndex = 0;
+  isLocationConfirmed = false;
 
   private readonly fb = inject(FormBuilder);
   private readonly eventService = inject(OrganizerEventService);
@@ -79,12 +82,17 @@ export class CreateEvent implements OnInit {
       category: ['', Validators.required],
       venue_name: ['', Validators.required],
       venue_address: ['', Validators.required],
+      venue_city_area: [''],
       start_date: [null, Validators.required],
       start_time_input: ['', [Validators.required, Validators.pattern(/^([01]\d|2[0-3]):([0-5]\d)$/)]],
       description: [''],
       image_url: [''],
+      image_gallery: [[]],
       seating_mode: ['GeneralAdmission', Validators.required],
       venue_template_id: [null],
+      venue_place_id: [''],
+      venue_latitude: [null],
+      venue_longitude: [null],
       gate_staff_ids: [[]],
       categories: this.fb.array([]),
       ticket_tiers: this.fb.array([])
@@ -123,6 +131,12 @@ export class CreateEvent implements OnInit {
       });
     });
 
+    this.eventForm.get('venue_address')!.valueChanges.subscribe(() => {
+      if (this.isLocationConfirmed) {
+        this.isLocationConfirmed = false;
+      }
+    });
+
     if (this.editingEventId) {
       this.loadEventForEdit(this.editingEventId);
     }
@@ -134,6 +148,10 @@ export class CreateEvent implements OnInit {
 
   get ticketTiers(): FormArray {
     return this.eventForm.get('ticket_tiers') as FormArray;
+  }
+
+  get locationConfidenceMessage(): string {
+    return 'Manual location mode is active. Enter venue name and full address carefully.';
   }
 
   addTicketTier(): void {
@@ -174,8 +192,22 @@ export class CreateEvent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.isUploadingImage) {
-      this.toastr.info('Please wait for the image upload to finish.', 'Uploading');
+    if (this.isUploadingImages) {
+      this.toastr.info('Please wait for the image uploads to finish.', 'Uploading');
+      return;
+    }
+
+    if (!this.isLocationConfirmed) {
+      const manualName = this.eventForm.get('venue_name')?.value?.trim();
+      const manualAddress = this.eventForm.get('venue_address')?.value?.trim();
+      if (manualName && manualAddress) {
+        this.isLocationConfirmed = true;
+        this.eventForm.patchValue({ venue_place_id: '' }, { emitEvent: false });
+      }
+    }
+
+    if (!this.isLocationConfirmed) {
+      this.toastr.warning('Confirm the event location before publishing.', 'Location not confirmed');
       return;
     }
 
@@ -194,6 +226,7 @@ export class CreateEvent implements OnInit {
     const {
       start_date,
       start_time_input,
+      venue_city_area,
       categories: categoriesData,
       gate_staff_ids,
       ticket_tiers,
@@ -205,6 +238,10 @@ export class CreateEvent implements OnInit {
       venue_template_id: rest.venue_template_id || undefined,
       seating_mode: rest.seating_mode || undefined,
       image_url: rest.image_url ? rest.image_url : undefined,
+      image_gallery: this.galleryImages,
+      venue_place_id: rest.venue_place_id ? rest.venue_place_id : undefined,
+      venue_latitude: rest.venue_latitude ?? undefined,
+      venue_longitude: rest.venue_longitude ?? undefined,
       ticket_tiers: (ticket_tiers as CreateEventTicketTierRequest[])
         .filter((tier) => tier.name?.trim())
     };
@@ -267,14 +304,23 @@ export class CreateEvent implements OnInit {
           category: event.category,
           venue_name: event.venue_name,
           venue_address: event.venue_address,
+          venue_city_area: this.extractCityArea(event.venue_address),
           start_date: startDate,
           start_time_input: `${hourText}:${minuteText}`,
           description: event.description ?? '',
           image_url: event.image_url ?? '',
+          image_gallery: event.image_gallery ?? [],
           seating_mode: event.seating_mode ?? (event.venue_template_id ? 'Reserved' : 'GeneralAdmission'),
           venue_template_id: event.venue_template_id ?? null,
+          venue_place_id: event.venue_place_id ?? '',
+          venue_latitude: event.venue_latitude ?? null,
+          venue_longitude: event.venue_longitude ?? null,
         });
-        this.imagePreviewUrl = event.image_url ?? null;
+
+        this.isLocationConfirmed = true;
+
+        this.galleryImages = this.resolveGalleryImages(event.image_url ?? null, event.image_gallery ?? []);
+        this.syncImageControls();
         this.ticketTiers.clear();
 
         this.publicEventService.getEventTicketTiers(eventId).subscribe({
@@ -325,40 +371,105 @@ export class CreateEvent implements OnInit {
     });
   }
 
-  async onImageSelected(event: Event): Promise<void> {
+  async onImagesSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+    const files = Array.from(input.files ?? []);
+    if (!files.length) return;
 
-    if (!file.type.startsWith('image/')) {
-      this.toastr.error('Please select an image file.', 'Invalid file');
+    if (this.galleryImages.length + files.length > this.maxGalleryImages) {
+      this.toastr.error(`You can upload up to ${this.maxGalleryImages} event images.`, 'Too many images');
       input.value = '';
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      this.toastr.error('Image must be smaller than 5MB.', 'File too large');
-      input.value = '';
-      return;
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        this.toastr.error('Please select image files only.', 'Invalid file');
+        input.value = '';
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        this.toastr.error('Each image must be smaller than 5MB.', 'File too large');
+        input.value = '';
+        return;
+      }
     }
 
-    this.isUploadingImage = true;
+    this.isUploadingImages = true;
     try {
-      const imageUrl = await this.uploadToCloudinary(file);
-      this.eventForm.get('image_url')?.setValue(imageUrl);
-      this.imagePreviewUrl = imageUrl;
-      this.toastr.success('Image uploaded successfully.', 'Uploaded');
+      for (const file of files) {
+        const imageUrl = await this.uploadToCloudinary(file);
+        this.galleryImages = [...this.galleryImages, imageUrl];
+      }
+      this.syncImageControls();
+      this.toastr.success(`${files.length} image${files.length === 1 ? '' : 's'} uploaded successfully.`, 'Uploaded');
     } catch (error) {
-      this.toastr.error('Failed to upload image. Please try again.', 'Upload Error');
+      this.toastr.error('Failed to upload one or more images. Please try again.', 'Upload Error');
     } finally {
-      this.isUploadingImage = false;
+      this.isUploadingImages = false;
       input.value = '';
     }
   }
 
-  removeImage(): void {
-    this.eventForm.get('image_url')?.setValue('');
-    this.imagePreviewUrl = null;
+  setPrimaryImage(index: number): void {
+    if (index <= 0 || index >= this.galleryImages.length) {
+      return;
+    }
+
+    const reordered = [...this.galleryImages];
+    const [selected] = reordered.splice(index, 1);
+    reordered.unshift(selected);
+    this.galleryImages = reordered;
+    this.activeGalleryIndex = 0;
+    this.syncImageControls();
+  }
+
+  removeGalleryImage(index: number): void {
+    this.galleryImages = this.galleryImages.filter((_, currentIndex) => currentIndex !== index);
+    this.activeGalleryIndex = Math.min(this.activeGalleryIndex, Math.max(this.galleryImages.length - 1, 0));
+    this.syncImageControls();
+  }
+
+  selectGalleryImage(index: number): void {
+    this.activeGalleryIndex = index;
+  }
+
+  get activeGalleryImage(): string | null {
+    return this.galleryImages[this.activeGalleryIndex] ?? null;
+  }
+
+  changeLocation(_resetSearch = true): void {
+    this.isLocationConfirmed = false;
+    this.eventForm.patchValue(
+      {
+        venue_place_id: '',
+        venue_latitude: null,
+        venue_longitude: null,
+      },
+      { emitEvent: false }
+    );
+  }
+
+  confirmManualLocation(): void {
+    const venueName = this.eventForm.get('venue_name')?.value?.trim();
+    const venueAddress = this.eventForm.get('venue_address')?.value?.trim();
+
+    if (!venueName || !venueAddress) {
+      this.toastr.warning('Venue name and full address are required before confirming.', 'Missing details');
+      return;
+    }
+
+    this.eventForm.patchValue(
+      {
+        venue_place_id: '',
+        venue_latitude: null,
+        venue_longitude: null,
+      },
+      { emitEvent: false }
+    );
+    this.isLocationConfirmed = true;
+    this.toastr.success('Manual location confirmed.', 'Location set');
   }
 
   private async uploadToCloudinary(file: File): Promise<string> {
@@ -381,5 +492,32 @@ export class CreateEvent implements OnInit {
       throw new Error('Upload failed');
     }
     return data.secure_url;
+  }
+
+  private syncImageControls(): void {
+    this.eventForm.patchValue(
+      {
+        image_url: this.galleryImages[0] ?? '',
+        image_gallery: this.galleryImages,
+      },
+      { emitEvent: false }
+    );
+  }
+
+  private resolveGalleryImages(primaryImage: string | null, gallery: string[]): string[] {
+    const normalized = [primaryImage ?? '', ...gallery]
+      .map((image) => image.trim())
+      .filter((image) => !!image);
+
+    return normalized.filter((image, index) => normalized.indexOf(image) === index);
+  }
+
+  private extractCityArea(address: string): string {
+    const parts = address.split(',').map((segment) => segment.trim()).filter((segment) => !!segment);
+    if (parts.length <= 1) {
+      return '';
+    }
+
+    return parts.slice(-2).join(', ');
   }
 }

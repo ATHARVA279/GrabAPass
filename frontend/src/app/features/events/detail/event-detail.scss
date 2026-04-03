@@ -108,6 +108,42 @@
     }
 }
 
+.gallery-strip {
+    display: flex;
+    gap: 0.8rem;
+    margin: -0.75rem 0 1.6rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+
+    .gallery-thumb {
+        flex: 0 0 110px;
+        height: 72px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0;
+        background: var(--black-card);
+        cursor: pointer;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+
+        &.active {
+            border-color: rgba(255, 214, 10, 0.4);
+            box-shadow: 0 10px 22px rgba(255, 214, 10, 0.12);
+        }
+    }
+}
+
 // ─── Content Grid ─────────────────────────────────────────────────────────────
 .event-grid {
     display: grid;
@@ -270,6 +306,7 @@
                 font-weight: 600;
             }
         }
+
     }
 
     .booking-card {

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use sqlx::types::Json;
 use uuid::Uuid;
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -83,6 +84,10 @@ pub struct Event {
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
     pub image_url: Option<String>,
+    pub image_gallery: Json<Vec<String>>,
+    pub venue_place_id: Option<String>,
+    pub venue_latitude: Option<f64>,
+    pub venue_longitude: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
@@ -102,6 +107,10 @@ pub struct PublicEvent {
     pub min_price: Option<f64>,
     pub max_price: Option<f64>,
     pub image_url: Option<String>,
+    pub image_gallery: Json<Vec<String>>,
+    pub venue_place_id: Option<String>,
+    pub venue_latitude: Option<f64>,
+    pub venue_longitude: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Clone, FromRow)]
@@ -197,6 +206,10 @@ pub struct CreateEventRequest {
     pub venue_template_id: Option<Uuid>,
     pub seating_mode: Option<SeatingMode>,
     pub image_url: Option<String>,
+    pub image_gallery: Option<Vec<String>>,
+    pub venue_place_id: Option<String>,
+    pub venue_latitude: Option<f64>,
+    pub venue_longitude: Option<f64>,
     pub ticket_tiers: Option<Vec<CreateEventTicketTierRequest>>,
 }
 

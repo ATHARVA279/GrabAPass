@@ -155,6 +155,42 @@
     }
 }
 
+.location-section {
+    margin-top: 0.5rem;
+    margin-bottom: 0.65rem;
+    padding: 1.1rem;
+    border: 1px solid var(--black-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.015);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+
+    .location-header {
+        p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+    }
+
+    .compact {
+        margin-bottom: 0.35rem;
+    }
+
+    .location-switch-row {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+
+        button {
+            border-radius: 999px;
+        }
+    }
+
+}
+
 // ─── Image Upload ────────────────────────────────────────────────────────────
 .image-upload-section {
     margin-top: 0.5rem;
@@ -277,6 +313,69 @@
     .upload-hint {
         font-size: 0.75rem;
         color: var(--text-muted);
+    }
+
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    .gallery-tile {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.02);
+
+        &.active {
+            border-color: rgba(255, 214, 10, 0.35);
+            box-shadow: 0 10px 24px rgba(255, 214, 10, 0.12);
+        }
+    }
+
+    .thumbnail-button {
+        width: 100%;
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+
+        img {
+            display: block;
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+        }
+    }
+
+    .gallery-tile-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.6rem 0.75rem;
+
+        button[mat-stroked-button] {
+            line-height: 32px;
+            padding: 0 0.85rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+        }
+    }
+
+    .cover-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(255, 214, 10, 0.14);
+        color: var(--yellow);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
     }
 }
 
