@@ -36,25 +36,38 @@ impl SplitService {
         req: InitializeSplitRequest,
     ) -> Result<SplitSession, (StatusCode, String)> {
         // 1. Get the order and verify the user
-        let order = crate::repositories::order_repository::OrderRepository::get_order_by_id_for_user(pool, order_id, user_id).await?;
+        let order =
+            crate::repositories::order_repository::OrderRepository::get_order_by_id_for_user(
+                pool, order_id, user_id,
+            )
+            .await?;
 
         if order.status != "Pending" {
-            return Err((StatusCode::BAD_REQUEST, "Only pending orders can be split.".to_string()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Only pending orders can be split.".to_string(),
+            ));
         }
 
-        let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         // 2. Extend the hold to 30 mins
         let new_expiration = Utc::now() + Duration::minutes(30);
-        sqlx::query(
-            "UPDATE seat_holds SET expires_at = $1 WHERE event_id = $2 AND user_id = $3"
-        )
-        .bind(new_expiration)
-        .bind(order.event_id)
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to extend holds: {}", e)))?;
+        sqlx::query("UPDATE seat_holds SET expires_at = $1 WHERE event_id = $2 AND user_id = $3")
+            .bind(new_expiration)
+            .bind(order.event_id)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Failed to extend holds: {}", e),
+                )
+            })?;
 
         // 3. Create split session
         let mut session = SplitRepository::create_split_session_tx(
@@ -62,8 +75,9 @@ impl SplitService {
             order_id,
             order.total_amount,
             req.split_type.clone(),
-            new_expiration
-        ).await?;
+            new_expiration,
+        )
+        .await?;
 
         let order_items = sqlx::query_as::<_, AllocatableOrderItem>(
             r#"
@@ -77,7 +91,12 @@ impl SplitService {
         .bind(order_id)
         .fetch_all(&mut *tx)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to load order items for split allocation: {}", e)))?;
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to load order items for split allocation: {}", e),
+            )
+        })?;
 
         let share_plans = match req.split_type {
             crate::db::models::SplitType::Even => {
@@ -123,7 +142,8 @@ impl SplitService {
             .await?;
 
             for item_id in &plan.item_ids {
-                SplitRepository::create_share_item_allocation_tx(&mut tx, share.id, *item_id).await?;
+                SplitRepository::create_share_item_allocation_tx(&mut tx, share.id, *item_id)
+                    .await?;
             }
 
             shares_created.push(share);
@@ -131,7 +151,9 @@ impl SplitService {
 
         session.shares = Some(shares_created);
 
-        tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         Ok(session)
     }
@@ -246,22 +268,24 @@ impl SplitService {
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        let user_id: Uuid = row.try_get("user_id")
+        let user_id: Uuid = row
+            .try_get("user_id")
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        let event_id: Uuid = row.try_get("event_id")
+        let event_id: Uuid = row
+            .try_get("event_id")
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        OrderRepository::finalize_split_order(&mut tx, order_id, event_id, user_id, jwt_secret).await?;
+        OrderRepository::finalize_split_order(&mut tx, order_id, event_id, user_id, jwt_secret)
+            .await?;
 
-        sqlx::query(
-            "UPDATE split_sessions SET status = 'Completed'::split_status WHERE id = $1",
-        )
-        .bind(share.split_session_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        sqlx::query("UPDATE split_sessions SET status = 'Completed'::split_status WHERE id = $1")
+            .bind(share.split_session_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        tx.commit().await
+        tx.commit()
+            .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         Ok(())
@@ -304,7 +328,10 @@ impl SplitService {
         .fetch_optional(&mut *tx)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-        .ok_or((StatusCode::NOT_FOUND, "Token invalid or expired.".to_string()))?;
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            "Token invalid or expired.".to_string(),
+        ))?;
 
         let share_id: Uuid = share_row
             .try_get("id")
@@ -357,7 +384,8 @@ impl SplitService {
             tx.rollback().await.ok();
             return Err((
                 StatusCode::CONFLICT,
-                "The host share stays in the booking owner's account and cannot be claimed.".to_string(),
+                "The host share stays in the booking owner's account and cannot be claimed."
+                    .to_string(),
             ));
         }
 
@@ -373,7 +401,8 @@ impl SplitService {
             if existing_owner == claimant_user_id {
                 let ticket_id = claimed_ticket_id.ok_or((
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "This share is already claimed, but the ticket reference is missing.".to_string(),
+                    "This share is already claimed, but the ticket reference is missing."
+                        .to_string(),
                 ))?;
                 let detail = TicketRepository::get_ticket_detail_in_tx(&mut tx, ticket_id).await?;
                 tx.commit()
@@ -394,7 +423,8 @@ impl SplitService {
                 tx.rollback().await.ok();
                 return Err((
                     StatusCode::FORBIDDEN,
-                    "This split share can only be claimed by the invited email address.".to_string(),
+                    "This split share can only be claimed by the invited email address."
+                        .to_string(),
                 ));
             }
         }
@@ -577,8 +607,7 @@ impl SplitService {
             .await
             .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-        let expired_sessions =
-            SplitRepository::find_expired_pending_sessions(&mut tx).await?;
+        let expired_sessions = SplitRepository::find_expired_pending_sessions(&mut tx).await?;
 
         for (session_id, order_id) in expired_sessions {
             // a. Mark session expired
@@ -594,12 +623,10 @@ impl SplitService {
             }
 
             // b. Mark order expired
-            if let Err(e) = sqlx::query(
-                "UPDATE orders SET status = 'Expired' WHERE id = $1",
-            )
-            .bind(order_id)
-            .execute(&mut *tx)
-            .await
+            if let Err(e) = sqlx::query("UPDATE orders SET status = 'Expired' WHERE id = $1")
+                .bind(order_id)
+                .execute(&mut *tx)
+                .await
             {
                 tracing::error!("Failed to expire order {order_id}: {e}");
                 continue;
@@ -660,7 +687,8 @@ impl SplitService {
                 };
                 let amount_paise = (share.amount_due * 100.0).round() as i64;
 
-                match PaymentService::refund_payment(config, gateway_payment_id, amount_paise).await {
+                match PaymentService::refund_payment(config, gateway_payment_id, amount_paise).await
+                {
                     Ok(()) => {
                         if let Err(e) = sqlx::query(
                             "UPDATE split_shares SET status = 'Refunded'::split_status WHERE id = $1",
@@ -730,11 +758,17 @@ impl SplitService {
         let existing_share = SplitRepository::get_share_by_payment_token(pool, token).await?;
 
         if detail.status != crate::db::models::SplitStatus::Pending {
-            return Err((StatusCode::BAD_REQUEST, "Share is already paid or expired.".to_string()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Share is already paid or expired.".to_string(),
+            ));
         }
 
         if detail.session_expires_at < chrono::Utc::now() {
-            return Err((StatusCode::BAD_REQUEST, "The session for this split has expired.".to_string()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "The session for this split has expired.".to_string(),
+            ));
         }
 
         let amount_paise = (detail.amount_due * 100.0).round() as i64;
@@ -751,7 +785,9 @@ impl SplitService {
                 customer_name: if detail.is_host_share {
                     detail.host_name.clone()
                 } else {
-                    detail.guest_name.unwrap_or(format!("Guest of {}", detail.host_name))
+                    detail
+                        .guest_name
+                        .unwrap_or(format!("Guest of {}", detail.host_name))
                 },
                 customer_email: existing_share.guest_email.unwrap_or_default(),
             });
@@ -770,10 +806,16 @@ impl SplitService {
         )
         .await?;
 
-        let mut tx = pool.begin().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-        let share = SplitRepository::attach_gateway_to_share_tx(&mut tx, token, &rzp_order.id).await?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        let share =
+            SplitRepository::attach_gateway_to_share_tx(&mut tx, token, &rzp_order.id).await?;
 
-        tx.commit().await.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
         Ok(crate::db::models::SplitCheckoutInitialization {
             share_id: share.id,
@@ -786,7 +828,9 @@ impl SplitService {
             customer_name: if detail.is_host_share {
                 detail.host_name
             } else {
-                detail.guest_name.unwrap_or(format!("Guest of {}", detail.host_name))
+                detail
+                    .guest_name
+                    .unwrap_or(format!("Guest of {}", detail.host_name))
             },
             customer_email: share.guest_email.unwrap_or_default(),
         })
@@ -805,12 +849,7 @@ impl SplitService {
         }
 
         let mut buckets = (0..num_shares)
-            .map(|_| {
-                (
-                    0.0_f64,
-                    Vec::<Uuid>::new(),
-                )
-            })
+            .map(|_| (0.0_f64, Vec::<Uuid>::new()))
             .collect::<Vec<_>>();
 
         let target_subtotal = order_subtotal / f64::from(num_shares);
@@ -820,7 +859,8 @@ impl SplitService {
             let Some(item) = items_iter.next() else {
                 return Err((
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "Split allocation failed because ticket items ran out unexpectedly.".to_string(),
+                    "Split allocation failed because ticket items ran out unexpectedly."
+                        .to_string(),
                 ));
             };
 
@@ -839,7 +879,11 @@ impl SplitService {
                     left_distance
                         .partial_cmp(&right_distance)
                         .unwrap_or(std::cmp::Ordering::Equal)
-                        .then_with(|| left.0.partial_cmp(&right.0).unwrap_or(std::cmp::Ordering::Equal))
+                        .then_with(|| {
+                            left.0
+                                .partial_cmp(&right.0)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        })
                 })
                 .map(|(index, _)| index)
                 .ok_or((
@@ -912,7 +956,8 @@ impl SplitService {
             for seat_id in share.seat_ids {
                 let (item_id, price) = seat_items.remove(&seat_id).ok_or((
                     StatusCode::BAD_REQUEST,
-                    "Each reserved seat must be assigned exactly once across split shares.".to_string(),
+                    "Each reserved seat must be assigned exactly once across split shares."
+                        .to_string(),
                 ))?;
                 item_ids.push(item_id);
                 subtotal_amount += price;
@@ -954,16 +999,28 @@ impl SplitService {
                 ));
             }
 
-            if !is_host_share && share.guest_email.as_deref().map(str::trim).unwrap_or("").is_empty() {
+            if !is_host_share
+                && share
+                    .guest_email
+                    .as_deref()
+                    .map(str::trim)
+                    .unwrap_or("")
+                    .is_empty()
+            {
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    "Each guest share needs an email so the right person can claim their ticket.".to_string(),
+                    "Each guest share needs an email so the right person can claim their ticket."
+                        .to_string(),
                 ));
             }
 
             plans.push(SplitSharePlan {
                 is_host_share,
-                guest_name: if is_host_share { None } else { share.guest_name.filter(|value| !value.trim().is_empty()) },
+                guest_name: if is_host_share {
+                    None
+                } else {
+                    share.guest_name.filter(|value| !value.trim().is_empty())
+                },
                 guest_email: if is_host_share {
                     None
                 } else {
@@ -977,7 +1034,8 @@ impl SplitService {
         if !seat_items.is_empty() || tier_items.values().any(|items| !items.is_empty()) {
             return Err((
                 StatusCode::BAD_REQUEST,
-                "Assign every selected ticket to exactly one share before generating split links.".to_string(),
+                "Assign every selected ticket to exactly one share before generating split links."
+                    .to_string(),
             ));
         }
 

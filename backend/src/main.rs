@@ -167,6 +167,10 @@ async fn main() {
         .nest("/api/gate", routes::gate::router())
         .nest("/api/organizer/events", routes::event::organizer_router())
         .nest(
+            "/api/organizer/event-venues",
+            routes::event_venue::organizer_router(),
+        )
+        .nest(
             "/api/organizer/venues",
             routes::venue::organizer_venue_router(),
         )

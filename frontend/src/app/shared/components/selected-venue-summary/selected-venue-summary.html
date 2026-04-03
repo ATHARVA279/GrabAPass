@@ -1,0 +1,58 @@
+<section class="selected-venue-summary" *ngIf="venue">
+  <div class="summary-copy">
+    <div class="summary-header">
+      <span class="summary-pill">Confirmed Venue</span>
+      <h3>{{ venue.name }}</h3>
+    </div>
+
+    <div class="summary-grid">
+      <div>
+        <span class="label">Full Address</span>
+        <strong>{{ venue.address }}</strong>
+      </div>
+
+      <div>
+        <span class="label">Locality / Area</span>
+        <strong>{{ venue.locality || 'Not available' }}</strong>
+      </div>
+
+      <div>
+        <span class="label">City, State, Pincode</span>
+        <strong
+          >{{ venue.city || 'City' }}, {{ venue.state || 'State' }}
+          {{ venue.pincode || '' }}</strong
+        >
+      </div>
+
+      <div>
+        <span class="label">Landmark</span>
+        <strong>{{ venue.landmark || 'No landmark added' }}</strong>
+      </div>
+    </div>
+
+    <div class="summary-actions">
+      <button mat-stroked-button type="button" (click)="changeVenue.emit()">Change Venue</button>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        *ngIf="showAdjustAction"
+        (click)="adjustOnMap.emit()"
+      >
+        Adjust On Map
+      </button>
+      <a *ngIf="googleMapsUrl" [href]="googleMapsUrl" target="_blank" rel="noopener noreferrer"
+        >Open in Google Maps</a
+      >
+    </div>
+  </div>
+
+  <div class="summary-map" *ngIf="mapPreviewUrl">
+    <iframe
+      [src]="mapPreviewUrl"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Venue preview map"
+    ></iframe>
+  </div>
+</section>

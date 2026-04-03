@@ -1,0 +1,102 @@
+<div class="add-venue-modal">
+  <div class="modal-header">
+    <div>
+      <span class="eyebrow">Add Venue</span>
+      <h2>Create a verified venue</h2>
+      <p>Use Google Maps to locate the venue, confirm the pin, then add the final venue details.</p>
+    </div>
+
+    <button mat-icon-button type="button" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="step-strip">
+    <span>1. Search or pin</span>
+    <span>2. Review auto-filled address</span>
+    <span>3. Add venue details</span>
+  </div>
+
+  <app-venue-search-select
+    [mapsEnabled]="mapsEnabled"
+    [initialQuery]="data.initialQuery ?? ''"
+    (venuePicked)="onSearchSelection($event)"
+  >
+  </app-venue-search-select>
+
+  <app-map-selector
+    [venue]="venueDraft"
+    [interactive]="mapsEnabled"
+    [height]="280"
+    helperText="You can also tap the map to place a pin when Google search does not find the exact entry."
+    (venueChange)="onMapChange($event)"
+  >
+  </app-map-selector>
+
+  <div class="duplicate-banner" *ngIf="exactMatch">
+    <mat-icon>content_copy</mat-icon>
+    <div>
+      <strong>This venue already exists</strong>
+      <p>
+        We found a matching Place ID, so saving will reuse the existing venue instead of creating a
+        duplicate.
+      </p>
+    </div>
+  </div>
+
+  <div class="duplicate-list" *ngIf="similarVenues.length">
+    <div class="section-heading">
+      <strong>Similar saved venues nearby</strong>
+      <span *ngIf="isCheckingDuplicates">Checking…</span>
+    </div>
+
+    <app-venue-option-card
+      *ngFor="let venue of similarVenues"
+      [venue]="venue"
+      actionLabel="Use This Venue"
+      emphasisLabel="Saved venue"
+      (selected)="useSimilarVenue(venue)"
+    >
+    </app-venue-option-card>
+  </div>
+
+  <app-address-form-group [venue]="venueDraft"></app-address-form-group>
+
+  <form [formGroup]="venueForm" class="details-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Venue Name</mat-label>
+      <input matInput formControlName="name" placeholder="e.g., Main Convention Hall" />
+      <mat-error *ngIf="venueForm.get('name')?.hasError('required')"
+        >Venue name is required.</mat-error
+      >
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Landmark</mat-label>
+        <input matInput formControlName="landmark" placeholder="Optional nearby landmark" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Capacity</mat-label>
+        <input matInput type="number" min="0" formControlName="capacity" placeholder="Optional" />
+      </mat-form-field>
+    </div>
+  </form>
+
+  <div class="error-copy" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <div class="modal-actions">
+    <button mat-stroked-button type="button" (click)="close()">Cancel</button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      (click)="saveVenue()"
+      [disabled]="isSaving"
+    >
+      <mat-spinner diameter="18" *ngIf="isSaving"></mat-spinner>
+      <span>{{ exactMatch ? 'Use Existing Venue' : 'Save Venue' }}</span>
+    </button>
+  </div>
+</div>

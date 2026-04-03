@@ -5,7 +5,13 @@
       Back to Dashboard
     </button>
     <h2>{{ isEditMode ? 'Edit Event' : 'Create New Event' }}</h2>
-    <p>{{ isEditMode ? 'Update event details and pricing.' : 'Publish an event to the public GrabAPass marketplace.' }}</p>
+    <p>
+      {{
+        isEditMode
+          ? 'Update event details and pricing.'
+          : 'Publish an event to the public GrabAPass marketplace.'
+      }}
+    </p>
   </div>
 
   <mat-card class="event-form-card">
@@ -16,13 +22,16 @@
       </div>
 
       <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" class="event-form">
-        
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Event Title</mat-label>
-          <input matInput formControlName="title" placeholder="e.g., Summer Music Festival 2026">
+          <input matInput formControlName="title" placeholder="e.g., Summer Music Festival 2026" />
           <mat-icon matPrefix>title</mat-icon>
-          <mat-error *ngIf="eventForm.get('title')?.hasError('required')">Title is required.</mat-error>
-          <mat-error *ngIf="eventForm.get('title')?.hasError('maxlength')">Title is too long.</mat-error>
+          <mat-error *ngIf="eventForm.get('title')?.hasError('required')"
+            >Title is required.</mat-error
+          >
+          <mat-error *ngIf="eventForm.get('title')?.hasError('maxlength')"
+            >Title is too long.</mat-error
+          >
         </mat-form-field>
 
         <div class="form-row">
@@ -36,24 +45,48 @@
               <mat-option value="Arts & Theater">Arts & Theater</mat-option>
             </mat-select>
             <mat-icon matPrefix>category</mat-icon>
-            <mat-error *ngIf="eventForm.get('category')?.hasError('required')">Please select a category.</mat-error>
+            <mat-error *ngIf="eventForm.get('category')?.hasError('required')"
+              >Please select a category.</mat-error
+            >
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="quarter-width">
             <mat-label>Start Date</mat-label>
-            <input matInput [matDatepicker]="startDatePicker" formControlName="start_date" placeholder="MM/DD/YYYY" readonly>
+            <input
+              matInput
+              [matDatepicker]="startDatePicker"
+              formControlName="start_date"
+              placeholder="MM/DD/YYYY"
+              readonly
+            />
             <mat-icon matPrefix>event</mat-icon>
             <mat-datepicker-toggle matIconSuffix [for]="startDatePicker"></mat-datepicker-toggle>
             <mat-datepicker #startDatePicker></mat-datepicker>
-            <mat-error *ngIf="eventForm.get('start_date')?.hasError('required')">Start date is required.</mat-error>
+            <mat-error *ngIf="eventForm.get('start_date')?.hasError('required')"
+              >Start date is required.</mat-error
+            >
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="quarter-width" (click)="openTimePicker()">
             <mat-label>Start Time</mat-label>
-            <input matInput readonly [value]="displayTime" placeholder="HH:MM AM/PM" style="cursor:pointer">
+            <input
+              matInput
+              readonly
+              [value]="displayTime"
+              placeholder="HH:MM AM/PM"
+              style="cursor: pointer"
+            />
             <mat-icon matPrefix>schedule</mat-icon>
-            <mat-icon matSuffix style="cursor:pointer; color: rgba(255,255,255,0.5)">access_time</mat-icon>
-            <mat-error *ngIf="eventForm.get('start_time_input')?.touched && eventForm.get('start_time_input')?.hasError('required')">Start time is required.</mat-error>
+            <mat-icon matSuffix style="cursor: pointer; color: rgba(255, 255, 255, 0.5)"
+              >access_time</mat-icon
+            >
+            <mat-error
+              *ngIf="
+                eventForm.get('start_time_input')?.touched &&
+                eventForm.get('start_time_input')?.hasError('required')
+              "
+              >Start time is required.</mat-error
+            >
           </mat-form-field>
         </div>
 
@@ -61,39 +94,130 @@
           <div class="location-header">
             <div class="seating-header compact">
               <mat-icon>place</mat-icon>
-              <span>Event Location Selection</span>
+              <span>Venue & Location</span>
             </div>
-            <p>{{ locationConfidenceMessage }}</p>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="half-width">
-              <mat-label>Venue Name</mat-label>
-              <input matInput formControlName="venue_name" [readonly]="isLocationConfirmed" placeholder="e.g., MIT-ADT Main Campus Auditorium">
-              <mat-icon matPrefix>stadium</mat-icon>
-              <mat-error *ngIf="eventForm.get('venue_name')?.hasError('required')">Venue name is required.</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="half-width">
-              <mat-label>City / Area</mat-label>
-              <input matInput formControlName="venue_city_area" [readonly]="isLocationConfirmed" placeholder="e.g., Loni Kalbhor, Pune">
-              <mat-icon matPrefix>location_city</mat-icon>
-            </mat-form-field>
+            <p>{{ venueFlowHeading }}</p>
           </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Full Address</mat-label>
-            <textarea matInput rows="3" formControlName="venue_address" [readonly]="isLocationConfirmed" placeholder="Complete venue address with landmarks"></textarea>
-            <mat-icon matPrefix>place</mat-icon>
-            <mat-error *ngIf="eventForm.get('venue_address')?.hasError('required')">Address is required.</mat-error>
-          </mat-form-field>
+          <div class="location-layout">
+            <div class="location-main" *ngIf="venueFlowState === 'search'">
+              <app-venue-search-select
+                [mapsEnabled]="mapsEnabled"
+                (venuePicked)="onVenueSearchSelected($event)"
+                (addVenue)="openAddVenueModal($event)"
+              >
+              </app-venue-search-select>
+            </div>
 
-          <div class="location-switch-row">
-            <button mat-flat-button color="primary" type="button" (click)="confirmManualLocation()" *ngIf="!isLocationConfirmed">
-              Confirm this location
-            </button>
-            <button mat-stroked-button type="button" (click)="changeLocation(false)" *ngIf="isLocationConfirmed">
-              Change location
-            </button>
+            <div class="location-main" *ngIf="venueFlowState === 'review' && pendingVenueCandidate">
+              <div class="candidate-overview">
+                <div>
+                  <span class="location-chip google">Google Maps candidate</span>
+                  <strong>{{ pendingVenueCandidate.name }}</strong>
+                  <span>{{ pendingVenueCandidate.address }}</span>
+                </div>
+                <button mat-stroked-button type="button" (click)="openAddVenueModal()">
+                  Add As New Venue
+                </button>
+              </div>
+
+              <div class="feedback-banner" *ngIf="venueLookupError">
+                <mat-icon>warning</mat-icon>
+                <span>{{ venueLookupError }}</span>
+              </div>
+
+              <div class="feedback-banner is-match" *ngIf="exactVenueMatch">
+                <mat-icon>verified</mat-icon>
+                <span
+                  >We found an existing saved venue with the same Google Place ID. Confirming will
+                  reuse it and prevent duplicates.</span
+                >
+              </div>
+
+              <div class="duplicate-stack" *ngIf="similarVenueMatches.length">
+                <div class="duplicate-heading">
+                  <strong>Similar nearby venues already saved</strong>
+                  <span *ngIf="isVenueLookupLoading">Checking saved venues…</span>
+                </div>
+
+                <app-venue-option-card
+                  *ngFor="let venue of similarVenueMatches"
+                  [venue]="venue"
+                  actionLabel="Use This Venue"
+                  emphasisLabel="Saved venue"
+                  (selected)="useExistingVenueMatch(venue)"
+                >
+                </app-venue-option-card>
+              </div>
+
+              <app-map-selector
+                [venue]="pendingVenueCandidate"
+                [interactive]="mapsEnabled"
+                [height]="320"
+                (venueChange)="onVenueMapAdjusted($event)"
+              >
+              </app-map-selector>
+
+              <div class="location-switch-row">
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  (click)="confirmPendingVenue()"
+                >
+                  Confirm Venue
+                </button>
+                <button mat-stroked-button type="button" (click)="changeVenue()">
+                  Back To Search
+                </button>
+              </div>
+            </div>
+
+            <div class="location-main" *ngIf="venueFlowState === 'confirmed' && selectedVenue">
+              <app-selected-venue-summary
+                [venue]="selectedVenue"
+                (changeVenue)="changeVenue()"
+                (adjustOnMap)="reopenMapReview()"
+              >
+              </app-selected-venue-summary>
+            </div>
+
+            <aside class="location-sidebar">
+              <div class="sidebar-card">
+                <span class="sidebar-step">How this works</span>
+                <h4>Real map confirmation before publish</h4>
+                <p>
+                  Search from Google Maps, verify the address, then confirm the exact pin so the
+                  event always points to the right venue branch.
+                </p>
+              </div>
+
+              <div class="sidebar-card">
+                <span class="sidebar-step">Duplicate protection</span>
+                <h4>Place ID beats venue name</h4>
+                <p>
+                  We check saved venues using Google Place ID and nearby matches, so “Main
+                  Auditorium” does not accidentally point to the wrong building.
+                </p>
+              </div>
+
+              <button
+                mat-stroked-button
+                type="button"
+                class="sidebar-action"
+                (click)="openAddVenueModal()"
+              >
+                <mat-icon>add_location_alt</mat-icon>
+                Add New Venue
+              </button>
+            </aside>
+          </div>
+
+          <div
+            class="venue-validation"
+            *ngIf="eventForm.get('venue_payload')?.touched && !hasConfirmedVenue"
+          >
+            Confirm a venue before publishing the event.
           </div>
         </div>
 
@@ -109,7 +233,12 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Event Description</mat-label>
-          <textarea matInput formControlName="description" rows="5" placeholder="Tell ticket buyers what to expect..."></textarea>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="5"
+            placeholder="Tell ticket buyers what to expect..."
+          ></textarea>
           <mat-icon class="align-top" matPrefix>description</mat-icon>
         </mat-form-field>
 
@@ -118,11 +247,18 @@
             <mat-icon>image</mat-icon>
             <span>Event Image Gallery</span>
           </div>
-          <p class="subtitle">Upload up to 8 images. The first image becomes the cover image used across cards and listings.</p>
+          <p class="subtitle">
+            Upload up to 8 images. The first image becomes the cover image used across cards and
+            listings.
+          </p>
 
           <div class="image-upload-card">
             <div class="image-preview" [class.empty]="!activeGalleryImage">
-              <img *ngIf="activeGalleryImage" [src]="activeGalleryImage" alt="Event gallery preview">
+              <img
+                *ngIf="activeGalleryImage"
+                [src]="activeGalleryImage"
+                alt="Event gallery preview"
+              />
               <div *ngIf="!activeGalleryImage" class="image-placeholder">
                 <mat-icon>photo_camera</mat-icon>
                 <span>No images yet</span>
@@ -131,23 +267,43 @@
 
             <div class="image-actions">
               <label class="upload-btn" [class.disabled]="isUploadingImages">
-                <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)" [disabled]="isUploadingImages">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="onImagesSelected($event)"
+                  [disabled]="isUploadingImages"
+                />
                 <mat-icon>cloud_upload</mat-icon>
                 <span>{{ isUploadingImages ? 'Uploading...' : 'Upload Images' }}</span>
               </label>
-              <span class="upload-hint">PNG or JPG · Max 5MB each · {{ galleryImages.length }}/{{ maxGalleryImages }} uploaded</span>
+              <span class="upload-hint"
+                >PNG or JPG · Max 5MB each · {{ galleryImages.length }}/{{
+                  maxGalleryImages
+                }}
+                uploaded</span
+              >
             </div>
           </div>
 
           <div class="gallery-grid" *ngIf="galleryImages.length > 0">
-            <div class="gallery-tile" *ngFor="let image of galleryImages; let i = index" [class.active]="i === activeGalleryIndex">
+            <div
+              class="gallery-tile"
+              *ngFor="let image of galleryImages; let i = index"
+              [class.active]="i === activeGalleryIndex"
+            >
               <button type="button" class="thumbnail-button" (click)="selectGalleryImage(i)">
-                <img [src]="image" [alt]="'Event image ' + (i + 1)">
+                <img [src]="image" [alt]="'Event image ' + (i + 1)" />
               </button>
 
               <div class="gallery-tile-meta">
                 <span class="cover-badge" *ngIf="i === 0">Cover</span>
-                <button mat-stroked-button type="button" *ngIf="i !== 0" (click)="setPrimaryImage(i)">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  *ngIf="i !== 0"
+                  (click)="setPrimaryImage(i)"
+                >
                   Make Cover
                 </button>
                 <button mat-icon-button type="button" (click)="removeGalleryImage(i)">
@@ -175,31 +331,45 @@
             </mat-select>
             <mat-icon matPrefix>stadium</mat-icon>
             <mat-hint>
-              <span *ngIf="!venueTemplates.length">No templates yet —
-                <a routerLink="/organizer/create-venue">create one first</a>.
+              <span *ngIf="!venueTemplates.length"
+                >No templates yet — <a routerLink="/organizer/create-venue">create one first</a>.
               </span>
-              <span *ngIf="venueTemplates.length">Attach a seating chart so attendees can pick seats.</span>
+              <span *ngIf="venueTemplates.length"
+                >Attach a seating chart so attendees can pick seats.</span
+              >
             </mat-hint>
           </mat-form-field>
 
           <!-- CATEGORY PRICING -->
-          <div *ngIf="categories.controls.length > 0" class="category-pricing-section fade-in" formArrayName="categories">
+          <div
+            *ngIf="categories.controls.length > 0"
+            class="category-pricing-section fade-in"
+            formArrayName="categories"
+          >
             <h4>Seat Pricing</h4>
             <p class="subtitle">Set the price for each section in your selected venue layout.</p>
-            
+
             <div class="category-grid">
-              <div *ngFor="let catCtrl of categories.controls; let i = index" [formGroupName]="i" class="category-card" [style.border-top-color]="catCtrl.get('color_hex')?.value">
+              <div
+                *ngFor="let catCtrl of categories.controls; let i = index"
+                [formGroupName]="i"
+                class="category-card"
+                [style.border-top-color]="catCtrl.get('color_hex')?.value"
+              >
                 <div class="cat-header">
-                  <div class="color-dot" [style.background-color]="catCtrl.get('color_hex')?.value"></div>
+                  <div
+                    class="color-dot"
+                    [style.background-color]="catCtrl.get('color_hex')?.value"
+                  ></div>
                   <mat-form-field appearance="outline" class="dense-field cat-name">
                     <mat-label>Category Name</mat-label>
-                    <input matInput formControlName="name">
+                    <input matInput formControlName="name" />
                   </mat-form-field>
                 </div>
-                
+
                 <mat-form-field appearance="outline" class="dense-field cat-price">
                   <mat-label>Price (₹)</mat-label>
-                  <input matInput type="number" formControlName="price" min="0">
+                  <input matInput type="number" formControlName="price" min="0" />
                   <span matTextPrefix>₹&nbsp;</span>
                   <mat-error *ngIf="catCtrl.get('price')?.hasError('required')">Required</mat-error>
                 </mat-form-field>
@@ -223,7 +393,9 @@
             </mat-select>
             <mat-hint>
               <span *ngIf="!gateStaffUsers.length">No gate staff users available yet.</span>
-              <span *ngIf="gateStaffUsers.length">Only assigned staff will be able to scan tickets for this event.</span>
+              <span *ngIf="gateStaffUsers.length"
+                >Only assigned staff will be able to scan tickets for this event.</span
+              >
             </mat-hint>
           </mat-form-field>
         </div>
@@ -234,15 +406,25 @@
             <span>GA Ticket Tiers <span class="optional">(optional)</span></span>
           </div>
 
-          <p class="subtitle">Add quantity-based ticket tiers for general admission or mixed events.</p>
+          <p class="subtitle">
+            Add quantity-based ticket tiers for general admission or mixed events.
+          </p>
 
           <div class="category-grid">
-            <div *ngFor="let tierCtrl of ticketTiers.controls; let i = index" [formGroupName]="i" class="category-card" [style.border-top-color]="tierCtrl.get('color_hex')?.value">
+            <div
+              *ngFor="let tierCtrl of ticketTiers.controls; let i = index"
+              [formGroupName]="i"
+              class="category-card"
+              [style.border-top-color]="tierCtrl.get('color_hex')?.value"
+            >
               <div class="cat-header">
-                <div class="color-dot" [style.background-color]="tierCtrl.get('color_hex')?.value"></div>
+                <div
+                  class="color-dot"
+                  [style.background-color]="tierCtrl.get('color_hex')?.value"
+                ></div>
                 <mat-form-field appearance="outline" class="dense-field cat-name">
                   <mat-label>Tier Name</mat-label>
-                  <input matInput formControlName="name" placeholder="Early Bird">
+                  <input matInput formControlName="name" placeholder="Early Bird" />
                 </mat-form-field>
                 <button mat-icon-button type="button" (click)="removeTicketTier(i)">
                   <mat-icon>close</mat-icon>
@@ -251,12 +433,12 @@
 
               <mat-form-field appearance="outline" class="dense-field cat-price">
                 <mat-label>Price (₹)</mat-label>
-                <input matInput type="number" formControlName="price" min="0">
+                <input matInput type="number" formControlName="price" min="0" />
               </mat-form-field>
 
               <mat-form-field appearance="outline" class="dense-field cat-price">
                 <mat-label>Capacity</mat-label>
-                <input matInput type="number" formControlName="capacity" min="1">
+                <input matInput type="number" formControlName="capacity" min="1" />
               </mat-form-field>
             </div>
           </div>
@@ -268,10 +450,18 @@
         </div>
 
         <div class="form-actions">
-          <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting || eventForm.invalid" class="submit-btn">
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="isSubmitting || eventForm.invalid"
+            class="submit-btn"
+          >
             <mat-icon *ngIf="!isSubmitting">{{ isEditMode ? 'save' : 'publish' }}</mat-icon>
             <mat-spinner diameter="20" *ngIf="isSubmitting"></mat-spinner>
-            <span *ngIf="isSubmitting" style="margin-left: 8px">{{ isEditMode ? 'Saving Changes...' : 'Publishing Event...' }}</span>
+            <span *ngIf="isSubmitting" style="margin-left: 8px">{{
+              isEditMode ? 'Saving Changes...' : 'Publishing Event...'
+            }}</span>
             <span *ngIf="!isSubmitting">{{ isEditMode ? 'Save Changes' : 'Publish Event' }}</span>
           </button>
         </div>

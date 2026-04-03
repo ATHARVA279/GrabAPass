@@ -2,7 +2,8 @@
 @use 'ngx-toastr/toastr' as toastr;
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 // ─── Base layout ─────────────────────────────────────────────────────────────
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
   margin: 0;
@@ -19,69 +20,74 @@ app-root {
 // ─── Angular Material Theme ───────────────────────────────────────────────────
 // typography omitted — we override all font tokens manually below with Poppins
 html {
-  @include mat.theme((
-    color: (
-      theme-type: dark,
-      primary: mat.$yellow-palette,
-    ),
-    density: 0,
-  ));
+  @include mat.theme(
+    (
+      color: (
+        theme-type: dark,
+        primary: mat.$yellow-palette,
+      ),
+      density: 0,
+    )
+  );
 }
 
 // ─── CSS Custom Properties ────────────────────────────────────────────────────
 :root {
   // Core palette
-  --yellow:        #FFD60A;
-  --yellow-dark:   #E6C000;
-  --yellow-glow:   rgba(255, 214, 10, 0.18);
+  --yellow: #ffd60a;
+  --yellow-dark: #e6c000;
+  --yellow-glow: rgba(255, 214, 10, 0.18);
   --yellow-subtle: rgba(255, 214, 10, 0.08);
 
-  --pink:          #FF2E88;
-  --pink-dark:     #E0006E;
-  --pink-glow:     rgba(255, 46, 136, 0.18);
-  --pink-subtle:   rgba(255, 46, 136, 0.08);
+  --pink: #ff2e88;
+  --pink-dark: #e0006e;
+  --pink-glow: rgba(255, 46, 136, 0.18);
+  --pink-subtle: rgba(255, 46, 136, 0.08);
 
-  --black:         #0D0D0D;
-  --black-soft:    #141414;
-  --black-card:    #1A1A1A;
-  --black-raised:  #222222;
-  --black-border:  rgba(255, 255, 255, 0.08);
+  --black: #0d0d0d;
+  --black-soft: #141414;
+  --black-card: #1a1a1a;
+  --black-raised: #222222;
+  --black-border: rgba(255, 255, 255, 0.08);
 
   // Text
-  --text-primary:   #FFFFFF;
-  --text-secondary: #A0A0A0;
-  --text-muted:     #606060;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #606060;
 
   // Status
-  --success:       #22c55e;
-  --error:         #FF2E88;
-  --error-subtle:  rgba(255, 46, 136, 0.1);
-  --warning:       #FFD60A;
+  --success: #22c55e;
+  --error: #ff2e88;
+  --error-subtle: rgba(255, 46, 136, 0.1);
+  --warning: #ffd60a;
 
   // Spacing & Shape
-  --radius-sm:  8px;
-  --radius-md:  12px;
-  --radius-lg:  16px;
-  --radius-xl:  24px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 
   // Shadows
-  --shadow-card:   0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
   --shadow-raised: 0 8px 32px rgba(0, 0, 0, 0.6);
   --shadow-yellow: 0 4px 20px rgba(255, 214, 10, 0.25);
-  --shadow-pink:   0 4px 20px rgba(255, 46, 136, 0.25);
+  --shadow-pink: 0 4px 20px rgba(255, 46, 136, 0.25);
 
   // Typography
   --font: 'Poppins', -apple-system, blinkmacsystemfont, 'Segoe UI', sans-serif;
 }
 
 // ─── Reset & Base ─────────────────────────────────────────────────────────────
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   color-scheme: dark;
 }
@@ -110,15 +116,22 @@ body {
   --mdc-filled-button-label-text-color: #000000;
   font-weight: 700;
   font-family: var(--font);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s;
 
   &:hover:not(:disabled) {
     --mdc-filled-button-container-color: var(--yellow-dark);
     box-shadow: var(--shadow-yellow);
     transform: translateY(-1px);
   }
-  &:active:not(:disabled) { transform: translateY(0); }
-  &:disabled { opacity: 0.4; }
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  &:disabled {
+    opacity: 0.4;
+  }
 }
 
 // Accent flat button → pink
@@ -127,7 +140,10 @@ body {
   --mdc-filled-button-label-text-color: #ffffff;
   font-weight: 700;
   font-family: var(--font);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s;
 
   &:hover:not(:disabled) {
     --mdc-filled-button-container-color: var(--pink-dark);
@@ -142,16 +158,30 @@ body {
   font-family: var(--font);
   color: var(--text-secondary);
   transition: color 0.2s;
-  &:hover { color: var(--yellow); }
+  &:hover {
+    color: var(--yellow);
+  }
 }
 
 // Icon buttons
 .mat-mdc-icon-button {
   color: var(--text-secondary);
   transition: color 0.2s;
-  &:hover                     { color: var(--pink);       }
-  &.mat-primary               { color: var(--yellow);     &:hover { color: var(--yellow-dark); } }
-  &.mat-accent                { color: var(--pink);       &:hover { color: var(--pink-dark);   } }
+  &:hover {
+    color: var(--pink);
+  }
+  &.mat-primary {
+    color: var(--yellow);
+    &:hover {
+      color: var(--yellow-dark);
+    }
+  }
+  &.mat-accent {
+    color: var(--pink);
+    &:hover {
+      color: var(--pink-dark);
+    }
+  }
 }
 
 // Cards
@@ -170,54 +200,54 @@ mat-card,
 :root {
   // ── FONT ────────────────────────────────────────────────────────────────────
   // These are the CONFIRMED token names from the compiled Material 21 bundle.
-  --mat-form-field-container-text-font:              'Poppins', sans-serif;
-  --mat-form-field-outlined-label-text-font:         'Poppins', sans-serif;
-  --mat-form-field-filled-label-text-font:           'Poppins', sans-serif;
-  --mat-form-field-subscript-text-font:              'Poppins', sans-serif;
+  --mat-form-field-container-text-font: 'Poppins', sans-serif;
+  --mat-form-field-outlined-label-text-font: 'Poppins', sans-serif;
+  --mat-form-field-filled-label-text-font: 'Poppins', sans-serif;
+  --mat-form-field-subscript-text-font: 'Poppins', sans-serif;
   // System-level font tokens that feed all --mat-sys-body-*-font references
-  --mat-sys-body-large-font:                         'Poppins', sans-serif;
-  --mat-sys-body-medium-font:                        'Poppins', sans-serif;
-  --mat-sys-body-small-font:                         'Poppins', sans-serif;
-  --mat-sys-label-large-font:                        'Poppins', sans-serif;
-  --mat-sys-label-medium-font:                       'Poppins', sans-serif;
+  --mat-sys-body-large-font: 'Poppins', sans-serif;
+  --mat-sys-body-medium-font: 'Poppins', sans-serif;
+  --mat-sys-body-small-font: 'Poppins', sans-serif;
+  --mat-sys-label-large-font: 'Poppins', sans-serif;
+  --mat-sys-label-medium-font: 'Poppins', sans-serif;
 
   // ── NOTCH-PIECE BORDER (the actual outline element Material renders) ─────────
   // Idle
-  --mat-form-field-outlined-outline-color:           rgba(255, 255, 255, 0.12);
-  --mat-form-field-outlined-outline-width:           1px;
+  --mat-form-field-outlined-outline-color: rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-outline-width: 1px;
   // Hover (not focused, not invalid)
-  --mat-form-field-outlined-hover-outline-color:     rgba(255, 255, 255, 0.3);
+  --mat-form-field-outlined-hover-outline-color: rgba(255, 255, 255, 0.3);
   // Focus → no color change (stays same as idle)
-  --mat-form-field-outlined-focus-outline-color:     rgba(255, 255, 255, 0.12);
-  --mat-form-field-outlined-focus-outline-width:     1px;
+  --mat-form-field-outlined-focus-outline-color: rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-focus-outline-width: 1px;
   // Error / invalid → same as idle (no pink)
-  --mat-form-field-outlined-error-outline-color:     rgba(255, 255, 255, 0.12);
+  --mat-form-field-outlined-error-outline-color: rgba(255, 255, 255, 0.12);
   --mat-form-field-outlined-error-hover-outline-color: rgba(255, 255, 255, 0.35);
   --mat-form-field-outlined-error-focus-outline-color: rgba(255, 255, 255, 0.12);
 
   // ── LABEL COLORS ────────────────────────────────────────────────────────────
-  --mat-form-field-outlined-label-text-color:        #a0a0a0;
-  --mat-form-field-outlined-hover-label-text-color:  #a0a0a0;
-  --mat-form-field-outlined-focus-label-text-color:  #a0a0a0;
-  --mat-form-field-outlined-error-label-text-color:  #a0a0a0;   // no pink on label
+  --mat-form-field-outlined-label-text-color: #a0a0a0;
+  --mat-form-field-outlined-hover-label-text-color: #a0a0a0;
+  --mat-form-field-outlined-focus-label-text-color: #a0a0a0;
+  --mat-form-field-outlined-error-label-text-color: #a0a0a0; // no pink on label
   --mat-form-field-outlined-error-focus-label-text-color: #a0a0a0;
   --mat-form-field-outlined-error-hover-label-text-color: #a0a0a0;
 
   // ── INPUT TEXT & CARET ──────────────────────────────────────────────────────
-  --mat-form-field-outlined-input-text-color:              #ffffff;
-  --mat-form-field-outlined-input-text-placeholder-color:  #606060;
-  --mat-form-field-outlined-caret-color:                   #ffffff;
-  --mat-form-field-outlined-error-caret-color:             #ffffff;
+  --mat-form-field-outlined-input-text-color: #ffffff;
+  --mat-form-field-outlined-input-text-placeholder-color: #606060;
+  --mat-form-field-outlined-caret-color: #ffffff;
+  --mat-form-field-outlined-error-caret-color: #ffffff;
 
   // ── CONTAINER SHAPE ─────────────────────────────────────────────────────────
-  --mat-form-field-outlined-container-shape:         8px;
+  --mat-form-field-outlined-container-shape: 8px;
 
   // ── ERROR TEXT ──────────────────────────────────────────────────────────────
-  --mat-form-field-error-text-color:                 #FF2E88;
+  --mat-form-field-error-text-color: #ff2e88;
 
   // ── STATE LAYER (hover overlay on filled variant, zero for outlined) ────────
-  --mat-form-field-focus-state-layer-opacity:        0;
-  --mat-form-field-hover-state-layer-opacity:        0;
+  --mat-form-field-focus-state-layer-opacity: 0;
+  --mat-form-field-hover-state-layer-opacity: 0;
 }
 
 // ── Font on the host element ─────────────────────────────────────────────────
@@ -256,24 +286,32 @@ mat-card,
 }
 
 // Hover (not focused, not invalid)
-.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):not(.mdc-text-field--invalid):hover .mat-mdc-notch-piece {
+.mdc-text-field--outlined:not(.mdc-text-field--disabled):not(.mdc-text-field--focused):not(
+    .mdc-text-field--invalid
+  ):hover
+  .mat-mdc-notch-piece {
   border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 // Focused → no color change
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mat-mdc-notch-piece {
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused
+  .mat-mdc-notch-piece {
   border-color: rgba(255, 255, 255, 0.12) !important;
   border-width: 1px !important;
 }
 
 // Invalid — same as idle (no color change)
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mat-mdc-notch-piece {
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid
+  .mat-mdc-notch-piece {
   border-color: rgba(255, 255, 255, 0.12) !important;
   border-width: 1px !important;
 }
 
 // Invalid + focused — still no color change
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid.mdc-text-field--focused .mat-mdc-notch-piece {
+.mdc-text-field--outlined:not(
+    .mdc-text-field--disabled
+  ).mdc-text-field--invalid.mdc-text-field--focused
+  .mat-mdc-notch-piece {
   border-color: rgba(255, 255, 255, 0.12) !important;
   border-width: 1px !important;
 }
@@ -282,19 +320,24 @@ mat-card,
 .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label {
   color: #a0a0a0 !important;
 }
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused .mdc-floating-label {
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--focused
+  .mdc-floating-label {
   color: #a0a0a0 !important;
 }
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid .mdc-floating-label {
+.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid
+  .mdc-floating-label {
   color: #a0a0a0 !important;
 }
-.mdc-text-field--outlined:not(.mdc-text-field--disabled).mdc-text-field--invalid.mdc-text-field--focused .mdc-floating-label {
+.mdc-text-field--outlined:not(
+    .mdc-text-field--disabled
+  ).mdc-text-field--invalid.mdc-text-field--focused
+  .mdc-floating-label {
   color: #a0a0a0 !important;
 }
 
 // ── Error / hint text ────────────────────────────────────────────────────────
 .mat-mdc-form-field-error {
-  color: #FF2E88 !important;
+  color: #ff2e88 !important;
   font-family: 'Poppins', sans-serif !important;
 }
 .mat-mdc-form-field-hint {
@@ -311,14 +354,92 @@ mat-card,
   .mat-mdc-option {
     color: var(--text-primary);
     font-family: var(--font);
-    &:hover, &.mat-mdc-option-active  { background: var(--yellow-subtle); }
-    &.mdc-list-item--selected         { color: var(--yellow); }
+    &:hover,
+    &.mat-mdc-option-active {
+      background: var(--yellow-subtle);
+    }
+    &.mdc-list-item--selected {
+      color: var(--yellow);
+    }
   }
 }
-.mat-mdc-select-value { color: var(--text-primary) !important; font-family: var(--font); }
-.mat-mdc-select-arrow { color: var(--text-secondary) !important; }
+.mat-mdc-select-value {
+  color: var(--text-primary) !important;
+  font-family: var(--font);
+}
+.mat-mdc-select-arrow {
+  color: var(--text-secondary) !important;
+}
 
 // Google Places Autocomplete (global element injected outside Angular component tree)
+.pac-target-input {
+  font-family: var(--font) !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings:
+    'liga' 0,
+    'clig' 0 !important;
+  background-image: none !important;
+  text-shadow: none !important;
+}
+
+.pac-container {
+  z-index: 3000 !important;
+  margin-top: 8px;
+  border-radius: 16px !important;
+  overflow: hidden;
+  background: #171717 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
+  font-family: var(--font) !important;
+}
+
+.pac-item {
+  min-height: 52px;
+  padding: 12px 16px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font) !important;
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.pac-item:first-child {
+  border-top: 0 !important;
+}
+
+.pac-item:hover,
+.pac-item.pac-item-selected {
+  background: rgba(255, 214, 10, 0.08) !important;
+}
+
+.pac-item-query {
+  color: var(--text-primary) !important;
+  font-family: var(--font) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  padding-right: 6px;
+}
+
+.pac-matched {
+  color: var(--yellow) !important;
+}
+
+.pac-item span {
+  color: var(--text-secondary);
+  font-family: var(--font) !important;
+}
+
+.pac-icon {
+  opacity: 0.8;
+  margin-right: 0 !important;
+}
+
 // Chips
 mat-chip {
   background: var(--yellow-subtle) !important;
@@ -334,7 +455,9 @@ mat-chip {
   background: transparent !important;
   font-family: var(--font);
 
-  .mat-mdc-header-row  { background: var(--black-raised) !important; }
+  .mat-mdc-header-row {
+    background: var(--black-raised) !important;
+  }
   .mat-mdc-header-cell {
     color: var(--text-secondary) !important;
     font-weight: 600;
@@ -343,8 +466,16 @@ mat-chip {
     letter-spacing: 0.05em;
     border-bottom-color: var(--black-border) !important;
   }
-  .mat-mdc-row         { transition: background 0.15s; &:hover { background: var(--yellow-subtle) !important; } }
-  .mat-mdc-cell        { color: var(--text-primary) !important; border-bottom-color: var(--black-border) !important; }
+  .mat-mdc-row {
+    transition: background 0.15s;
+    &:hover {
+      background: var(--yellow-subtle) !important;
+    }
+  }
+  .mat-mdc-cell {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--black-border) !important;
+  }
 }
 
 // Toolbar
@@ -399,7 +530,10 @@ mat-toolbar.mat-toolbar {
   font-size: 0.9rem;
   font-weight: 500;
 
-  mat-icon { color: var(--pink); flex-shrink: 0; }
+  mat-icon {
+    color: var(--pink);
+    flex-shrink: 0;
+  }
 }
 
 // ─── Toast overrides ──────────────────────────────────────────────────────────
@@ -436,7 +570,9 @@ mat-toolbar.mat-toolbar {
   top: 10px;
   right: 10px;
 
-  &:hover { opacity: 1; }
+  &:hover {
+    opacity: 1;
+  }
 }
 
 // Progress bar
@@ -450,11 +586,15 @@ mat-toolbar.mat-toolbar {
 // Error toast — pink
 #toast-container > .toast-error {
   background-color: #1a0d12 !important;
-  border-left-color: #FF2E88 !important;
+  border-left-color: #ff2e88 !important;
   color: #ffffff !important;
 
-  .toast-title  { color: #FF2E88; }
-  .toast-progress { background: #FF2E88 !important; }
+  .toast-title {
+    color: #ff2e88;
+  }
+  .toast-progress {
+    background: #ff2e88 !important;
+  }
 
   &::before {
     background-image: none !important;
@@ -464,11 +604,15 @@ mat-toolbar.mat-toolbar {
 // Warning toast — yellow
 #toast-container > .toast-warning {
   background-color: #1a1500 !important;
-  border-left-color: #FFD60A !important;
+  border-left-color: #ffd60a !important;
   color: #ffffff !important;
 
-  .toast-title  { color: #FFD60A; }
-  .toast-progress { background: #FFD60A !important; }
+  .toast-title {
+    color: #ffd60a;
+  }
+  .toast-progress {
+    background: #ffd60a !important;
+  }
 }
 
 // Success toast — green
@@ -477,8 +621,12 @@ mat-toolbar.mat-toolbar {
   border-left-color: #22c55e !important;
   color: #ffffff !important;
 
-  .toast-title  { color: #22c55e; }
-  .toast-progress { background: #22c55e !important; }
+  .toast-title {
+    color: #22c55e;
+  }
+  .toast-progress {
+    background: #22c55e !important;
+  }
 }
 
 // Info toast — neutral
@@ -487,19 +635,26 @@ mat-toolbar.mat-toolbar {
   border-left-color: #60a5fa !important;
   color: #ffffff !important;
 
-  .toast-title  { color: #60a5fa; }
-  .toast-progress { background: #60a5fa !important; }
+  .toast-title {
+    color: #60a5fa;
+  }
+  .toast-progress {
+    background: #60a5fa !important;
+  }
 }
 
 // Hide default background images (the icons)
-.toast-error, .toast-warning, .toast-success, .toast-info {
+.toast-error,
+.toast-warning,
+.toast-success,
+.toast-info {
   background-image: none !important;
 }
 
 // ─── Time Picker Dialog ───────────────────────────────────────────────────────
 .timepicker-panel .mat-mdc-dialog-container {
   background: transparent !important;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.7) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7) !important;
   border-radius: 16px !important;
   padding: 0 !important;
   overflow: hidden;
@@ -511,4 +666,23 @@ mat-toolbar.mat-toolbar {
 }
 .timepicker-backdrop {
   backdrop-filter: blur(4px);
+}
+
+.venue-modal-panel .mat-mdc-dialog-container {
+  padding: 0 !important;
+  border-radius: 28px !important;
+  overflow: hidden !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55) !important;
+}
+
+.venue-modal-panel .mdc-dialog__surface {
+  background: #101010 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px !important;
+  overflow: hidden !important;
+}
+
+.venue-modal-backdrop {
+  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.72);
 }

@@ -1,0 +1,24 @@
+<div class="map-selector" [style.--map-height]="mapHeight">
+  <div class="map-toolbar">
+    <div>
+      <strong>Map Confirmation</strong>
+      <p>{{ helperText }}</p>
+    </div>
+
+    <span class="status-chip" *ngIf="isResolvingLocation">Updating address…</span>
+  </div>
+
+  <div class="map-frame">
+    <div #mapCanvas class="map-canvas" [class.is-hidden]="!canRenderMap"></div>
+
+    <div class="map-overlay" *ngIf="isLoading">
+      <mat-icon>travel_explore</mat-icon>
+      <span>Loading Google Maps…</span>
+    </div>
+
+    <div class="map-overlay map-overlay--error" *ngIf="errorMessage && !isLoading">
+      <mat-icon>error</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  </div>
+</div>

@@ -7,9 +7,10 @@ use crate::{
     AppState,
     db::models::{
         AssignGateStaffRequest, CreateEventRequest, Event, EventStatus, EventTicketTier,
-        GateStaffSummary, OrganizerDashboardSummaryResponse, PublicEvent,
+        EventVenueInput, GateStaffSummary, OrganizerDashboardSummaryResponse, PublicEvent,
     },
     repositories::{auth_repository, event_repository},
+    services::event_venue_service,
     services::suspicious_activity_service::SuspiciousActivityService,
     services::venue_service,
 };
@@ -61,15 +62,13 @@ pub async fn create_event(
 ) -> Result<Event, (StatusCode, String)> {
     let (primary_image_url, image_gallery) =
         normalize_event_gallery(payload.image_url.clone(), payload.image_gallery.clone())?;
-    let (venue_latitude, venue_longitude) =
-        normalize_coordinates(payload.venue_latitude, payload.venue_longitude)?;
-    let venue_place_id = normalize_optional_text(payload.venue_place_id.as_deref());
+    let mut tx = state.pool.begin().await.map_err(internal_error)?;
+    let resolved_venue =
+        resolve_event_venue_tx(&mut tx, organizer_id, payload.venue.as_ref(), &payload).await?;
     let seating_mode = venue_service::resolve_seating_mode(
-        payload.seating_mode,
+        payload.seating_mode.clone(),
         payload.venue_template_id.is_some(),
     );
-
-    let mut tx = state.pool.begin().await.map_err(internal_error)?;
 
     let event = event_repository::create_event_tx(
         &mut tx,
@@ -77,16 +76,17 @@ pub async fn create_event(
         &payload.title,
         payload.description.as_deref(),
         &payload.category,
-        &payload.venue_name,
-        &payload.venue_address,
+        resolved_venue.venue_id,
+        &resolved_venue.venue_name,
+        &resolved_venue.venue_address,
         payload.start_time,
         payload.venue_template_id,
         seating_mode,
         primary_image_url.as_deref(),
         &image_gallery,
-        venue_place_id.as_deref(),
-        venue_latitude,
-        venue_longitude,
+        resolved_venue.venue_place_id.as_deref(),
+        resolved_venue.venue_latitude,
+        resolved_venue.venue_longitude,
     )
     .await
     .map_err(internal_error)?;
@@ -115,15 +115,13 @@ pub async fn update_event(
 ) -> Result<Event, (StatusCode, String)> {
     let (primary_image_url, image_gallery) =
         normalize_event_gallery(payload.image_url.clone(), payload.image_gallery.clone())?;
-    let (venue_latitude, venue_longitude) =
-        normalize_coordinates(payload.venue_latitude, payload.venue_longitude)?;
-    let venue_place_id = normalize_optional_text(payload.venue_place_id.as_deref());
+    let mut tx = state.pool.begin().await.map_err(internal_error)?;
+    let resolved_venue =
+        resolve_event_venue_tx(&mut tx, organizer_id, payload.venue.as_ref(), &payload).await?;
     let seating_mode = venue_service::resolve_seating_mode(
-        payload.seating_mode,
+        payload.seating_mode.clone(),
         payload.venue_template_id.is_some(),
     );
-
-    let mut tx = state.pool.begin().await.map_err(internal_error)?;
 
     let event = event_repository::update_event(
         &state.pool,
@@ -132,15 +130,17 @@ pub async fn update_event(
         &payload.title,
         payload.description.as_deref(),
         &payload.category,
-        &payload.venue_name,
-        &payload.venue_address,
+        resolved_venue.venue_id,
+        &resolved_venue.venue_name,
+        &resolved_venue.venue_address,
         payload.start_time,
+        payload.venue_template_id,
         seating_mode,
         primary_image_url.as_deref(),
         &image_gallery,
-        venue_place_id.as_deref(),
-        venue_latitude,
-        venue_longitude,
+        resolved_venue.venue_place_id.as_deref(),
+        resolved_venue.venue_latitude,
+        resolved_venue.venue_longitude,
     )
     .await
     .map_err(internal_error)?
@@ -332,11 +332,65 @@ fn normalize_coordinates(
     }
 }
 
+fn normalize_required_text(value: &str, field_name: &str) -> Result<String, (StatusCode, String)> {
+    let normalized = value.trim();
+    if normalized.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            format!("{field_name} is required."),
+        ));
+    }
+
+    Ok(normalized.to_string())
+}
+
 fn normalize_optional_text(value: Option<&str>) -> Option<String> {
     value
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(ToOwned::to_owned)
+}
+
+struct ResolvedVenueFields {
+    venue_id: Option<Uuid>,
+    venue_name: String,
+    venue_address: String,
+    venue_place_id: Option<String>,
+    venue_latitude: Option<f64>,
+    venue_longitude: Option<f64>,
+}
+
+async fn resolve_event_venue_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    organizer_id: Uuid,
+    venue_input: Option<&EventVenueInput>,
+    payload: &CreateEventRequest,
+) -> Result<ResolvedVenueFields, (StatusCode, String)> {
+    if let Some(venue_input) = venue_input {
+        let venue = event_venue_service::save_event_venue_tx(tx, organizer_id, venue_input).await?;
+        return Ok(ResolvedVenueFields {
+            venue_id: Some(venue.id),
+            venue_name: venue.name,
+            venue_address: venue.address,
+            venue_place_id: Some(venue.place_id),
+            venue_latitude: Some(venue.latitude),
+            venue_longitude: Some(venue.longitude),
+        });
+    }
+
+    let venue_name = normalize_required_text(&payload.venue_name, "Venue name")?;
+    let venue_address = normalize_required_text(&payload.venue_address, "Venue address")?;
+    let (venue_latitude, venue_longitude) =
+        normalize_coordinates(payload.venue_latitude, payload.venue_longitude)?;
+
+    Ok(ResolvedVenueFields {
+        venue_id: None,
+        venue_name,
+        venue_address,
+        venue_place_id: normalize_optional_text(payload.venue_place_id.as_deref()),
+        venue_latitude,
+        venue_longitude,
+    })
 }
 
 pub async fn get_event_pulse(

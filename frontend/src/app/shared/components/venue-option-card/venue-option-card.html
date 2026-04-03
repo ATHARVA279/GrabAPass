@@ -1,0 +1,25 @@
+<article class="venue-option-card" [class.disabled]="disabled">
+  <div class="card-copy">
+    <div class="card-meta">
+      <span class="meta-pill" *ngIf="emphasisLabel">{{ emphasisLabel }}</span>
+      <span class="meta-pill" *ngIf="hasRating">
+        <mat-icon>star</mat-icon>
+        {{ $any(venue).rating ?? 0 | number: '1.1-1' }}
+      </span>
+    </div>
+
+    <h4>{{ venue.name }}</h4>
+    <p>{{ venue.address }}</p>
+
+    <div class="location-line">
+      <span *ngIf="venue.locality">{{ venue.locality }}</span>
+      <span *ngIf="venue.city">{{ venue.city }}</span>
+      <span *ngIf="venue.state">{{ venue.state }}</span>
+      <span *ngIf="venue.pincode">{{ venue.pincode }}</span>
+    </div>
+  </div>
+
+  <button mat-stroked-button type="button" (click)="selectVenue()" [disabled]="disabled">
+    {{ actionLabel }}
+  </button>
+</article>
