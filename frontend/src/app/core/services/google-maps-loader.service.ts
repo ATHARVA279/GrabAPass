@@ -51,7 +51,7 @@ export class GoogleMapsLoaderService {
           this.loadPromise = null;
           reject(new Error('Google Maps authentication failed.'));
         };
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.apiKey)}&libraries=places`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.apiKey)}&libraries=places&loading=async`;
         script.async = true;
         script.defer = true;
         script.dataset['googleMaps'] = 'true';

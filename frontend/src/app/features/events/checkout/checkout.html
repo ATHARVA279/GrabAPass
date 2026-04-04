@@ -1,11 +1,4 @@
 <div class="checkout-page">
-
-  <!-- Timer Bar -->
-  <div class="timer-bar" *ngIf="state?.holdExpiresAt">
-    <mat-icon>timer</mat-icon>
-    <span>Complete payment in <strong>{{ holdTimeRemaining }}</strong></span>
-  </div>
-
   <!-- Top Bar -->
   <div class="top-bar">
     <button class="back-link" (click)="goBack()">
@@ -281,6 +274,14 @@
           <h3>Secure Payment</h3>
         </div>
 
+        <div class="hold-timer-card" *ngIf="state.holdExpiresAt">
+          <mat-icon>timer</mat-icon>
+          <div>
+            <span class="timer-label">Complete payment in</span>
+            <strong>{{ holdTimeRemaining }}</strong>
+          </div>
+        </div>
+
         <div class="payment-amount">
           <span class="amount-label">Amount to Pay</span>
           <span class="amount-value">₹{{ grandTotal | number:'1.2-2' }}</span>
@@ -290,13 +291,6 @@
           <mat-icon>link</mat-icon>
           <p>Continue to generate {{ splitShares }} payment link{{ splitShares === 1 ? '' : 's' }}. The host dashboard will open right after this step.</p>
         </div>
-
-        <div class="payment-info" *ngIf="!isSplitEnabled && !splitSession">
-          <mat-icon>info</mat-icon>
-          <p>Razorpay Test Mode is enabled. Use sandbox cards or UPI IDs. No real money will be charged.</p>
-        </div>
-
-
 
         <button class="pay-btn" [disabled]="isProcessing || (isSplitEnabled && !getSplitReadyToSubmit())" *ngIf="!splitSession" (click)="onConfirmPayment()">
           <span *ngIf="!isProcessing && !isSplitEnabled">

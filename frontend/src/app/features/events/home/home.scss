@@ -562,6 +562,9 @@
     border-top: 1px solid var(--black-border);
     padding: 4rem 2rem 2rem;
     margin-top: 4rem;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
 
     .footer-content {
         max-width: 1400px;

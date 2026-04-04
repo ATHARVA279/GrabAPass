@@ -110,6 +110,11 @@ body {
   stroke: var(--yellow) !important;
 }
 
+button .mat-mdc-progress-spinner circle,
+a .mat-mdc-progress-spinner circle {
+  stroke: currentColor !important;
+}
+
 // Primary flat button → yellow bg, black text
 .mat-mdc-unelevated-button.mat-primary {
   --mdc-filled-button-container-color: var(--yellow);
@@ -132,6 +137,10 @@ body {
   &:disabled {
     opacity: 0.4;
   }
+
+  .mat-mdc-progress-spinner {
+    color: #000000;
+  }
 }
 
 // Accent flat button → pink
@@ -149,6 +158,10 @@ body {
     --mdc-filled-button-container-color: var(--pink-dark);
     box-shadow: var(--shadow-pink);
     transform: translateY(-1px);
+  }
+
+  .mat-mdc-progress-spinner {
+    color: #ffffff;
   }
 }
 

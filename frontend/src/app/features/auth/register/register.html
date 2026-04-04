@@ -86,25 +86,12 @@
             <mat-icon matPrefix>apartment</mat-icon>
           </mat-form-field>
 
-          <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!registerForm.form.valid">
-            Register
+          <button mat-flat-button color="primary" type="submit" class="submit-btn" [disabled]="!registerForm.form.valid || isSubmitting">
+            <mat-spinner *ngIf="isSubmitting" diameter="20"></mat-spinner>
+            <span>{{ isSubmitting ? 'Creating Account...' : 'Register' }}</span>
           </button>
         </form>
 
-        <div class="divider">
-          <span>OR</span>
-        </div>
-
-        <div class="social-login">
-          <button mat-stroked-button class="social-btn">
-            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" class="social-icon">
-            Sign up with Google
-          </button>
-          <button mat-stroked-button class="social-btn">
-            <mat-icon class="apple-icon">apple</mat-icon>
-            Sign up with Apple
-          </button>
-        </div>
       </mat-card-content>
 
       <mat-card-actions class="auth-footer">
