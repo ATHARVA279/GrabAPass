@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService, UserRole } from '../../../core/auth/auth';
 
@@ -25,7 +27,8 @@ import { AuthService, UserRole } from '../../../core/auth/auth';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatSelectModule
+    MatSelectModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './register.html',
   styleUrls: ['./register.scss']
@@ -38,6 +41,7 @@ export class Register implements OnInit {
   role: UserRole = UserRole.Customer;
   organizer_company = '';
   returnUrlMessage: string | null = null;
+  isSubmitting = false;
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -54,6 +58,10 @@ export class Register implements OnInit {
   }
 
   onSubmit() {
+    if (this.isSubmitting) {
+      return;
+    }
+
     const payload: any = {
       name: this.name,
       email: this.email,
@@ -69,7 +77,10 @@ export class Register implements OnInit {
       payload.organizer_company = this.organizer_company;
     }
 
-    this.authService.register(payload).subscribe({
+    this.isSubmitting = true;
+    this.authService.register(payload).pipe(
+      finalize(() => (this.isSubmitting = false))
+    ).subscribe({
       next: async (res) => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         const targetUrl = returnUrl || this.authService.getDefaultRouteForRole(res.user.role);

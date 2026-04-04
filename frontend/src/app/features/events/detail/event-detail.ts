@@ -157,13 +157,6 @@ export class EventDetail implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.isLoggedIn) {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: `/events/${this.event.id}/seats` },
-      });
-      return;
-    }
-
     this.router.navigate(['/events', this.event.id, 'seats']);
   }
 

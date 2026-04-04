@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService, UserRole } from '../../../core/auth/auth';
 
@@ -23,7 +25,8 @@ import { AuthService, UserRole } from '../../../core/auth/auth';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './login.html',
   styleUrls: ['./login.scss']
@@ -32,6 +35,7 @@ export class Login {
   email = '';
   password = '';
   returnUrlMessage: string | null = null;
+  isSubmitting = false;
 
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -48,7 +52,14 @@ export class Login {
   }
 
   onSubmit() {
-    this.authService.login({ email: this.email, password: this.password }).subscribe({
+    if (this.isSubmitting) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.authService.login({ email: this.email, password: this.password }).pipe(
+      finalize(() => (this.isSubmitting = false))
+    ).subscribe({
       next: async (res) => {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         const targetUrl = returnUrl || this.authService.getDefaultRouteForRole(res.user.role);
